@@ -1,0 +1,372 @@
+{
+  "version": 1,
+  "sdk_version": "0.28.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://obgfbgggozfbkisozkvr.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "range-roulette-connect",
+      "version": "0.1.0",
+      "title": "Range Roulette Connect"
+    },
+    "tools": [
+      {
+        "name": "draw_drill",
+        "title": "Draw a random drill",
+        "description": "Draw a random Range Roulette training drill: one card each for time, distance, start position, target, and course of fire.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_saved_drills",
+        "title": "List saved drills",
+        "description": "List the signed-in user's saved Range Roulette training drills.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "save_drill",
+        "title": "Save a drill",
+        "description": "Save a Range Roulette drill under a name for the signed-in user. Re-saving the same name overwrites it.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name for the saved drill."
+            },
+            "drill": {
+              "type": "object",
+              "properties": {
+                "time": {
+                  "type": "object",
+                  "properties": {
+                    "cardId": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cardId",
+                    "label"
+                  ]
+                },
+                "distance": {
+                  "type": "object",
+                  "properties": {
+                    "cardId": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cardId",
+                    "label"
+                  ]
+                },
+                "startPosition": {
+                  "type": "object",
+                  "properties": {
+                    "cardId": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cardId",
+                    "label"
+                  ]
+                },
+                "target": {
+                  "type": "object",
+                  "properties": {
+                    "cardId": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cardId",
+                    "label"
+                  ]
+                },
+                "courseOfFire": {
+                  "type": "object",
+                  "properties": {
+                    "cardId": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cardId",
+                    "label"
+                  ]
+                },
+                "parSeconds": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "time",
+                "distance",
+                "startPosition",
+                "target",
+                "courseOfFire"
+              ],
+              "description": "Drill snapshot, e.g. the output of draw_drill."
+            }
+          },
+          "required": [
+            "name",
+            "drill"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "log_training_result",
+        "title": "Log a training result",
+        "description": "Log a training run for a trainee: raw time plus zone/complete misses. The penalised final time is computed automatically.",
+        "annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "trainee": {
+              "type": "string",
+              "description": "Trainee name."
+            },
+            "rawSeconds": {
+              "type": "number",
+              "description": "Raw time on the timer, in seconds."
+            },
+            "zoneMisses": {
+              "description": "Number of zone misses (default 0).",
+              "type": "number"
+            },
+            "completeMisses": {
+              "description": "Number of complete misses (default 0).",
+              "type": "number"
+            },
+            "savedDrillName": {
+              "description": "Name of a saved drill to log against; its snapshot is used.",
+              "type": "string"
+            },
+            "drill": {
+              "description": "Drill snapshot, required when savedDrillName is not given.",
+              "type": "object",
+              "properties": {
+                "time": {
+                  "type": "object",
+                  "properties": {
+                    "cardId": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cardId",
+                    "label"
+                  ]
+                },
+                "distance": {
+                  "type": "object",
+                  "properties": {
+                    "cardId": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cardId",
+                    "label"
+                  ]
+                },
+                "startPosition": {
+                  "type": "object",
+                  "properties": {
+                    "cardId": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cardId",
+                    "label"
+                  ]
+                },
+                "target": {
+                  "type": "object",
+                  "properties": {
+                    "cardId": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cardId",
+                    "label"
+                  ]
+                },
+                "courseOfFire": {
+                  "type": "object",
+                  "properties": {
+                    "cardId": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "cardId",
+                    "label"
+                  ]
+                },
+                "parSeconds": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "time",
+                "distance",
+                "startPosition",
+                "target",
+                "courseOfFire"
+              ]
+            }
+          },
+          "required": [
+            "trainee",
+            "rawSeconds"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_training_sessions",
+        "title": "List training sessions",
+        "description": "List logged training sessions, most recent first. Optionally filter by trainee name.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "trainee": {
+              "description": "Filter to one trainee name.",
+              "type": "string"
+            },
+            "limit": {
+              "description": "Maximum rows to return (default 20).",
+              "type": "number"
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_leaderboard",
+        "title": "Get the match leaderboard",
+        "description": "Aggregate wins, losses, and win percentage from recorded Range Roulette matches.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
