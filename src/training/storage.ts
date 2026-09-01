@@ -1,9 +1,25 @@
+import { readCache, writeCache } from "../offline/cache";
 import { supabase } from "../integrations/supabase/client";
 import type { Database } from "../integrations/supabase/types";
+import {
+  getPendingSessions,
+  PENDING_ID_PREFIX,
+  pendingSessionToTrainingSession,
+  removePendingSession,
+} from "./offlineQueue";
 import { deleteTrainingPhoto } from "./photos";
 import type { TrainingDrill, TrainingSession } from "./types";
 
 type TrainingSessionInsert = Database["public"]["Tables"]["training_sessions"]["Insert"];
+
+const SESSIONS_CACHE_KEY = "training_sessions";
+
+function mergeWithPending(server: TrainingSession[], trainee?: string): TrainingSession[] {
+  const pending = getPendingSessions()
+    .map(pendingSessionToTrainingSession)
+    .filter((s) => !trainee || normalizeName(s.trainee) === normalizeName(trainee));
+  return [...pending, ...server].sort((a, b) => (a.loggedAt < b.loggedAt ? 1 : -1));
+}
 
 function normalizeName(name: string): string {
   return name.trim().toLowerCase();
@@ -106,10 +122,16 @@ export async function getTrainingSessions(trainee?: string): Promise<TrainingSes
 
   const { data, error } = await query;
   if (error || !data) {
-    console.error("Failed to load training sessions", error);
-    return [];
+    console.error("Failed to load training sessions — falling back to last-known data", error);
+    const cached = readCache<TrainingSession[]>(SESSIONS_CACHE_KEY) ?? [];
+    const filtered = trainee
+      ? cached.filter((s) => normalizeName(s.trainee) === normalizeName(trainee))
+      : cached;
+    return mergeWithPending(filtered, trainee);
   }
-  return data.map(fromRow);
+  const rows = data.map(fromRow);
+  if (!trainee) writeCache(SESSIONS_CACHE_KEY, rows);
+  return mergeWithPending(rows, trainee);
 }
 
 /**
@@ -125,11 +147,12 @@ export async function getVisibleTrainingSessions(): Promise<TrainingSession[]> {
     .order("logged_at", { ascending: false });
 
   if (error) {
-    // archived_at column not migrated onto the live project yet — fall back
-    // to showing everything rather than an empty/broken History screen.
+    // archived_at column not migrated onto the live project yet, or the
+    // request never reached the network — fall back to showing everything
+    // (merged with anything still queued locally) rather than a broken screen.
     return getTrainingSessions();
   }
-  return (data ?? []).map(fromRow);
+  return mergeWithPending((data ?? []).map(fromRow));
 }
 
 /** Clears Training History by archiving every visible session for this account — data stays intact for Analytics. */
@@ -148,6 +171,13 @@ export async function clearTrainingHistory(userId: string): Promise<boolean> {
 }
 
 export async function deleteTrainingSession(id: string): Promise<boolean> {
+  // A session logged offline and not yet synced has a local id, not a real
+  // row — remove it from the pending queue instead of hitting the network.
+  if (id.startsWith(PENDING_ID_PREFIX)) {
+    removePendingSession(id.slice(PENDING_ID_PREFIX.length));
+    return true;
+  }
+
   // .select() so we get the deleted row(s) back — without it, Postgres/PostgREST
   // reports success with zero rows affected when RLS blocks the delete (e.g. the
   // grant/policy migration hasn't been applied yet), rather than an error, which
@@ -169,4 +199,27 @@ export async function deleteTrainingSession(id: string): Promise<boolean> {
   const photoPath = (data[0] as { photo_path?: string | null }).photo_path;
   if (photoPath) await deleteTrainingPhoto(photoPath);
   return true;
+}
+
+let flushing = false;
+
+/**
+ * Retries every session queued while offline, in the order they were logged.
+ * Stops at the first failure rather than skipping ahead — `recordTrainingSession`
+ * returns null for both "still offline" and a genuine server error, and there's
+ * no way to tell those apart here, so treating any failure as "still offline,
+ * try again later" is the safer assumption than silently dropping a queued result.
+ */
+export async function flushPendingSessions(userId: string): Promise<void> {
+  if (flushing) return;
+  flushing = true;
+  try {
+    for (const item of getPendingSessions(userId)) {
+      const saved = await recordTrainingSession(item.session, userId);
+      if (!saved) break;
+      removePendingSession(item.localId);
+    }
+  } finally {
+    flushing = false;
+  }
 }

@@ -27,4 +27,6 @@ export interface TrainingSession {
   pistolId?: string;
   /** Set when the user "clears" Training History — hides it from History while Analytics still counts it. */
   archivedAt?: string;
+  /** True for a session logged while offline that hasn't synced to the server yet — a local, not-yet-real id. */
+  pendingSync?: boolean;
 }

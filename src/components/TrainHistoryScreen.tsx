@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { listMyPistols, pistolLabel, type PistolInput } from "../profile";
 import { drillSummary } from "../training/drillLabel";
 import { getTrainingPhotoUrl } from "../training/photos";
 import {
@@ -43,6 +44,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [pistols, setPistols] = useState<PistolInput[]>([]);
 
   const [confirmingClear, setConfirmingClear] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -70,6 +72,19 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
       signal.cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    listMyPistols(user.id).then((loaded) => {
+      if (!cancelled) setPistols(loaded);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  const pistolById = new Map(pistols.filter((p) => p.id).map((p) => [p.id, p]));
 
   async function handleDelete(id: string) {
     setDeletingId(id);
@@ -208,6 +223,11 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
                       {s.finalSeconds.toFixed(2)}s
                     </span>
                     <div className="flex items-center gap-2">
+                      {s.pendingSync && (
+                        <span className="rounded-full border border-amber-700 bg-amber-950/40 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-400">
+                          Pending sync
+                        </span>
+                      )}
                       <span className="text-xs text-zinc-500">{formatDate(s.loggedAt)}</span>
                       {confirmingId === s.id ? (
                         <span className="flex items-center gap-1 text-xs">
@@ -250,6 +270,11 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
                         )}
                         {drillSummary(s.drill)}
                       </div>
+                      {s.pistolId && pistolById.get(s.pistolId) && (
+                        <div className="text-xs text-zinc-500">
+                          🔫 {pistolLabel(pistolById.get(s.pistolId)!)}
+                        </div>
+                      )}
                       {(s.zoneMisses > 0 || s.completeMisses > 0) && (
                         <div className="text-xs text-amber-400">
                           {s.zoneMisses > 0 &&

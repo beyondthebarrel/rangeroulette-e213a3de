@@ -87,3 +87,17 @@ export async function deleteSavedDrill(id: string): Promise<boolean> {
   }
   return true;
 }
+
+/**
+ * Deletes every saved drill template for this account. Only affects the
+ * `saved_drills` table — logged sessions in Analytics/History keep their own
+ * snapshot of the drill and saved name at log time, so this can't touch them.
+ */
+export async function deleteAllSavedDrills(userId: string): Promise<boolean> {
+  const { error } = await savedDrillsTable().delete().eq("user_id", userId);
+  if (error) {
+    console.error("Failed to clear saved drills", error);
+    return false;
+  }
+  return true;
+}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { BENCHMARKS, passesBenchmark } from "../data/benchmarks";
 import { CATEGORY_ORDER, type CategoryKey } from "../data/cards";
@@ -10,6 +10,7 @@ import {
   type ShootingLevel,
 } from "../profile";
 import { computeAccountAnalytics } from "../training/analytics";
+import { getTrainingPhotoUrl } from "../training/photos";
 import { getTrainingSessions } from "../training/storage";
 import type { TrainingSession } from "../training/types";
 import { BenchmarkProgressChart } from "./charts/BenchmarkProgressChart";
@@ -19,7 +20,10 @@ import { RankedBarChart } from "./charts/RankedBarChart";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
 import { PlayingCard } from "./PlayingCard";
+import { RetryImage } from "./RetryImage";
 import { TitleFrame } from "./TitleFrame";
+
+const RECENT_PHOTO_LIMIT = 12;
 
 const LEVEL_LABELS: Record<ShootingLevel, string> = {
   beginner: "Beginner",
@@ -47,6 +51,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
   const [pistols, setPistols] = useState<PistolInput[]>([]);
   const [selectedPistolId, setSelectedPistolId] = useState("");
   const [shootingLevel, setShootingLevel] = useState<ShootingLevel | null>(null);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!user) return;
@@ -99,6 +104,34 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
     () => (filteredSessions ? computeAccountAnalytics(filteredSessions, pistols) : null),
     [filteredSessions, pistols],
   );
+
+  // Most recent target photos, newest first — a quick visual log to pair with the numbers above.
+  const recentPhotoSessions = useMemo(
+    () => (filteredSessions ?? []).filter((s) => s.photoPath).slice(0, RECENT_PHOTO_LIMIT),
+    [filteredSessions],
+  );
+
+  const fetchedPhotoPaths = useRef(new Set<string>());
+
+  useEffect(() => {
+    const bestDrillPaths = analytics?.bestDrills.map((d) => d.bestSession.photoPath).filter((p): p is string => !!p) ?? [];
+    const recentPaths = recentPhotoSessions.map((s) => s.photoPath!);
+    const paths = [...new Set([...recentPaths, ...bestDrillPaths])].filter(
+      (p) => !fetchedPhotoPaths.current.has(p),
+    );
+    if (paths.length === 0) return;
+    for (const p of paths) fetchedPhotoPaths.current.add(p);
+    let cancelled = false;
+    Promise.all(paths.map(async (p) => [p, await getTrainingPhotoUrl(p)] as const)).then((entries) => {
+      if (cancelled) return;
+      const urls: Record<string, string> = {};
+      for (const [path, url] of entries) if (url) urls[path] = url;
+      setPhotoUrls((prev) => ({ ...prev, ...urls }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [analytics, recentPhotoSessions]);
 
   return (
     <HeroBackdrop>
@@ -170,6 +203,40 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
               )}
             </Panel>
 
+            {recentPhotoSessions.length > 0 && (
+              <Panel>
+                <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  Target Photos
+                </div>
+                <div className="text-xs text-zinc-500">Most recent first — tap to view full size.</div>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {recentPhotoSessions.map((s) =>
+                    photoUrls[s.photoPath!] ? (
+                      <a
+                        key={s.id}
+                        href={photoUrls[s.photoPath!]}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex shrink-0 flex-col items-center gap-1"
+                      >
+                        <RetryImage
+                          src={photoUrls[s.photoPath!]}
+                          alt="Target photo"
+                          className="h-16 w-16 rounded border border-zinc-700 object-cover"
+                        />
+                        <span className="text-[10px] text-zinc-500">{formatDate(s.loggedAt)}</span>
+                      </a>
+                    ) : (
+                      <div
+                        key={s.id}
+                        className="h-16 w-16 shrink-0 animate-pulse rounded border border-zinc-800 bg-zinc-900"
+                      />
+                    ),
+                  )}
+                </div>
+              </Panel>
+            )}
+
             {benchmark && (
               <Panel>
                 <div className="flex items-center justify-between">
@@ -230,13 +297,29 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                     key={d.key}
                     className="flex items-center justify-between gap-2 rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3"
                   >
-                    <div>
-                      <div className="text-sm text-white">
-                        <span className="mr-2 text-zinc-500">{i + 1}.</span>
-                        {d.label}
-                      </div>
-                      <div className="text-xs text-zinc-500">
-                        {d.bestSession.trainee} · {formatDate(d.bestSession.loggedAt)}
+                    <div className="flex items-center gap-3">
+                      {d.bestSession.photoPath && photoUrls[d.bestSession.photoPath] && (
+                        <a
+                          href={photoUrls[d.bestSession.photoPath]}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="shrink-0"
+                        >
+                          <RetryImage
+                            src={photoUrls[d.bestSession.photoPath]}
+                            alt="Target photo"
+                            className="h-12 w-12 rounded border border-zinc-700 object-cover"
+                          />
+                        </a>
+                      )}
+                      <div>
+                        <div className="text-sm text-white">
+                          <span className="mr-2 text-zinc-500">{i + 1}.</span>
+                          {d.label}
+                        </div>
+                        <div className="text-xs text-zinc-500">
+                          {d.bestSession.trainee} · {formatDate(d.bestSession.loggedAt)}
+                        </div>
                       </div>
                     </div>
                     <span className="font-mono text-lg text-orange-400">

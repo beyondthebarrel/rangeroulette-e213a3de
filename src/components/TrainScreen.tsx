@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { BENCHMARKS, type BenchmarkDrill } from "../data/benchmarks";
 import { CATEGORY_ORDER, type CategoryKey } from "../data/cards";
+import { useOnlineStatus } from "../offline/useOnlineStatus";
 import {
   getMyDisplayName,
   getMyShootingLevel,
@@ -9,8 +10,10 @@ import {
   pistolLabel,
   type PistolInput,
 } from "../profile";
+import { enqueueSession, getPendingSessions } from "../training/offlineQueue";
 import { uploadTrainingPhoto } from "../training/photos";
 import {
+  deleteAllSavedDrills,
   deleteSavedDrill,
   listSavedDrills,
   saveDrill,
@@ -40,6 +43,8 @@ export function TrainScreen({
 }) {
   const { user } = useAuth();
   const { drill, drawNew } = useTrainingDrill();
+  const online = useOnlineStatus();
+  const [pendingCount, setPendingCount] = useState(0);
   const [trainee, setTrainee] = useState<string | null>(null);
   const [rawSeconds, setRawSeconds] = useState<number | null>(null);
   const [zoneMisses, setZoneMisses] = useState(0);
@@ -65,6 +70,12 @@ export function TrainScreen({
   const [showSave, setShowSave] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedDrillError, setSavedDrillError] = useState<string | null>(null);
+
+  const [showManageSaved, setShowManageSaved] = useState(false);
+  const [confirmingDeleteSavedId, setConfirmingDeleteSavedId] = useState<string | null>(null);
+  const [deletingSavedId, setDeletingSavedId] = useState<string | null>(null);
+  const [confirmingClearSaved, setConfirmingClearSaved] = useState(false);
+  const [clearingSaved, setClearingSaved] = useState(false);
 
   const refreshSaved = useCallback(async () => {
     if (!user) return;
@@ -113,6 +124,16 @@ export function TrainScreen({
       if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
     };
   }, [photoPreviewUrl]);
+
+  useEffect(() => {
+    if (!user) return;
+    setPendingCount(getPendingSessions(user.id).length);
+    if (!online) return;
+    // Give a just-reconnected sync a moment to finish before re-checking,
+    // rather than reading the queue mid-flush.
+    const t = setTimeout(() => setPendingCount(getPendingSessions(user.id).length), 2000);
+    return () => clearTimeout(t);
+  }, [user, online]);
 
   const selectedSaved = savedDrills.find((d) => d.id === selectedSavedId) ?? null;
   const isBenchmarkSelected = selectedSavedId === BENCHMARK_OPTION_VALUE && !!benchmark;
@@ -199,13 +220,39 @@ export function TrainScreen({
 
   async function handleDeleteSaved() {
     if (!selectedSaved) return;
+    await handleDeleteSavedById(selectedSaved.id);
+  }
+
+  // Saved drills are just templates (name + drill config) in their own
+  // table — a logged session snapshots its drill/name at log time instead of
+  // referencing this row, so deleting or clearing templates here never
+  // touches History or Analytics.
+  async function handleDeleteSavedById(id: string) {
+    setDeletingSavedId(id);
     setSavedDrillError(null);
-    const deleted = await deleteSavedDrill(selectedSaved.id);
+    const deleted = await deleteSavedDrill(id);
+    setDeletingSavedId(null);
+    setConfirmingDeleteSavedId(null);
     if (!deleted) {
       setSavedDrillError("Couldn't delete that drill — check your connection and try again.");
       return;
     }
-    setSelectedSavedId("");
+    if (selectedSavedId === id) setSelectedSavedId("");
+    await refreshSaved();
+  }
+
+  async function handleClearAllSaved() {
+    if (!user) return;
+    setClearingSaved(true);
+    setSavedDrillError(null);
+    const cleared = await deleteAllSavedDrills(user.id);
+    setClearingSaved(false);
+    setConfirmingClearSaved(false);
+    if (!cleared) {
+      setSavedDrillError("Couldn't clear saved drills — check your connection and try again.");
+      return;
+    }
+    if (selectedSaved) setSelectedSavedId("");
     await refreshSaved();
   }
 
@@ -225,38 +272,51 @@ export function TrainScreen({
 
     let photoPath: string | undefined;
     let photoWarning: string | null = null;
-    if (photoFile) {
+    if (photoFile && navigator.onLine) {
       const uploaded = await uploadTrainingPhoto(user.id, photoFile);
       if (uploaded) {
         photoPath = uploaded;
       } else {
         photoWarning = "Result logged, but the photo failed to upload — try attaching it again.";
       }
+    } else if (photoFile) {
+      photoWarning = "Saved offline without the photo — photos need a connection to attach.";
     }
 
-    const saved = await recordTrainingSession(
-      {
-        trainee,
-        drill: activeDrill,
-        rawSeconds,
-        zoneMisses,
-        completeMisses,
-        finalSeconds,
-        savedDrillName: selectedSaved?.name,
-        photoPath,
-        pistolId: selectedPistolId || undefined,
-      },
-      user.id,
-    );
+    const sessionPayload = {
+      trainee,
+      drill: activeDrill,
+      rawSeconds,
+      zoneMisses,
+      completeMisses,
+      finalSeconds,
+      savedDrillName: selectedSaved?.name,
+      photoPath,
+      pistolId: selectedPistolId || undefined,
+    };
+
+    // Only attempt the network write if the browser thinks it's connected —
+    // otherwise skip straight to queuing so a dead connection doesn't stall
+    // the button for a request that's guaranteed to fail.
+    const saved = navigator.onLine ? await recordTrainingSession(sessionPayload, user.id) : null;
     setLogging(false);
 
+    let queuedOffline = false;
     if (!saved) {
-      setLogError("Couldn't save that result — check your connection and try again.");
-      return;
+      if (!navigator.onLine) {
+        enqueueSession(sessionPayload, user.id);
+        setPendingCount(getPendingSessions(user.id).length);
+        queuedOffline = true;
+      } else {
+        setLogError("Couldn't save that result — check your connection and try again.");
+        return;
+      }
     }
 
     setLastLogged(finalSeconds);
-    setLogWarning(photoWarning);
+    setLogWarning(
+      queuedOffline ? "Saved offline — will sync automatically once you're back online." : photoWarning,
+    );
     if (isBenchmarkSelected && benchmark) {
       const par = benchmark.drill.parSeconds ?? Infinity;
       setBenchmarkResult(
@@ -265,7 +325,9 @@ export function TrainScreen({
           completeMisses <= benchmark.maxCompleteMisses,
       );
     }
-    if (!selectedSaved && !isBenchmarkSelected) drawNew();
+    // The drill (random, saved, or benchmark) stays on screen after logging
+    // so the same drill can be repeated for another rep — advancing to a
+    // different one is always an explicit "Next Drill" click, not automatic.
     resetScoreFields();
     clearPhoto();
   }
@@ -282,6 +344,17 @@ export function TrainScreen({
             Training as <span className="font-semibold text-white">{trainee ?? "…"}</span>
           </div>
         </TitleFrame>
+
+        {(!online || pendingCount > 0) && (
+          <div className="flex items-center justify-center gap-2 rounded-md border border-amber-800 bg-amber-950/40 px-3 py-2 text-center text-xs font-semibold uppercase tracking-wide text-amber-400">
+            {!online ? "📴 Offline — results will save on this device and sync later" : "🔄 Syncing offline results…"}
+            {pendingCount > 0 && (
+              <span className="rounded-full bg-amber-800/60 px-2 py-0.5 text-amber-200">
+                {pendingCount} pending
+              </span>
+            )}
+          </div>
+        )}
 
         <Panel>
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -320,11 +393,28 @@ export function TrainScreen({
               >
                 Save Drill
               </button>
+              {savedDrills.length > 0 && (
+                <button
+                  onClick={() => {
+                    setShowManageSaved((v) => !v);
+                    setSavedDrillError(null);
+                    setConfirmingDeleteSavedId(null);
+                    setConfirmingClearSaved(false);
+                  }}
+                  className={`rounded border px-3 py-1 text-xs uppercase tracking-wide ${
+                    showManageSaved
+                      ? "border-zinc-400 bg-zinc-800 text-white"
+                      : "border-zinc-600 text-zinc-300 hover:bg-zinc-800"
+                  }`}
+                >
+                  Manage Saved
+                </button>
+              )}
               <button
                 onClick={handleNewDrill}
                 className="rounded border border-orange-700 px-3 py-1 text-xs uppercase tracking-wide text-orange-400 hover:bg-orange-950"
               >
-                New Drill
+                Next Drill
               </button>
             </div>
           </div>
@@ -360,6 +450,84 @@ export function TrainScreen({
               </button>
             )}
           </div>
+
+          {showManageSaved && (
+            <div className="flex flex-col gap-2 rounded-lg border border-zinc-700 bg-zinc-900/60 p-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  Saved Drills
+                </div>
+                {confirmingClearSaved ? (
+                  <span className="flex items-center gap-1.5 text-xs">
+                    <span className="text-zinc-400">Clear all {savedDrills.length}?</span>
+                    <button
+                      onClick={handleClearAllSaved}
+                      disabled={clearingSaved}
+                      className="rounded bg-orange-700 px-2 py-1 text-white hover:bg-orange-600 disabled:opacity-60"
+                    >
+                      {clearingSaved ? "…" : "Yes, Clear"}
+                    </button>
+                    <button
+                      onClick={() => setConfirmingClearSaved(false)}
+                      disabled={clearingSaved}
+                      className="rounded bg-zinc-700 px-2 py-1 text-white hover:bg-zinc-600"
+                    >
+                      Cancel
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => setConfirmingClearSaved(true)}
+                    className="rounded border border-zinc-600 px-2 py-1 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
+                  >
+                    Clear All
+                  </button>
+                )}
+              </div>
+              <p className="text-[11px] leading-snug text-zinc-500">
+                Only removes these templates — your logged times stay intact in History and
+                Analytics.
+              </p>
+              <ul className="flex flex-col gap-1.5">
+                {savedDrills.map((d) => (
+                  <li
+                    key={d.id}
+                    className="flex items-center justify-between gap-2 rounded border border-zinc-800 bg-zinc-900 px-2.5 py-1.5"
+                  >
+                    <span className="text-sm text-white">{d.name}</span>
+                    {confirmingDeleteSavedId === d.id ? (
+                      <span className="flex items-center gap-1 text-xs">
+                        <span className="text-zinc-400">Delete?</span>
+                        <button
+                          onClick={() => handleDeleteSavedById(d.id)}
+                          disabled={deletingSavedId === d.id}
+                          className="rounded bg-orange-700 px-1.5 py-0.5 text-white hover:bg-orange-600 disabled:opacity-60"
+                        >
+                          {deletingSavedId === d.id ? "…" : "Yes"}
+                        </button>
+                        <button
+                          onClick={() => setConfirmingDeleteSavedId(null)}
+                          disabled={deletingSavedId === d.id}
+                          className="rounded bg-zinc-700 px-1.5 py-0.5 text-white hover:bg-zinc-600"
+                        >
+                          Cancel
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmingDeleteSavedId(d.id)}
+                        aria-label={`Delete ${d.name}`}
+                        title="Delete"
+                        className="text-zinc-500 hover:text-orange-400"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {showSave && (
             <div className="flex gap-2">
@@ -436,7 +604,7 @@ export function TrainScreen({
 
           <div className="flex flex-col gap-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Target Photo
+              Target Photo{!online && <span className="ml-1 normal-case text-zinc-500">(needs a connection to attach)</span>}
             </div>
             <input
               ref={photoInputRef}

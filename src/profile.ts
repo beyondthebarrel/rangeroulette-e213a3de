@@ -1,3 +1,4 @@
+import { readCache, writeCache } from "./offline/cache";
 import { supabase } from "./integrations/supabase/client";
 
 export type ShootingLevel = "beginner" | "intermediate" | "advanced" | "pro";
@@ -32,12 +33,23 @@ export function pistolLabel(p: { make: string; model: string }): string {
 
 /** Falls back to the email's local part when no nickname has been set. */
 export async function getMyDisplayName(userId: string, fallbackEmail?: string | null): Promise<string> {
+  const cacheKey = `displayName:${userId}`;
   const { data, error } = await supabase
     .from("profiles")
     .select("display_name")
     .eq("user_id", userId)
     .maybeSingle();
-  if (!error && data?.display_name) return data.display_name;
+  if (!error && data?.display_name) {
+    writeCache(cacheKey, data.display_name);
+    return data.display_name;
+  }
+  // Offline or a genuine error, rather than "no nickname set yet" — use
+  // whatever name was last logged under so offline sessions still group
+  // with the account's history instead of drifting to the email fallback.
+  if (error) {
+    const cached = readCache<string>(cacheKey);
+    if (cached) return cached;
+  }
   return fallbackEmail?.split("@")[0] ?? "Me";
 }
 
@@ -71,13 +83,17 @@ export async function getOnboardedStatus(userId: string): Promise<boolean> {
 }
 
 export async function getMyShootingLevel(userId: string): Promise<ShootingLevel | null> {
+  const cacheKey = `shootingLevel:${userId}`;
   const { data, error } = await supabase
     .from("profiles")
     .select("shooting_level")
     .eq("user_id", userId)
     .maybeSingle();
-  if (error || !data) return null;
-  return (data.shooting_level as ShootingLevel | null) ?? null;
+  if (error) return readCache<ShootingLevel | null>(cacheKey) ?? null;
+  if (!data) return null;
+  const level = (data.shooting_level as ShootingLevel | null) ?? null;
+  writeCache(cacheKey, level);
+  return level;
 }
 
 export async function getMyProfile(userId: string): Promise<ShooterProfile | null> {
@@ -210,13 +226,14 @@ export async function setPistolPhotoPath(pistolId: string, photoPath: string | n
 }
 
 export async function listMyPistols(userId: string): Promise<PistolInput[]> {
+  const cacheKey = `pistols:${userId}`;
   const { data, error } = await supabase
     .from("pistols")
     .select("*")
     .eq("user_id", userId)
     .order("created_at", { ascending: true });
-  if (error || !data) return [];
-  return data.map((row) => ({
+  if (error || !data) return readCache<PistolInput[]>(cacheKey) ?? [];
+  const pistols = data.map((row) => ({
     id: row.id,
     make: row.make,
     model: row.model,
@@ -227,4 +244,6 @@ export async function listMyPistols(userId: string): Promise<PistolInput[]> {
     accessories: row.accessories ?? "",
     photoPath: row.photo_path ?? undefined,
   }));
+  writeCache(cacheKey, pistols);
+  return pistols;
 }

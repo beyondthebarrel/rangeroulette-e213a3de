@@ -20,6 +20,7 @@ import { TrainScreen } from "./components/TrainScreen";
 import { GameProvider, useGame } from "./game/GameContext";
 import { hasSeenRulesIntro, markRulesIntroSeen } from "./onboarding/rulesIntro";
 import { getOnboardedStatus } from "./profile";
+import { useOfflineSync } from "./training/useOfflineSync";
 
 type View =
   | "modeSelect"
@@ -61,6 +62,10 @@ function App() {
   );
   const [pendingMode, setPendingMode] = useState<PendingMode | null>(null);
   const { session, loading } = useAuth();
+  // Mounted for the whole signed-in session (not just while Train Mode is
+  // open) so a session logged offline still syncs even if the user has since
+  // navigated to History, Analytics, or Modes by the time connectivity returns.
+  useOfflineSync(session?.user?.id);
 
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
 
