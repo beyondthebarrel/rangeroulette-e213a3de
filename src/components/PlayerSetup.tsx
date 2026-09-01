@@ -56,7 +56,7 @@ export function PlayerSetup({
   return (
     <HeroBackdrop>
       <TitleFrame>
-        <h1 className="text-2xl font-bold uppercase tracking-wide text-red-500">
+        <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">
           Game Mode
         </h1>
 
@@ -75,8 +75,8 @@ export function PlayerSetup({
                     disabled={added}
                     className={`rounded-full border px-3 py-1 text-xs ${
                       added
-                        ? "cursor-default border-red-700 bg-red-950/40 text-red-400"
-                        : "border-zinc-700 text-zinc-300 hover:border-red-600 hover:text-red-400"
+                        ? "cursor-default border-orange-700 bg-orange-950/40 text-orange-400"
+                        : "border-zinc-700 text-zinc-300 hover:border-orange-600 hover:text-orange-400"
                     }`}
                   >
                     {name}
@@ -94,7 +94,7 @@ export function PlayerSetup({
                 value={n}
                 onChange={(e) => updateName(i, e.target.value)}
                 placeholder={`Shooter ${i + 1}`}
-                className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-white focus:border-red-600 focus:outline-none sm:py-2"
+                className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-white focus:border-orange-600 focus:outline-none sm:py-2"
               />
               {names.length > 2 && (
                 <button
@@ -118,7 +118,7 @@ export function PlayerSetup({
         <button
           disabled={!canStart}
           onClick={() => dispatch({ type: "START_MATCH", names: validNames })}
-          className="w-full rounded-md bg-red-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white enabled:hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500 sm:py-3"
+          className="w-full rounded-md bg-orange-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500 sm:py-3"
         >
           Start with Bill Drill
         </button>

@@ -42,7 +42,7 @@ export function Header() {
 
   if (state.phase === "setup") {
     return (
-      <div className="border-b border-red-900/50 bg-black px-4 py-1.5 text-right">
+      <div className="border-b border-orange-900/50 bg-black px-4 py-1.5 text-right">
         <div className="mx-auto flex max-w-3xl items-center justify-end gap-2 text-xs text-zinc-500">
           {editing ? (
             <>
@@ -55,12 +55,12 @@ export function Header() {
                   if (e.key === "Escape") setEditing(false);
                 }}
                 placeholder="Nickname"
-                className="w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-xs text-white focus:border-red-600 focus:outline-none"
+                className="w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-xs text-white focus:border-orange-600 focus:outline-none"
               />
               <button
                 onClick={handleSaveName}
                 disabled={saving || draftName.trim().length === 0}
-                className="text-red-400 hover:text-red-300 disabled:opacity-50"
+                className="text-orange-400 hover:text-orange-300 disabled:opacity-50"
               >
                 {saving ? "…" : "Save"}
               </button>
@@ -77,7 +77,7 @@ export function Header() {
                 onClick={startEditing}
                 aria-label="Edit nickname"
                 title="Edit nickname"
-                className="text-zinc-600 hover:text-red-400"
+                className="text-zinc-600 hover:text-orange-400"
               >
                 ✎
               </button>
@@ -93,12 +93,12 @@ export function Header() {
   }
 
   return (
-    <div className="border-b border-red-900/50 bg-black px-4 py-2">
+    <div className="border-b border-orange-900/50 bg-black px-4 py-2">
       <div className="mx-auto flex max-w-3xl items-center justify-between">
         <div className="flex flex-wrap gap-3 text-sm text-zinc-300">
           {state.players.map((p) => (
             <span key={p.id}>
-              {p.name} <span className="text-red-400">{p.points}</span>
+              {p.name} <span className="text-orange-400">{p.points}</span>
             </span>
           ))}
         </div>
@@ -110,7 +110,7 @@ export function Header() {
                 dispatch({ type: "RESET_MATCH" });
                 setConfirming(false);
               }}
-              className="rounded bg-red-700 px-2 py-1 text-white hover:bg-red-600"
+              className="rounded bg-orange-700 px-2 py-1 text-white hover:bg-orange-600"
             >
               Yes, Title Screen
             </button>

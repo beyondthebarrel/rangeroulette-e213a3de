@@ -108,7 +108,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <TitleFrame>
-          <h1 className="text-2xl font-bold uppercase tracking-wide text-red-500">
+          <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">
             Training History
           </h1>
 
@@ -128,7 +128,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
             </div>
             <div className="grid grid-cols-3 gap-3 text-center">
               <div>
-                <div className="font-mono text-2xl font-bold text-red-400">
+                <div className="font-mono text-2xl font-bold text-orange-400">
                   {stats.bestSession.finalSeconds.toFixed(2)}s
                 </div>
                 <div className="text-xs text-zinc-500">Best time</div>
@@ -147,7 +147,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
             <div className="text-xs text-zinc-500">
               Best run:{" "}
               {stats.bestSession.savedDrillName && (
-                <span className="text-red-400">{stats.bestSession.savedDrillName} · </span>
+                <span className="text-orange-400">{stats.bestSession.savedDrillName} · </span>
               )}
               {drillSummary(stats.bestSession.drill)}
             </div>
@@ -166,7 +166,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
                   <button
                     onClick={handleClearHistory}
                     disabled={clearing}
-                    className="rounded bg-red-700 px-2 py-1 text-white hover:bg-red-600 disabled:opacity-60"
+                    className="rounded bg-orange-700 px-2 py-1 text-white hover:bg-orange-600 disabled:opacity-60"
                   >
                     {clearing ? "…" : "Yes, Clear"}
                   </button>
@@ -201,7 +201,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
               {sessions.map((s) => (
                 <li
                   key={s.id}
-                  className="rounded-lg border border-red-900/50 bg-zinc-900/60 p-3"
+                  className="rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-mono text-lg text-white">
@@ -215,7 +215,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
                           <button
                             onClick={() => handleDelete(s.id)}
                             disabled={deletingId === s.id}
-                            className="rounded bg-red-700 px-1.5 py-0.5 text-white hover:bg-red-600 disabled:opacity-60"
+                            className="rounded bg-orange-700 px-1.5 py-0.5 text-white hover:bg-orange-600 disabled:opacity-60"
                           >
                             {deletingId === s.id ? "…" : "Yes"}
                           </button>
@@ -235,7 +235,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
                           }}
                           aria-label="Delete session"
                           title="Delete session"
-                          className="text-zinc-500 hover:text-red-400"
+                          className="text-zinc-500 hover:text-orange-400"
                         >
                           ✕
                         </button>
@@ -246,7 +246,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
                     <div className="flex-1">
                       <div className="text-xs text-zinc-400">
                         {s.savedDrillName && (
-                          <span className="text-red-400">{s.savedDrillName} · </span>
+                          <span className="text-orange-400">{s.savedDrillName} · </span>
                         )}
                         {drillSummary(s.drill)}
                       </div>
@@ -278,7 +278,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
 
         <button
           onClick={onBack}
-          className="w-full rounded-md bg-red-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white hover:bg-red-600"
+          className="w-full rounded-md bg-orange-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white hover:bg-orange-600"
         >
           Back
         </button>

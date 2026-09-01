@@ -9,7 +9,7 @@ function CornerMedallion({
 }) {
   return (
     <div
-      className={`absolute flex h-9 w-9 items-center justify-center rounded-full border border-red-700/80 bg-black text-red-500 ${className}`}
+      className={`absolute flex h-9 w-9 items-center justify-center rounded-full border border-orange-700/80 bg-black text-orange-500 ${className}`}
     >
       {icon === "reticle" ? (
         <svg
@@ -34,7 +34,7 @@ function CornerMedallion({
 
 export function TitleFrame({ children }: { children: ReactNode }) {
   return (
-    <div className="relative mx-auto w-full max-w-md overflow-hidden rounded-2xl border-2 border-red-700 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 px-4 pb-4 pt-6 shadow-[0_0_80px_rgba(153,27,27,0.15)] sm:px-6 sm:pb-6 sm:pt-8">
+    <div className="relative mx-auto w-full max-w-md overflow-hidden rounded-2xl border-2 border-orange-700 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 px-4 pb-4 pt-6 shadow-[0_0_80px_rgba(154,52,18,0.15)] sm:px-6 sm:pb-6 sm:pt-8">
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.07]"
         viewBox="0 0 400 400"
@@ -48,7 +48,7 @@ export function TitleFrame({ children }: { children: ReactNode }) {
         <line x1="0" y1="200" x2="400" y2="200" stroke="white" strokeWidth="1" />
       </svg>
 
-      <div className="pointer-events-none absolute inset-0 rounded-2xl border border-red-900/60 m-1.5" />
+      <div className="pointer-events-none absolute inset-0 rounded-2xl border border-orange-900/60 m-1.5" />
 
       <CornerMedallion className="left-2 top-2" icon="reticle" />
       <CornerMedallion className="right-2 top-2" icon="suit" />

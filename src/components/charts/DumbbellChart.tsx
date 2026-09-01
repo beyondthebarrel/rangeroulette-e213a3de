@@ -32,7 +32,7 @@ export function DumbbellChart({ data }: { data: DumbbellDatum[] }) {
             </div>
             <div className="relative h-2.5 w-full">
               <div
-                className="absolute top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-red-800"
+                className="absolute top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-orange-800"
                 style={{ left: `${afterPct}%`, width: `${Math.max(beforePct - afterPct, 0)}%` }}
               />
               <div
@@ -40,7 +40,7 @@ export function DumbbellChart({ data }: { data: DumbbellDatum[] }) {
                 style={{ left: `${beforePct}%` }}
               />
               <div
-                className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-400 ring-2 ring-black"
+                className="absolute top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-400 ring-2 ring-black"
                 style={{ left: `${afterPct}%` }}
               />
             </div>
@@ -52,7 +52,7 @@ export function DumbbellChart({ data }: { data: DumbbellDatum[] }) {
           <span className="h-2 w-2 rounded-full bg-zinc-500" /> First attempt
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-2 w-2 rounded-full bg-red-400" /> Best since
+          <span className="h-2 w-2 rounded-full bg-orange-400" /> Best since
         </span>
       </div>
     </div>

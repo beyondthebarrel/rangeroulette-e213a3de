@@ -22,7 +22,7 @@ export function PlayChallengesScreen() {
 
       {state.activeChallenges.length > 0 && (
         <Panel>
-          <div className="text-xs font-semibold uppercase tracking-wider text-red-400">
+          <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
             Active Challenge Cards
           </div>
           <ul className="flex flex-col gap-2">
@@ -39,7 +39,7 @@ export function PlayChallengesScreen() {
                       onClick={() =>
                         dispatch({ type: "REVERSE_CHALLENGE", activeIndex: i })
                       }
-                      className="ml-2 rounded bg-red-700 px-2 py-0.5 text-xs text-white hover:bg-red-600"
+                      className="ml-2 rounded bg-orange-700 px-2 py-0.5 text-xs text-white hover:bg-orange-600"
                     >
                       Reverse onto {state.players.find((p) => p.id === c.playedBy)?.name}
                     </button>
@@ -66,9 +66,9 @@ export function PlayChallengesScreen() {
                         cardId={c.def.id}
                         className={`rounded-lg transition ${
                           playFor === c.instanceId
-                            ? "ring-2 ring-red-500"
+                            ? "ring-2 ring-orange-500"
                             : isRevealed
-                              ? "hover:ring-2 hover:ring-red-800"
+                              ? "hover:ring-2 hover:ring-orange-800"
                               : ""
                         }`}
                         faceDown
@@ -91,7 +91,7 @@ export function PlayChallengesScreen() {
                             setPlayFor(playFor === c.instanceId ? null : c.instanceId)
                           }
                           title={c.def.text}
-                          className="rounded bg-red-800 px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white hover:bg-red-700"
+                          className="rounded bg-orange-800 px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white hover:bg-orange-700"
                         >
                           Play
                         </button>
@@ -120,7 +120,7 @@ export function PlayChallengesScreen() {
                             });
                             setPlayFor(null);
                           }}
-                          className="rounded bg-red-700 px-2 py-0.5 text-white hover:bg-red-600"
+                          className="rounded bg-orange-700 px-2 py-0.5 text-white hover:bg-orange-600"
                         >
                           {t.name}
                         </button>
@@ -135,7 +135,7 @@ export function PlayChallengesScreen() {
 
       <button
         onClick={() => dispatch({ type: "CONTINUE_TO_DRILL" })}
-        className="rounded-md bg-red-700 px-4 py-3 font-semibold uppercase tracking-wide text-white hover:bg-red-600"
+        className="rounded-md bg-orange-700 px-4 py-3 font-semibold uppercase tracking-wide text-white hover:bg-orange-600"
       >
         Continue to Drill →
       </button>

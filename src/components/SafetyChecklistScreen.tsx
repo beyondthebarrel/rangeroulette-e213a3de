@@ -30,7 +30,7 @@ export function SafetyChecklistScreen({
   return (
     <HeroBackdrop>
       <TitleFrame>
-        <h1 className="text-2xl font-bold uppercase tracking-wide text-red-500 sm:text-3xl">
+        <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500 sm:text-3xl">
           Safety Rules
         </h1>
 
@@ -43,12 +43,12 @@ export function SafetyChecklistScreen({
         <ul className="flex w-full flex-col gap-2">
           {SAFETY_RULES.map((rule, i) => (
             <li key={rule}>
-              <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-red-900/50 bg-zinc-900/60 p-3 text-sm text-zinc-200 hover:bg-zinc-900">
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3 text-sm text-zinc-200 hover:bg-zinc-900">
                 <input
                   type="checkbox"
                   checked={checked[i]}
                   onChange={() => toggle(i)}
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-red-600"
+                  className="mt-0.5 h-4 w-4 shrink-0 accent-orange-600"
                 />
                 <span>{rule}</span>
               </label>
@@ -68,7 +68,7 @@ export function SafetyChecklistScreen({
         <button
           disabled={!allChecked}
           onClick={onAcknowledge}
-          className="w-full rounded-md bg-red-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+          className="w-full rounded-md bg-orange-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
         >
           I Understand — Continue
         </button>

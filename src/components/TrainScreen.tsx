@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
-import { CATEGORY_ORDER, SCORING, type CategoryKey } from "../data/cards";
-import { getMyDisplayName, listMyPistols, pistolLabel, type PistolInput } from "../profile";
+import { BENCHMARKS, type BenchmarkDrill } from "../data/benchmarks";
+import { CATEGORY_ORDER, type CategoryKey } from "../data/cards";
+import {
+  getMyDisplayName,
+  getMyShootingLevel,
+  listMyPistols,
+  pistolLabel,
+  type PistolInput,
+} from "../profile";
 import { uploadTrainingPhoto } from "../training/photos";
 import {
   deleteSavedDrill,
@@ -20,20 +27,7 @@ import { Stepper } from "./Stepper";
 import { TitleFrame } from "./TitleFrame";
 import { UtilityButton } from "./UtilityButton";
 
-function computeFinalSeconds(
-  rawSeconds: number,
-  zoneMisses: number,
-  completeMisses: number,
-  parSeconds: number | undefined,
-): number {
-  let total = rawSeconds;
-  total += zoneMisses * SCORING.zoneMissPenalty;
-  total += completeMisses * SCORING.completeMissPenalty;
-  if (parSeconds != null && rawSeconds > parSeconds) {
-    total += SCORING.overParPenalty;
-  }
-  return Math.round(total * 100) / 100;
-}
+const BENCHMARK_OPTION_VALUE = "__benchmark__";
 
 export function TrainScreen({
   onBack,
@@ -61,6 +55,9 @@ export function TrainScreen({
 
   const [pistols, setPistols] = useState<PistolInput[]>([]);
   const [selectedPistolId, setSelectedPistolId] = useState("");
+
+  const [benchmark, setBenchmark] = useState<BenchmarkDrill | null>(null);
+  const [benchmarkResult, setBenchmarkResult] = useState<boolean | null>(null);
 
   const [savedDrills, setSavedDrills] = useState<SavedDrill[]>([]);
   const [selectedSavedId, setSelectedSavedId] = useState("");
@@ -101,12 +98,24 @@ export function TrainScreen({
   }, [user]);
 
   useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    getMyShootingLevel(user.id).then((level) => {
+      if (!cancelled) setBenchmark(level ? BENCHMARKS[level] : null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
     return () => {
       if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
     };
   }, [photoPreviewUrl]);
 
   const selectedSaved = savedDrills.find((d) => d.id === selectedSavedId) ?? null;
+  const isBenchmarkSelected = selectedSavedId === BENCHMARK_OPTION_VALUE && !!benchmark;
 
   const randomSnapshot: TrainingDrill = {
     time: { cardId: drill.time.def.id, label: drill.time.def.label, detail: drill.time.def.detail },
@@ -133,7 +142,11 @@ export function TrainScreen({
     parSeconds: drill.time.def.parSeconds,
   };
 
-  const activeDrill: TrainingDrill = selectedSaved ? selectedSaved.drill : randomSnapshot;
+  const activeDrill: TrainingDrill = isBenchmarkSelected
+    ? benchmark!.drill
+    : selectedSaved
+      ? selectedSaved.drill
+      : randomSnapshot;
   const parSeconds = activeDrill.parSeconds;
   const canLog = !!trainee && rawSeconds != null && !logging && !!user;
 
@@ -162,6 +175,7 @@ export function TrainScreen({
     resetScoreFields();
     clearPhoto();
     setLastLogged(null);
+    setBenchmarkResult(null);
     setLogError(null);
     setLogWarning(null);
     setSavedDrillError(null);
@@ -198,11 +212,16 @@ export function TrainScreen({
   async function handleLog() {
     if (!canLog || rawSeconds == null || !user || !trainee) return;
 
-    const finalSeconds = computeFinalSeconds(rawSeconds, zoneMisses, completeMisses, parSeconds);
+    // Training Mode has no win/loss to score — Analytics already tracks raw
+    // time and misses (accuracy) as separate, honest numbers, so the logged
+    // time is just the time on the clock, with no Game Mode-style penalties
+    // folded in.
+    const finalSeconds = rawSeconds;
     setLogging(true);
     setLogError(null);
     setLogWarning(null);
     setLastLogged(null);
+    setBenchmarkResult(null);
 
     let photoPath: string | undefined;
     let photoWarning: string | null = null;
@@ -238,7 +257,15 @@ export function TrainScreen({
 
     setLastLogged(finalSeconds);
     setLogWarning(photoWarning);
-    if (!selectedSaved) drawNew();
+    if (isBenchmarkSelected && benchmark) {
+      const par = benchmark.drill.parSeconds ?? Infinity;
+      setBenchmarkResult(
+        rawSeconds <= par &&
+          zoneMisses <= benchmark.maxZoneMisses &&
+          completeMisses <= benchmark.maxCompleteMisses,
+      );
+    }
+    if (!selectedSaved && !isBenchmarkSelected) drawNew();
     resetScoreFields();
     clearPhoto();
   }
@@ -247,7 +274,7 @@ export function TrainScreen({
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <TitleFrame>
-          <h1 className="text-2xl font-bold uppercase tracking-wide text-red-500">
+          <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">
             Train Mode
           </h1>
 
@@ -259,9 +286,31 @@ export function TrainScreen({
         <Panel>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              {selectedSaved ? `Saved Drill — ${selectedSaved.name}` : "The Drill"}
+              {isBenchmarkSelected
+                ? `🎯 Benchmark — ${benchmark!.name}`
+                : selectedSaved
+                  ? `Saved Drill — ${selectedSaved.name}`
+                  : "The Drill"}
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              {benchmark && (
+                <button
+                  onClick={() => {
+                    setSelectedSavedId(BENCHMARK_OPTION_VALUE);
+                    resetScoreFields();
+                    setLastLogged(null);
+                    setBenchmarkResult(null);
+                    setSavedDrillError(null);
+                  }}
+                  className={`rounded border px-3 py-1 text-xs uppercase tracking-wide ${
+                    isBenchmarkSelected
+                      ? "border-orange-500 bg-orange-950/40 text-orange-400"
+                      : "border-orange-700 text-orange-400 hover:bg-orange-950"
+                  }`}
+                >
+                  🎯 Benchmark
+                </button>
+              )}
               <button
                 onClick={() => {
                   setShowSave((v) => !v);
@@ -273,7 +322,7 @@ export function TrainScreen({
               </button>
               <button
                 onClick={handleNewDrill}
-                className="rounded border border-red-700 px-3 py-1 text-xs uppercase tracking-wide text-red-400 hover:bg-red-950"
+                className="rounded border border-orange-700 px-3 py-1 text-xs uppercase tracking-wide text-orange-400 hover:bg-orange-950"
               >
                 New Drill
               </button>
@@ -287,11 +336,15 @@ export function TrainScreen({
                 setSelectedSavedId(e.target.value);
                 resetScoreFields();
                 setLastLogged(null);
+                setBenchmarkResult(null);
                 setSavedDrillError(null);
               }}
-              className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-red-600 focus:outline-none"
+              className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-orange-600 focus:outline-none"
             >
               <option value="">Random draw</option>
+              {benchmark && (
+                <option value={BENCHMARK_OPTION_VALUE}>🎯 Benchmark — {benchmark.name}</option>
+              )}
               {savedDrills.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
@@ -314,12 +367,12 @@ export function TrainScreen({
                 value={saveName}
                 onChange={(e) => setSaveName(e.target.value)}
                 placeholder="Drill name"
-                className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-red-600 focus:outline-none"
+                className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-orange-600 focus:outline-none"
               />
               <button
                 disabled={saving || saveName.trim().length === 0 || !user}
                 onClick={handleSaveDrill}
-                className="rounded bg-red-700 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white enabled:hover:bg-red-600 disabled:bg-zinc-800 disabled:text-zinc-500"
+                className="rounded bg-orange-700 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white enabled:hover:bg-orange-600 disabled:bg-zinc-800 disabled:text-zinc-500"
               >
                 {saving ? "Saving…" : "Save"}
               </button>
@@ -346,7 +399,7 @@ export function TrainScreen({
               <select
                 value={selectedPistolId}
                 onChange={(e) => setSelectedPistolId(e.target.value)}
-                className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-red-600 focus:outline-none"
+                className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-orange-600 focus:outline-none"
               >
                 <option value="">Not tagged</option>
                 {pistols.map((p) => (
@@ -377,12 +430,8 @@ export function TrainScreen({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Stepper label="Zone misses (+0.5s)" value={zoneMisses} onChange={setZoneMisses} />
-            <Stepper
-              label="Complete misses (+1.0s)"
-              value={completeMisses}
-              onChange={setCompleteMisses}
-            />
+            <Stepper label="Zone misses" value={zoneMisses} onChange={setZoneMisses} />
+            <Stepper label="Complete misses" value={completeMisses} onChange={setCompleteMisses} />
           </div>
 
           <div className="flex flex-col gap-2">
@@ -423,7 +472,7 @@ export function TrainScreen({
             ) : (
               <label
                 htmlFor="target-photo-input"
-                className="w-full cursor-pointer rounded border border-dashed border-zinc-600 px-3 py-3 text-center text-sm text-zinc-400 hover:border-red-700 hover:text-red-400"
+                className="w-full cursor-pointer rounded border border-dashed border-zinc-600 px-3 py-3 text-center text-sm text-zinc-400 hover:border-orange-700 hover:text-orange-400"
               >
                 Take / Add Photo
               </label>
@@ -439,15 +488,25 @@ export function TrainScreen({
           )}
 
           {lastLogged != null && (
-            <div className="text-sm text-red-400">
+            <div className="text-sm text-orange-400">
               Logged: {lastLogged.toFixed(2)}s
+            </div>
+          )}
+
+          {benchmarkResult != null && (
+            <div
+              className={`text-sm font-semibold ${
+                benchmarkResult ? "text-emerald-400" : "text-amber-400"
+              }`}
+            >
+              {benchmarkResult ? "🎯 Benchmark achieved!" : "Not yet — beat the standard to pass."}
             </div>
           )}
 
           <button
             disabled={!canLog}
             onClick={handleLog}
-            className="w-full rounded-md bg-red-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+            className="w-full rounded-md bg-orange-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
           >
             {logging ? "Logging…" : "Log Result"}
           </button>

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { getAvatarUrl, uploadAvatar } from "../avatar";
+import { BENCHMARKS, findBestBenchmarkPass } from "../data/benchmarks";
+import { CATEGORY_ORDER, type CategoryKey } from "../data/cards";
 import { deletePistolPhoto, getPistolPhotoUrl, uploadPistolPhoto } from "../pistolPhotos";
 import {
   getMyDisplayName,
@@ -13,8 +15,11 @@ import {
   type PistolInput,
   type ShootingLevel,
 } from "../profile";
+import { getTrainingSessions } from "../training/storage";
+import type { TrainingSession } from "../training/types";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
+import { PlayingCard } from "./PlayingCard";
 import { TitleFrame } from "./TitleFrame";
 
 const LEVEL_LABELS: Record<ShootingLevel, string> = {
@@ -68,6 +73,7 @@ export function ProfileSetupScreen({
 
   const [pistols, setPistols] = useState<PistolFormRow[]>([]);
   const [pistolPhotoUrls, setPistolPhotoUrls] = useState<Record<string, string>>({});
+  const [sessions, setSessions] = useState<TrainingSession[]>([]);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,11 +83,13 @@ export function ProfileSetupScreen({
     if (!user) return;
     let cancelled = false;
     (async () => {
-      const [profile, savedPistols] = await Promise.all([
+      const [profile, savedPistols, loggedSessions] = await Promise.all([
         getMyProfile(user.id),
         listMyPistols(user.id),
+        getTrainingSessions(),
       ]);
       if (cancelled) return;
+      setSessions(loggedSessions);
       if (profile) {
         setName(profile.displayName);
         setAge(profile.age != null ? String(profile.age) : "");
@@ -237,7 +245,7 @@ export function ProfileSetupScreen({
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <TitleFrame>
-          <h1 className="text-2xl font-bold uppercase tracking-wide text-red-500">
+          <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">
             {mode === "edit" ? "Edit Your Profile" : "Build Your Profile"}
           </h1>
           <p className="text-center text-sm text-zinc-400">
@@ -264,10 +272,10 @@ export function ProfileSetupScreen({
                 <img
                   src={shownAvatarUrl}
                   alt="Profile preview"
-                  className="h-16 w-16 rounded-full border-2 border-red-700 object-cover"
+                  className="h-16 w-16 rounded-full border-2 border-orange-700 object-cover"
                 />
               ) : (
-                <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-zinc-600 text-center text-[10px] uppercase leading-tight tracking-wide text-zinc-500 hover:border-red-700 hover:text-red-400">
+                <span className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-zinc-600 text-center text-[10px] uppercase leading-tight tracking-wide text-zinc-500 hover:border-orange-700 hover:text-orange-400">
                   Add
                   <br />
                   Photo
@@ -296,7 +304,7 @@ export function ProfileSetupScreen({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Name"
-            className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+            className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-orange-600 focus:outline-none"
           />
 
           <input
@@ -306,7 +314,7 @@ export function ProfileSetupScreen({
             value={age}
             onChange={(e) => setAge(e.target.value)}
             placeholder="Age (optional)"
-            className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+            className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-orange-600 focus:outline-none"
           />
 
           <div className="flex flex-col gap-1.5">
@@ -318,7 +326,7 @@ export function ProfileSetupScreen({
                   onClick={() => setShootingLevel(level)}
                   className={`rounded border px-2 py-2 text-xs font-semibold uppercase tracking-wide ${
                     shootingLevel === level
-                      ? "border-red-500 bg-red-950/40 text-red-400"
+                      ? "border-orange-500 bg-orange-950/40 text-orange-400"
                       : "border-zinc-700 text-zinc-400 hover:border-zinc-500"
                   }`}
                 >
@@ -332,9 +340,42 @@ export function ProfileSetupScreen({
             value={primaryPistol}
             onChange={(e) => setPrimaryPistol(e.target.value)}
             placeholder="Primary pistol trained with (e.g. Glock 19)"
-            className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+            className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-orange-600 focus:outline-none"
           />
         </Panel>
+
+        {shootingLevel && (
+          <Panel>
+            <div className="flex items-center justify-between">
+              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                {LEVEL_LABELS[shootingLevel]} Benchmark
+              </div>
+              {(() => {
+                const best = findBestBenchmarkPass(sessions, BENCHMARKS[shootingLevel]);
+                return best ? (
+                  <span className="text-xs font-semibold text-emerald-400">
+                    ✓ Achieved — {best.rawSeconds.toFixed(2)}s
+                  </span>
+                ) : (
+                  <span className="text-xs text-zinc-500">Not yet achieved</span>
+                );
+              })()}
+            </div>
+            <div className="text-sm text-white">{BENCHMARKS[shootingLevel].name}</div>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+              {CATEGORY_ORDER.map((cat: CategoryKey) => (
+                <PlayingCard key={cat} cardId={BENCHMARKS[shootingLevel].drill[cat].cardId} />
+              ))}
+            </div>
+            <div className="text-xs text-zinc-500">
+              Par {BENCHMARKS[shootingLevel].drill.parSeconds}s · max{" "}
+              {BENCHMARKS[shootingLevel].maxZoneMisses} zone /{" "}
+              {BENCHMARKS[shootingLevel].maxCompleteMisses} complete miss
+              {BENCHMARKS[shootingLevel].maxCompleteMisses === 1 ? "" : "es"} — attempt it from Train
+              Mode's drill picker.
+            </div>
+          </Panel>
+        )}
 
         <Panel>
           <div className="flex items-center justify-between">
@@ -343,7 +384,7 @@ export function ProfileSetupScreen({
             </div>
             <button
               onClick={addPistol}
-              className="rounded border border-red-700 px-3 py-1 text-xs uppercase tracking-wide text-red-400 hover:bg-red-950"
+              className="rounded border border-orange-700 px-3 py-1 text-xs uppercase tracking-wide text-orange-400 hover:bg-orange-950"
             >
               + Add Pistol
             </button>
@@ -359,7 +400,7 @@ export function ProfileSetupScreen({
               {pistols.map((p, i) => (
                 <div
                   key={p.id ?? `new-${i}`}
-                  className="flex flex-col gap-2 rounded-lg border border-red-900/50 bg-zinc-900/60 p-3"
+                  className="flex flex-col gap-2 rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
@@ -367,7 +408,7 @@ export function ProfileSetupScreen({
                     </span>
                     <button
                       onClick={() => removePistol(i)}
-                      className="text-xs text-zinc-500 hover:text-red-400"
+                      className="text-xs text-zinc-500 hover:text-orange-400"
                     >
                       Remove
                     </button>
@@ -379,7 +420,7 @@ export function ProfileSetupScreen({
                         value={p[f.key]}
                         onChange={(e) => updatePistol(i, { [f.key]: e.target.value })}
                         placeholder={f.placeholder}
-                        className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white focus:border-red-600 focus:outline-none"
+                        className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white focus:border-orange-600 focus:outline-none"
                       />
                     ))}
                   </div>
@@ -387,7 +428,7 @@ export function ProfileSetupScreen({
                     value={p.accessories}
                     onChange={(e) => updatePistol(i, { accessories: e.target.value })}
                     placeholder="Other accessories"
-                    className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white focus:border-red-600 focus:outline-none"
+                    className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white focus:border-orange-600 focus:outline-none"
                   />
                   {(() => {
                     const shownUrl =
@@ -409,7 +450,7 @@ export function ProfileSetupScreen({
                               className="h-12 w-12 rounded border border-zinc-700 object-cover"
                             />
                           ) : (
-                            <span className="flex h-12 w-12 items-center justify-center rounded border border-dashed border-zinc-600 text-[9px] uppercase leading-tight tracking-wide text-zinc-500 hover:border-red-700 hover:text-red-400">
+                            <span className="flex h-12 w-12 items-center justify-center rounded border border-dashed border-zinc-600 text-[9px] uppercase leading-tight tracking-wide text-zinc-500 hover:border-orange-700 hover:text-orange-400">
                               Photo
                             </span>
                           )}
@@ -444,7 +485,7 @@ export function ProfileSetupScreen({
           <button
             disabled={!canSave}
             onClick={warning != null ? onComplete : handleSave}
-            className="flex-1 rounded-md bg-red-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+            className="flex-1 rounded-md bg-orange-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
           >
             {saving
               ? "Saving…"

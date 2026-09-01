@@ -96,7 +96,7 @@ export function OAuthConsent() {
   return (
     <HeroBackdrop>
       <TitleFrame>
-        <h1 className="text-2xl font-bold uppercase tracking-wide text-red-500">
+        <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">
           Connect App
         </h1>
         {error ? (
@@ -113,7 +113,7 @@ export function OAuthConsent() {
               <button
                 disabled={busy}
                 onClick={() => decide(true)}
-                className="flex-1 rounded-md bg-red-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white enabled:hover:bg-red-600 disabled:bg-zinc-800 disabled:text-zinc-500"
+                className="flex-1 rounded-md bg-orange-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white enabled:hover:bg-orange-600 disabled:bg-zinc-800 disabled:text-zinc-500"
               >
                 Approve
               </button>

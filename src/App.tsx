@@ -145,7 +145,7 @@ function App() {
           />
         )}
         {view === "trainHistory" && <TrainHistoryScreen onBack={() => setView("train")} />}
-        {view === "trainAnalytics" && <AnalyticsScreen onBack={() => setView("modeSelect")} />}
+        {view === "trainAnalytics" && <AnalyticsScreen onBack={() => setView("train")} />}
         {view === "leaderboard" && (
           <LeaderboardScreen onBack={() => setView("modeSelect")} />
         )}

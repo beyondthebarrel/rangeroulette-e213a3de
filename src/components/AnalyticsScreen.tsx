@@ -1,15 +1,32 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
-import { listMyPistols, pistolLabel, type PistolInput } from "../profile";
+import { BENCHMARKS, passesBenchmark } from "../data/benchmarks";
+import { CATEGORY_ORDER, type CategoryKey } from "../data/cards";
+import {
+  getMyShootingLevel,
+  listMyPistols,
+  pistolLabel,
+  type PistolInput,
+  type ShootingLevel,
+} from "../profile";
 import { computeAccountAnalytics } from "../training/analytics";
 import { getTrainingSessions } from "../training/storage";
 import type { TrainingSession } from "../training/types";
+import { BenchmarkProgressChart } from "./charts/BenchmarkProgressChart";
 import { DumbbellChart } from "./charts/DumbbellChart";
 import { LineChart } from "./charts/LineChart";
 import { RankedBarChart } from "./charts/RankedBarChart";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
+import { PlayingCard } from "./PlayingCard";
 import { TitleFrame } from "./TitleFrame";
+
+const LEVEL_LABELS: Record<ShootingLevel, string> = {
+  beginner: "Beginner",
+  intermediate: "Intermediate",
+  advanced: "Advanced",
+  pro: "Pro",
+};
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
@@ -29,19 +46,46 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
   const [allSessions, setAllSessions] = useState<TrainingSession[] | null>(null);
   const [pistols, setPistols] = useState<PistolInput[]>([]);
   const [selectedPistolId, setSelectedPistolId] = useState("");
+  const [shootingLevel, setShootingLevel] = useState<ShootingLevel | null>(null);
 
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    Promise.all([getTrainingSessions(), listMyPistols(user.id)]).then(([sessions, loadedPistols]) => {
+    Promise.all([
+      getTrainingSessions(),
+      listMyPistols(user.id),
+      getMyShootingLevel(user.id),
+    ]).then(([sessions, loadedPistols, level]) => {
       if (cancelled) return;
       setAllSessions(sessions);
       setPistols(loadedPistols);
+      setShootingLevel(level);
     });
     return () => {
       cancelled = true;
     };
   }, [user]);
+
+  const benchmark = shootingLevel ? BENCHMARKS[shootingLevel] : null;
+
+  const benchmarkAttempts = useMemo(() => {
+    if (!allSessions || !benchmark) return [];
+    return allSessions
+      .filter(
+        (s) =>
+          s.drill.time.cardId === benchmark.drill.time.cardId &&
+          s.drill.distance.cardId === benchmark.drill.distance.cardId &&
+          s.drill.startPosition.cardId === benchmark.drill.startPosition.cardId &&
+          s.drill.target.cardId === benchmark.drill.target.cardId &&
+          s.drill.courseOfFire.cardId === benchmark.drill.courseOfFire.cardId,
+      )
+      .sort((a, b) => new Date(a.loggedAt).getTime() - new Date(b.loggedAt).getTime())
+      .map((s) => ({
+        date: s.loggedAt,
+        seconds: s.rawSeconds,
+        passed: passesBenchmark(s, benchmark),
+      }));
+  }, [allSessions, benchmark]);
 
   const selectedPistol = pistols.find((p) => p.id === selectedPistolId) ?? null;
 
@@ -60,7 +104,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <TitleFrame>
-          <h1 className="text-2xl font-bold uppercase tracking-wide text-red-500">Analytics</h1>
+          <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">Analytics</h1>
           <p className="text-center text-sm text-zinc-400">
             {selectedPistol
               ? `Every rep logged with the ${pistolLabel(selectedPistol)}.`
@@ -77,7 +121,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
               <select
                 value={selectedPistolId}
                 onChange={(e) => setSelectedPistolId(e.target.value)}
-                className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-red-600 focus:outline-none"
+                className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-orange-600 focus:outline-none"
               >
                 <option value="">Whole account</option>
                 {pistols.map((p) => (
@@ -126,6 +170,48 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
               )}
             </Panel>
 
+            {benchmark && (
+              <Panel>
+                <div className="flex items-center justify-between">
+                  <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                    {LEVEL_LABELS[benchmark.level]} Benchmark
+                  </div>
+                  {benchmarkAttempts.some((a) => a.passed) ? (
+                    <span className="text-xs font-semibold text-emerald-400">✓ Achieved</span>
+                  ) : (
+                    <span className="text-xs text-zinc-500">Not yet achieved</span>
+                  )}
+                </div>
+                <div className="text-sm text-white">{benchmark.name}</div>
+                <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                  {CATEGORY_ORDER.map((cat: CategoryKey) => (
+                    <PlayingCard key={cat} cardId={benchmark.drill[cat].cardId} />
+                  ))}
+                </div>
+                <div className="text-xs text-zinc-500">
+                  Par {benchmark.drill.parSeconds}s · max {benchmark.maxZoneMisses} zone /{" "}
+                  {benchmark.maxCompleteMisses} complete miss
+                  {benchmark.maxCompleteMisses === 1 ? "" : "es"}
+                </div>
+                {benchmarkAttempts.length > 0 ? (
+                  <div className="flex flex-col gap-2 border-t border-zinc-800 pt-3">
+                    <div className="text-xs text-zinc-500">
+                      Progress toward par ({benchmarkAttempts.length} attempt
+                      {benchmarkAttempts.length === 1 ? "" : "s"})
+                    </div>
+                    <BenchmarkProgressChart
+                      attempts={benchmarkAttempts}
+                      par={benchmark.drill.parSeconds!}
+                    />
+                  </div>
+                ) : (
+                  <p className="text-xs text-zinc-500">
+                    No attempts logged yet — select the benchmark from Train Mode's drill picker.
+                  </p>
+                )}
+              </Panel>
+            )}
+
             <Panel>
               <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
                 Overall Best Drills
@@ -142,7 +228,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                 {analytics.bestDrills.map((d, i) => (
                   <li
                     key={d.key}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-red-900/50 bg-zinc-900/60 p-3"
+                    className="flex items-center justify-between gap-2 rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3"
                   >
                     <div>
                       <div className="text-sm text-white">
@@ -153,7 +239,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                         {d.bestSession.trainee} · {formatDate(d.bestSession.loggedAt)}
                       </div>
                     </div>
-                    <span className="font-mono text-lg text-red-400">
+                    <span className="font-mono text-lg text-orange-400">
                       {d.bestSession.finalSeconds.toFixed(2)}s
                     </span>
                   </li>
@@ -180,7 +266,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                   {analytics.mostImproved.map((d, i) => (
                     <li
                       key={d.key}
-                      className="flex items-center justify-between gap-2 rounded-lg border border-red-900/50 bg-zinc-900/60 p-3"
+                      className="flex items-center justify-between gap-2 rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3"
                     >
                       <div>
                         <div className="text-sm text-white">
@@ -217,7 +303,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                 {analytics.mostRepeated.map((d, i) => (
                   <li
                     key={d.key}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-red-900/50 bg-zinc-900/60 p-3"
+                    className="flex items-center justify-between gap-2 rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3"
                   >
                     <div className="text-sm text-white">
                       <span className="mr-2 text-zinc-500">{i + 1}.</span>
@@ -253,7 +339,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                 {analytics.leastAccurate.map((d, i) => (
                   <li
                     key={d.key}
-                    className="flex items-center justify-between gap-2 rounded-lg border border-red-900/50 bg-zinc-900/60 p-3"
+                    className="flex items-center justify-between gap-2 rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3"
                   >
                     <div>
                       <div className="text-sm text-white">
@@ -265,7 +351,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                         {d.avgCompleteMisses.toFixed(1)} complete miss{d.avgCompleteMisses === 1 ? "" : "es"}
                       </div>
                     </div>
-                    <span className="font-mono text-lg text-red-400">{d.cleanRate.toFixed(0)}%</span>
+                    <span className="font-mono text-lg text-orange-400">{d.cleanRate.toFixed(0)}%</span>
                   </li>
                 ))}
               </ul>
@@ -288,7 +374,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                   {analytics.byPistol.map((p, i) => (
                     <li
                       key={p.pistolId}
-                      className="flex items-center justify-between gap-2 rounded-lg border border-red-900/50 bg-zinc-900/60 p-3"
+                      className="flex items-center justify-between gap-2 rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3"
                     >
                       <div>
                         <div className="text-sm text-white">
@@ -300,7 +386,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                           {p.averageSeconds.toFixed(2)}s
                         </div>
                       </div>
-                      <span className="font-mono text-lg text-red-400">{p.cleanRate.toFixed(0)}%</span>
+                      <span className="font-mono text-lg text-orange-400">{p.cleanRate.toFixed(0)}%</span>
                     </li>
                   ))}
                 </ul>
@@ -311,7 +397,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
 
         <button
           onClick={onBack}
-          className="w-full rounded-md bg-red-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white hover:bg-red-600"
+          className="w-full rounded-md bg-orange-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white hover:bg-orange-600"
         >
           Back
         </button>

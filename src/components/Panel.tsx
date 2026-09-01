@@ -9,7 +9,7 @@ export function Panel({
 }) {
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border-2 border-red-800/70 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 p-4 shadow-[0_0_50px_rgba(153,27,27,0.1)] sm:p-6 ${className}`}
+      className={`relative overflow-hidden rounded-2xl border-2 border-orange-800/70 bg-gradient-to-b from-zinc-950 via-black to-zinc-950 p-4 shadow-[0_0_50px_rgba(154,52,18,0.1)] sm:p-6 ${className}`}
     >
       <svg
         className="pointer-events-none absolute inset-0 h-full w-full opacity-[0.05]"

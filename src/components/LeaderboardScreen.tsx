@@ -26,7 +26,7 @@ export function LeaderboardScreen({ onBack }: { onBack: () => void }) {
   return (
     <HeroBackdrop>
       <TitleFrame>
-        <h1 className="text-2xl font-bold uppercase tracking-wide text-red-500 sm:text-3xl">
+        <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500 sm:text-3xl">
           Leaderboard
         </h1>
 
@@ -46,13 +46,13 @@ export function LeaderboardScreen({ onBack }: { onBack: () => void }) {
                 {mostWins.map((p, i) => (
                   <li
                     key={p.name}
-                    className="flex items-center justify-between rounded-lg border border-red-900/50 bg-zinc-900/60 px-3 py-2"
+                    className="flex items-center justify-between rounded-lg border border-orange-900/50 bg-zinc-900/60 px-3 py-2"
                   >
                     <span className="text-white">
                       <span className="mr-2 text-zinc-500">{i + 1}.</span>
                       {p.name}
                     </span>
-                    <span className="text-red-400">
+                    <span className="text-orange-400">
                       {p.wins}-{p.losses}
                     </span>
                   </li>
@@ -73,13 +73,13 @@ export function LeaderboardScreen({ onBack }: { onBack: () => void }) {
                   {bestWinPct.map((p, i) => (
                     <li
                       key={p.name}
-                      className="flex items-center justify-between rounded-lg border border-red-900/50 bg-zinc-900/60 px-3 py-2"
+                      className="flex items-center justify-between rounded-lg border border-orange-900/50 bg-zinc-900/60 px-3 py-2"
                     >
                       <span className="text-white">
                         <span className="mr-2 text-zinc-500">{i + 1}.</span>
                         {p.name}
                       </span>
-                      <span className="text-red-400">
+                      <span className="text-orange-400">
                         {Math.round(p.winPct * 100)}%
                         <span className="ml-1.5 text-xs text-zinc-500">
                           ({p.wins}-{p.losses})
@@ -101,7 +101,7 @@ export function LeaderboardScreen({ onBack }: { onBack: () => void }) {
 
         <button
           onClick={onBack}
-          className="w-full rounded-md bg-red-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white hover:bg-red-600"
+          className="w-full rounded-md bg-orange-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white hover:bg-orange-600"
         >
           Back
         </button>

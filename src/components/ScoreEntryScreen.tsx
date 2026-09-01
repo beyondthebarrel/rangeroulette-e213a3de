@@ -18,7 +18,7 @@ function PlayerScoreCard({
   onChange: (entry: ScoreEntry) => void;
 }) {
   return (
-    <div className="rounded-lg border border-red-900/50 bg-zinc-900/60 p-4">
+    <div className="rounded-lg border border-orange-900/50 bg-zinc-900/60 p-4">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-white">{name}</h3>
         <label className="flex items-center gap-2 text-sm text-zinc-400">
@@ -151,7 +151,7 @@ export function ScoreEntryScreen({
       <button
         disabled={!allEntered}
         onClick={onSubmit}
-        className="rounded-md bg-red-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+        className="rounded-md bg-orange-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
       >
         {submitLabel}
       </button>

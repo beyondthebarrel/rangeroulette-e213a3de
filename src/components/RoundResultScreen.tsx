@@ -32,7 +32,7 @@ export function RoundResultScreen() {
               key={p.id}
               className={`flex items-center justify-between rounded-lg border p-3 ${
                 p.id === result.winnerId
-                  ? "border-red-500 bg-red-950/30"
+                  ? "border-orange-500 bg-orange-950/30"
                   : "border-zinc-700 bg-zinc-900/50"
               }`}
             >
@@ -52,8 +52,8 @@ export function RoundResultScreen() {
         )}
 
         {winner && (
-          <div className="rounded-lg border border-red-600 bg-red-950/30 p-3">
-            <div className="mb-2 text-red-300">
+          <div className="rounded-lg border border-orange-600 bg-orange-950/30 p-3">
+            <div className="mb-2 text-orange-300">
               {winner.name} wins the round (+1 point) and draws a Challenge card:
             </div>
             {result.awardedChallenge && (
@@ -91,7 +91,7 @@ export function RoundResultScreen() {
             .sort((a, b) => b.points - a.points)
             .map((p) => (
               <div key={p.id} className="text-sm text-white">
-                {p.name}: <span className="text-red-400">{p.points}</span>
+                {p.name}: <span className="text-orange-400">{p.points}</span>
               </div>
             ))}
         </div>
@@ -118,7 +118,7 @@ export function RoundResultScreen() {
 
       <button
         onClick={() => dispatch({ type: "NEXT_ROUND" })}
-        className="rounded-md bg-red-700 px-4 py-3 font-semibold uppercase tracking-wide text-white hover:bg-red-600"
+        className="rounded-md bg-orange-700 px-4 py-3 font-semibold uppercase tracking-wide text-white hover:bg-orange-600"
       >
         {state.winnerId ? "See Match Winner →" : "Next Round →"}
       </button>

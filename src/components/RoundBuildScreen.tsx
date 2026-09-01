@@ -57,7 +57,7 @@ export function RoundBuildScreen() {
                   card.def.dealersChoice ? (
                     <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 bg-black/80 p-1.5">
                       {!(drill.dealersChoiceValues[cat] ?? "").trim() && (
-                        <div className="text-center text-[10px] font-semibold uppercase tracking-wide text-red-400">
+                        <div className="text-center text-[10px] font-semibold uppercase tracking-wide text-orange-400">
                           Dealer must set a value
                         </div>
                       )}
@@ -72,8 +72,8 @@ export function RoundBuildScreen() {
                         }
                         className={`w-full rounded border bg-zinc-900 px-1 py-1 text-center text-[11px] text-white focus:outline-none ${
                           (drill.dealersChoiceValues[cat] ?? "").trim()
-                            ? "border-red-700"
-                            : "animate-pulse border-red-500 ring-2 ring-red-500"
+                            ? "border-orange-700"
+                            : "animate-pulse border-orange-500 ring-2 ring-orange-500"
                         }`}
                       >
                         <option value="" disabled>
@@ -98,7 +98,7 @@ export function RoundBuildScreen() {
 
       {state.activeChallenges.length > 0 && (
         <Panel>
-          <div className="text-xs font-semibold uppercase tracking-wider text-red-400">
+          <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
             Active Challenge Cards
           </div>
           <ul className="flex flex-col gap-1">
@@ -115,7 +115,7 @@ export function RoundBuildScreen() {
       )}
 
       {!readyToScore && (
-        <div className="text-center text-sm text-red-400">
+        <div className="text-center text-sm text-orange-400">
           Waiting on Dealer&apos;s Choice value
           {missingDealersChoice.length > 1 ? "s" : ""} for:{" "}
           {missingDealersChoice.map((cat) => CATEGORY_LABELS[cat]).join(", ")}
@@ -124,7 +124,7 @@ export function RoundBuildScreen() {
       <button
         disabled={!readyToScore}
         onClick={() => dispatch({ type: "START_SCORING" })}
-        className="rounded-md bg-red-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+        className="rounded-md bg-orange-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
       >
         Run the Drill →
       </button>

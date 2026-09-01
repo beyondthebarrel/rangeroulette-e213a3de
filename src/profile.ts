@@ -70,6 +70,16 @@ export async function getOnboardedStatus(userId: string): Promise<boolean> {
   return data?.onboarded ?? true;
 }
 
+export async function getMyShootingLevel(userId: string): Promise<ShootingLevel | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("shooting_level")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return (data.shooting_level as ShootingLevel | null) ?? null;
+}
+
 export async function getMyProfile(userId: string): Promise<ShooterProfile | null> {
   const { data, error } = await supabase
     .from("profiles")

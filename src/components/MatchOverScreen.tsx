@@ -12,7 +12,7 @@ export function MatchOverScreen() {
   return (
     <HeroBackdrop>
       <TitleFrame>
-        <h1 className="text-3xl font-bold uppercase tracking-wide text-red-500">
+        <h1 className="text-3xl font-bold uppercase tracking-wide text-orange-500">
           {winner?.name} Wins!
         </h1>
 
@@ -20,11 +20,11 @@ export function MatchOverScreen() {
           {ranked.map((p) => (
             <div
               key={p.id}
-              className="rounded-lg border border-red-900/50 bg-zinc-900/60 p-3"
+              className="rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3"
             >
               <div className="flex items-center justify-between">
                 <span className="text-white">{p.name}</span>
-                <span className="text-red-400">{p.points} pts</span>
+                <span className="text-orange-400">{p.points} pts</span>
               </div>
               {p.hand.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -39,7 +39,7 @@ export function MatchOverScreen() {
 
         <button
           onClick={() => dispatch({ type: "RESET_MATCH" })}
-          className="w-full rounded-md bg-red-700 px-4 py-3 font-semibold uppercase tracking-wide text-white hover:bg-red-600"
+          className="w-full rounded-md bg-orange-700 px-4 py-3 font-semibold uppercase tracking-wide text-white hover:bg-orange-600"
         >
           New Match
         </button>

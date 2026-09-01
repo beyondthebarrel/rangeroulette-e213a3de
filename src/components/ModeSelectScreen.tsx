@@ -18,9 +18,9 @@ function ModeButton({
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-2.5 rounded-xl border-2 border-red-700 bg-zinc-900/60 p-2 text-left hover:bg-zinc-900 sm:gap-3 sm:p-4"
+      className="flex w-full items-center gap-2.5 rounded-xl border-2 border-orange-700 bg-zinc-900/60 p-2 text-left hover:bg-zinc-900 sm:gap-3 sm:p-4"
     >
-      <span className="shrink-0 text-red-500">{icon}</span>
+      <span className="shrink-0 text-orange-500">{icon}</span>
       <span>
         <span className="block text-sm font-bold uppercase tracking-wide text-white sm:text-lg">
           {title}

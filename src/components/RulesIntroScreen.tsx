@@ -80,7 +80,7 @@ export function RulesIntroScreen({ onDone }: { onDone: () => void }) {
   return (
     <HeroBackdrop>
       <TitleFrame>
-        <h1 className="text-2xl font-bold uppercase tracking-wide text-red-500 sm:text-3xl">
+        <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500 sm:text-3xl">
           {slide.title}
         </h1>
 
@@ -88,10 +88,10 @@ export function RulesIntroScreen({ onDone }: { onDone: () => void }) {
           {slide.items.map((item) => (
             <li
               key={item.heading ?? item.text}
-              className="rounded-lg border border-red-900/50 bg-zinc-900/60 p-3 text-sm text-zinc-200"
+              className="rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3 text-sm text-zinc-200"
             >
               {item.heading && (
-                <div className="mb-0.5 text-xs font-semibold uppercase tracking-wide text-red-400">
+                <div className="mb-0.5 text-xs font-semibold uppercase tracking-wide text-orange-400">
                   {item.heading}
                 </div>
               )}
@@ -105,7 +105,7 @@ export function RulesIntroScreen({ onDone }: { onDone: () => void }) {
             <span
               key={s.title}
               className={`h-1.5 w-1.5 rounded-full ${
-                i === index ? "bg-red-500" : "bg-zinc-700"
+                i === index ? "bg-orange-500" : "bg-zinc-700"
               }`}
             />
           ))}
@@ -122,7 +122,7 @@ export function RulesIntroScreen({ onDone }: { onDone: () => void }) {
           )}
           <button
             onClick={() => (isLast ? onDone() : setIndex((i) => i + 1))}
-            className="flex-1 rounded-md bg-red-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white hover:bg-red-600"
+            className="flex-1 rounded-md bg-orange-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white hover:bg-orange-600"
           >
             {isLast ? "Get Started" : "Next"}
           </button>

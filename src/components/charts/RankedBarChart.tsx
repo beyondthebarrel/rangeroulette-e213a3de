@@ -28,7 +28,7 @@ export function RankedBarChart({ data }: { data: RankedBarDatum[] }) {
             </div>
             <div className="h-2.5 w-full overflow-hidden rounded-sm bg-zinc-800">
               <div
-                className="h-full rounded-r bg-red-500"
+                className="h-full rounded-r bg-orange-500"
                 style={{ width: `${Math.max(pct, 2)}%` }}
               />
             </div>

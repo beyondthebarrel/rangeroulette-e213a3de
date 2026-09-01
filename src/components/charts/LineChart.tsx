@@ -49,11 +49,11 @@ export function LineChart({ data }: { data: LineChartDatum[] }) {
           preserveAspectRatio="none"
           className="absolute inset-0 h-full w-full overflow-visible"
         >
-          <path d={areaPath} fill="#ef4444" fillOpacity={0.1} stroke="none" />
+          <path d={areaPath} fill="#f97316" fillOpacity={0.1} stroke="none" />
           <path
             d={linePath}
             fill="none"
-            stroke="#ef4444"
+            stroke="#f97316"
             strokeWidth={2}
             strokeLinejoin="round"
             strokeLinecap="round"
@@ -77,8 +77,8 @@ export function LineChart({ data }: { data: LineChartDatum[] }) {
               <span
                 className={
                   isLast
-                    ? "h-2.5 w-2.5 rounded-full bg-red-400 ring-2 ring-black"
-                    : "h-1.5 w-1.5 rounded-full bg-red-500"
+                    ? "h-2.5 w-2.5 rounded-full bg-orange-400 ring-2 ring-black"
+                    : "h-1.5 w-1.5 rounded-full bg-orange-500"
                 }
               />
             </div>

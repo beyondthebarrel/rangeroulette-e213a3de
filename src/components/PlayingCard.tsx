@@ -84,7 +84,7 @@ export function PlayingCard({
           {overlay}
           {isTappable && tapped && (
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-black/80 py-1.5 text-center">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-red-500">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-orange-500">
                 Tap to Hide
               </span>
             </div>
@@ -103,7 +103,7 @@ export function PlayingCard({
           />
           {isTappable && !tapped && (
             <div className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-black/80 py-1.5 text-center">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-red-500">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-orange-500">
                 Tap to Reveal
               </span>
             </div>

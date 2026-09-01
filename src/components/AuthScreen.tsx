@@ -34,7 +34,7 @@ export function AuthScreen() {
   return (
     <HeroBackdrop>
       <TitleFrame>
-        <h1 className="text-2xl font-bold uppercase tracking-wide text-red-500 sm:text-3xl">
+        <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500 sm:text-3xl">
           Range Roulette
         </h1>
         <p className="text-center text-xs text-zinc-400 sm:text-sm">
@@ -49,7 +49,7 @@ export function AuthScreen() {
               value={nickname}
               onChange={(e) => setNickname(e.target.value)}
               placeholder="Nickname (optional)"
-              className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+              className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-orange-600 focus:outline-none"
             />
           )}
           <input
@@ -59,7 +59,7 @@ export function AuthScreen() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
-            className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+            className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-orange-600 focus:outline-none"
           />
           <input
             type="password"
@@ -69,16 +69,16 @@ export function AuthScreen() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
-            className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+            className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-orange-600 focus:outline-none"
           />
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-orange-400">{error}</p>}
           {info && <p className="text-sm text-emerald-400">{info}</p>}
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-md bg-red-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white enabled:hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+            className="w-full rounded-md bg-orange-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
           >
             {submitting ? "Please wait…" : mode === "signIn" ? "Sign In" : "Sign Up"}
           </button>
