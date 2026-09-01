@@ -51,6 +51,7 @@ export interface Database {
           light: string | null;
           holster: string | null;
           accessories: string | null;
+          photo_path: string | null;
           created_at: string;
         };
         Insert: {
@@ -63,6 +64,7 @@ export interface Database {
           light?: string | null;
           holster?: string | null;
           accessories?: string | null;
+          photo_path?: string | null;
           created_at?: string;
         };
         Update: {
@@ -75,6 +77,7 @@ export interface Database {
           light?: string | null;
           holster?: string | null;
           accessories?: string | null;
+          photo_path?: string | null;
           created_at?: string;
         };
         Relationships: [];
@@ -124,6 +127,7 @@ export interface Database {
           saved_drill_name: string | null;
           photo_path: string | null;
           pistol_id: string | null;
+          archived_at: string | null;
         };
         Insert: {
           id?: string;
@@ -139,6 +143,7 @@ export interface Database {
           saved_drill_name?: string | null;
           photo_path?: string | null;
           pistol_id?: string | null;
+          archived_at?: string | null;
         };
         Update: {
           id?: string;
@@ -154,6 +159,7 @@ export interface Database {
           saved_drill_name?: string | null;
           photo_path?: string | null;
           pistol_id?: string | null;
+          archived_at?: string | null;
         };
         Relationships: [];
       };

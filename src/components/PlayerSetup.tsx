@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useGame } from "../game/GameContext";
+import { getKnownShooterNames } from "../leaderboard/storage";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { TitleFrame } from "./TitleFrame";
 
@@ -10,6 +11,17 @@ export function PlayerSetup({
 }) {
   const { dispatch } = useGame();
   const [names, setNames] = useState<string[]>(["", ""]);
+  const [knownShooters, setKnownShooters] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getKnownShooterNames().then((loaded) => {
+      if (!cancelled) setKnownShooters(loaded);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function updateName(i: number, value: string) {
     setNames((prev) => prev.map((n, idx) => (idx === i ? value : n)));
@@ -23,6 +35,21 @@ export function PlayerSetup({
     setNames((prev) => prev.filter((_, idx) => idx !== i));
   }
 
+  const usedNormalized = new Set(
+    names.map((n) => n.trim().toLowerCase()).filter(Boolean),
+  );
+
+  function addKnownShooter(name: string) {
+    if (usedNormalized.has(name.trim().toLowerCase())) return;
+    setNames((prev) => {
+      const emptyIndex = prev.findIndex((n) => n.trim().length === 0);
+      if (emptyIndex >= 0) {
+        return prev.map((n, idx) => (idx === emptyIndex ? name : n));
+      }
+      return [...prev, name];
+    });
+  }
+
   const validNames = names.map((n) => n.trim()).filter(Boolean);
   const canStart = validNames.length >= 2;
 
@@ -32,6 +59,33 @@ export function PlayerSetup({
         <h1 className="text-2xl font-bold uppercase tracking-wide text-red-500">
           Game Mode
         </h1>
+
+        {knownShooters.length > 0 && (
+          <div className="flex w-full flex-col gap-1.5">
+            <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              Prior Shooters
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {knownShooters.map((name) => {
+                const added = usedNormalized.has(name.trim().toLowerCase());
+                return (
+                  <button
+                    key={name}
+                    onClick={() => addKnownShooter(name)}
+                    disabled={added}
+                    className={`rounded-full border px-3 py-1 text-xs ${
+                      added
+                        ? "cursor-default border-red-700 bg-red-950/40 text-red-400"
+                        : "border-zinc-700 text-zinc-300 hover:border-red-600 hover:text-red-400"
+                    }`}
+                  >
+                    {name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="flex w-full flex-col gap-1.5 sm:gap-2">
           {names.map((n, i) => (

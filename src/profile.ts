@@ -22,6 +22,8 @@ export interface PistolInput {
   light: string;
   holster: string;
   accessories: string;
+  /** Storage path of the pistol's photo, if one has been uploaded. */
+  photoPath?: string;
 }
 
 export function pistolLabel(p: { make: string; model: string }): string {
@@ -109,6 +111,12 @@ export async function saveShooterProfile(
   return true;
 }
 
+export interface SyncedPistol {
+  /** Index into the `pistols` array passed to syncPistols. */
+  index: number;
+  id: string;
+}
+
 /**
  * Reconciles the caller's pistol list with the edited form array: existing
  * rows (carrying an `id`) are updated in place, new rows are inserted, and
@@ -116,10 +124,21 @@ export async function saveShooterProfile(
  * update (rather than delete-and-reinsert) matters because training_sessions
  * can reference a pistol by id — regenerating ids on every save would
  * silently unlink every session's pistol tag each time the profile is edited.
+ *
+ * Returns each surviving row's array index paired with its (existing or
+ * newly assigned) id, so the caller can attach a pending photo upload to the
+ * right row once new rows actually have an id to upload against. Returns
+ * null on failure. Inserts run one row at a time (rather than a single
+ * batch) specifically so each new row's id can be captured reliably.
  */
-export async function syncPistols(userId: string, pistols: PistolInput[]): Promise<boolean> {
-  const valid = pistols.filter((p) => p.make.trim() && p.model.trim());
-  const keepIds = valid.filter((p) => p.id).map((p) => p.id as string);
+export async function syncPistols(
+  userId: string,
+  pistols: PistolInput[],
+): Promise<SyncedPistol[] | null> {
+  const valid = pistols
+    .map((p, index) => ({ p, index }))
+    .filter(({ p }) => p.make.trim() && p.model.trim());
+  const keepIds = valid.filter(({ p }) => p.id).map(({ p }) => p.id as string);
 
   let deleteQuery = supabase.from("pistols").delete().eq("user_id", userId);
   if (keepIds.length > 0) {
@@ -128,33 +147,13 @@ export async function syncPistols(userId: string, pistols: PistolInput[]): Promi
   const { error: deleteError } = await deleteQuery;
   if (deleteError) {
     console.error("Failed to remove deleted pistols", deleteError);
-    return false;
+    return null;
   }
 
-  for (const p of valid.filter((p) => p.id)) {
-    const { error } = await supabase
-      .from("pistols")
-      .update({
-        make: p.make.trim(),
-        model: p.model.trim(),
-        caliber: p.caliber.trim() || null,
-        optic: p.optic.trim() || null,
-        light: p.light.trim() || null,
-        holster: p.holster.trim() || null,
-        accessories: p.accessories.trim() || null,
-      })
-      .eq("id", p.id as string)
-      .eq("user_id", userId);
-    if (error) {
-      console.error("Failed to update pistol", error);
-      return false;
-    }
-  }
+  const results: SyncedPistol[] = [];
 
-  const toInsert = valid
-    .filter((p) => !p.id)
-    .map((p) => ({
-      user_id: userId,
+  for (const { p, index } of valid) {
+    const fields = {
       make: p.make.trim(),
       model: p.model.trim(),
       caliber: p.caliber.trim() || null,
@@ -162,15 +161,41 @@ export async function syncPistols(userId: string, pistols: PistolInput[]): Promi
       light: p.light.trim() || null,
       holster: p.holster.trim() || null,
       accessories: p.accessories.trim() || null,
-    }));
-  if (toInsert.length > 0) {
-    const { error } = await supabase.from("pistols").insert(toInsert);
-    if (error) {
-      console.error("Failed to save new pistols", error);
-      return false;
+    };
+    if (p.id) {
+      const { error } = await supabase
+        .from("pistols")
+        .update(fields)
+        .eq("id", p.id)
+        .eq("user_id", userId);
+      if (error) {
+        console.error("Failed to update pistol", error);
+        return null;
+      }
+      results.push({ index, id: p.id });
+    } else {
+      const { data, error } = await supabase
+        .from("pistols")
+        .insert({ user_id: userId, ...fields })
+        .select("id")
+        .single();
+      if (error || !data) {
+        console.error("Failed to save new pistol", error);
+        return null;
+      }
+      results.push({ index, id: data.id });
     }
   }
 
+  return results;
+}
+
+export async function setPistolPhotoPath(pistolId: string, photoPath: string | null): Promise<boolean> {
+  const { error } = await supabase.from("pistols").update({ photo_path: photoPath }).eq("id", pistolId);
+  if (error) {
+    console.error("Failed to update pistol photo", error);
+    return false;
+  }
   return true;
 }
 
@@ -190,5 +215,6 @@ export async function listMyPistols(userId: string): Promise<PistolInput[]> {
     light: row.light ?? "",
     holster: row.holster ?? "",
     accessories: row.accessories ?? "",
+    photoPath: row.photo_path ?? undefined,
   }));
 }

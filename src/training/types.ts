@@ -25,4 +25,6 @@ export interface TrainingSession {
   photoPath?: string;
   /** Which pistol (from the profile's pistol list) this was logged with, if tagged. */
   pistolId?: string;
+  /** Set when the user "clears" Training History — hides it from History while Analytics still counts it. */
+  archivedAt?: string;
 }

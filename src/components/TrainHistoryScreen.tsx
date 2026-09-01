@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../auth/AuthContext";
 import { drillSummary } from "../training/drillLabel";
 import { getTrainingPhotoUrl } from "../training/photos";
-import { deleteTrainingSession, getTrainingSessions } from "../training/storage";
+import {
+  clearTrainingHistory,
+  deleteTrainingSession,
+  getVisibleTrainingSessions,
+} from "../training/storage";
 import type { TrainingSession } from "../training/types";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
@@ -32,29 +37,37 @@ function computeStats(sessions: TrainingSession[]): Stats | null {
 }
 
 export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
+  const { user } = useAuth();
   const [sessions, setSessions] = useState<TrainingSession[] | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
 
+  const [confirmingClear, setConfirmingClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
+
+  async function loadSessions(signal?: { cancelled: boolean }) {
+    const loaded = await getVisibleTrainingSessions();
+    if (signal?.cancelled) return;
+    setSessions(loaded);
+    const withPhotos = loaded.filter((s) => s.photoPath);
+    if (withPhotos.length === 0) return;
+    const entries = await Promise.all(
+      withPhotos.map(async (s) => [s.photoPath!, await getTrainingPhotoUrl(s.photoPath!)] as const),
+    );
+    if (signal?.cancelled) return;
+    const urls: Record<string, string> = {};
+    for (const [path, url] of entries) if (url) urls[path] = url;
+    setPhotoUrls((prev) => ({ ...prev, ...urls }));
+  }
+
   useEffect(() => {
-    let cancelled = false;
-    getTrainingSessions().then(async (loaded) => {
-      if (cancelled) return;
-      setSessions(loaded);
-      const withPhotos = loaded.filter((s) => s.photoPath);
-      if (withPhotos.length === 0) return;
-      const entries = await Promise.all(
-        withPhotos.map(async (s) => [s.photoPath!, await getTrainingPhotoUrl(s.photoPath!)] as const),
-      );
-      if (cancelled) return;
-      const urls: Record<string, string> = {};
-      for (const [path, url] of entries) if (url) urls[path] = url;
-      setPhotoUrls((prev) => ({ ...prev, ...urls }));
-    });
+    const signal = { cancelled: false };
+    loadSessions(signal);
     return () => {
-      cancelled = true;
+      signal.cancelled = true;
     };
   }, []);
 
@@ -70,7 +83,23 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
       return;
     }
 
-    setSessions(await getTrainingSessions());
+    await loadSessions();
+  }
+
+  async function handleClearHistory() {
+    if (!user) return;
+    setClearing(true);
+    setClearError(null);
+    const ok = await clearTrainingHistory(user.id);
+    setClearing(false);
+    setConfirmingClear(false);
+
+    if (!ok) {
+      setClearError("Couldn't clear history — check your connection and try again.");
+      return;
+    }
+
+    await loadSessions();
   }
 
   const stats = sessions ? computeStats(sessions) : null;
@@ -127,9 +156,44 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
 
         {sessions != null && sessions.length > 0 && (
           <Panel>
-            <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              Session History
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                Session History
+              </div>
+              {confirmingClear ? (
+                <span className="flex items-center gap-1.5 text-xs">
+                  <span className="text-zinc-400">Clear all history shown here?</span>
+                  <button
+                    onClick={handleClearHistory}
+                    disabled={clearing}
+                    className="rounded bg-red-700 px-2 py-1 text-white hover:bg-red-600 disabled:opacity-60"
+                  >
+                    {clearing ? "…" : "Yes, Clear"}
+                  </button>
+                  <button
+                    onClick={() => setConfirmingClear(false)}
+                    disabled={clearing}
+                    className="rounded bg-zinc-700 px-2 py-1 text-white hover:bg-zinc-600"
+                  >
+                    Cancel
+                  </button>
+                </span>
+              ) : (
+                <button
+                  onClick={() => {
+                    setConfirmingClear(true);
+                    setClearError(null);
+                  }}
+                  className="rounded border border-zinc-700 px-2 py-1 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
+                >
+                  Clear History
+                </button>
+              )}
             </div>
+            <p className="text-[11px] leading-snug text-zinc-500">
+              Clears this list only — your lifetime records stay intact in Analytics.
+            </p>
+            {clearError != null && <div className="text-xs text-amber-400">{clearError}</div>}
             {deleteError != null && (
               <div className="text-xs text-amber-400">{deleteError}</div>
             )}

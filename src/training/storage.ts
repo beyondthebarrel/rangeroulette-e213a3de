@@ -21,6 +21,7 @@ function fromRow(row: {
   saved_drill_name: string | null;
   photo_path?: string | null;
   pistol_id?: string | null;
+  archived_at?: string | null;
 }): TrainingSession {
   return {
     id: row.id,
@@ -34,6 +35,7 @@ function fromRow(row: {
     savedDrillName: row.saved_drill_name ?? undefined,
     photoPath: row.photo_path ?? undefined,
     pistolId: row.pistol_id ?? undefined,
+    archivedAt: row.archived_at ?? undefined,
   };
 }
 
@@ -108,6 +110,41 @@ export async function getTrainingSessions(trainee?: string): Promise<TrainingSes
     return [];
   }
   return data.map(fromRow);
+}
+
+/**
+ * Sessions not yet "cleared" from Training History. Analytics intentionally
+ * uses `getTrainingSessions` instead (ignoring archived_at) so clearing
+ * History never changes the lifetime totals/records shown there.
+ */
+export async function getVisibleTrainingSessions(): Promise<TrainingSession[]> {
+  const { data, error } = await supabase
+    .from("training_sessions")
+    .select("*")
+    .is("archived_at", null)
+    .order("logged_at", { ascending: false });
+
+  if (error) {
+    // archived_at column not migrated onto the live project yet — fall back
+    // to showing everything rather than an empty/broken History screen.
+    return getTrainingSessions();
+  }
+  return (data ?? []).map(fromRow);
+}
+
+/** Clears Training History by archiving every visible session for this account — data stays intact for Analytics. */
+export async function clearTrainingHistory(userId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from("training_sessions")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("recorded_by", userId)
+    .is("archived_at", null);
+
+  if (error) {
+    console.error("Failed to clear training history", error);
+    return false;
+  }
+  return true;
 }
 
 export async function deleteTrainingSession(id: string): Promise<boolean> {

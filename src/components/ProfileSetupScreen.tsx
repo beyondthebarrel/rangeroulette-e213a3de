@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { getAvatarUrl, uploadAvatar } from "../avatar";
+import { deletePistolPhoto, getPistolPhotoUrl, uploadPistolPhoto } from "../pistolPhotos";
 import {
   getMyDisplayName,
   getMyProfile,
   listMyPistols,
   saveShooterProfile,
+  setPistolPhotoPath,
   SHOOTING_LEVELS,
   syncPistols,
   type PistolInput,
@@ -22,7 +24,13 @@ const LEVEL_LABELS: Record<ShootingLevel, string> = {
   pro: "Pro",
 };
 
-function emptyPistol(): PistolInput {
+interface PistolFormRow extends PistolInput {
+  photoFile?: File | null;
+  photoPreviewUrl?: string | null;
+  photoRemoved?: boolean;
+}
+
+function emptyPistol(): PistolFormRow {
   return { make: "", model: "", caliber: "", optic: "", light: "", holster: "", accessories: "" };
 }
 
@@ -58,10 +66,12 @@ export function ProfileSetupScreen({
   const [avatarRemoved, setAvatarRemoved] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  const [pistols, setPistols] = useState<PistolInput[]>([]);
+  const [pistols, setPistols] = useState<PistolFormRow[]>([]);
+  const [pistolPhotoUrls, setPistolPhotoUrls] = useState<Record<string, string>>({});
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -86,6 +96,18 @@ export function ProfileSetupScreen({
         setName(await getMyDisplayName(user.id, user.email));
       }
       setPistols(savedPistols);
+
+      const withPhotos = savedPistols.filter((p) => p.photoPath && p.id);
+      if (withPhotos.length > 0) {
+        const entries = await Promise.all(
+          withPhotos.map(async (p) => [p.id as string, await getPistolPhotoUrl(p.photoPath!)] as const),
+        );
+        if (!cancelled) {
+          const urls: Record<string, string> = {};
+          for (const [id, url] of entries) if (url) urls[id] = url;
+          setPistolPhotoUrls(urls);
+        }
+      }
     })();
     return () => {
       cancelled = true;
@@ -116,7 +138,7 @@ export function ProfileSetupScreen({
 
   const shownAvatarUrl = avatarPreviewUrl ?? existingAvatarUrl;
 
-  function updatePistol(index: number, patch: Partial<PistolInput>) {
+  function updatePistol(index: number, patch: Partial<PistolFormRow>) {
     setPistols((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)));
   }
 
@@ -125,7 +147,34 @@ export function ProfileSetupScreen({
   }
 
   function removePistol(index: number) {
-    setPistols((prev) => prev.filter((_, i) => i !== index));
+    setPistols((prev) => {
+      if (prev[index]?.photoPreviewUrl) URL.revokeObjectURL(prev[index].photoPreviewUrl!);
+      return prev.filter((_, i) => i !== index);
+    });
+  }
+
+  function handlePistolPhotoSelect(index: number, e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPistols((prev) => {
+      const prevRow = prev[index];
+      if (prevRow?.photoPreviewUrl) URL.revokeObjectURL(prevRow.photoPreviewUrl);
+      return prev.map((p, i) =>
+        i === index
+          ? { ...p, photoFile: file, photoPreviewUrl: URL.createObjectURL(file), photoRemoved: false }
+          : p,
+      );
+    });
+  }
+
+  function clearPistolPhoto(index: number) {
+    setPistols((prev) => {
+      const prevRow = prev[index];
+      if (prevRow?.photoPreviewUrl) URL.revokeObjectURL(prevRow.photoPreviewUrl);
+      return prev.map((p, i) =>
+        i === index ? { ...p, photoFile: null, photoPreviewUrl: null, photoRemoved: true } : p,
+      );
+    });
   }
 
   const canSave = !!user && name.trim().length > 0 && shootingLevel != null && !saving;
@@ -134,6 +183,7 @@ export function ProfileSetupScreen({
     if (!canSave || !user) return;
     setSaving(true);
     setError(null);
+    setWarning(null);
 
     const avatarPath = avatarFile
       ? await uploadAvatar(user.id, avatarFile)
@@ -155,9 +205,31 @@ export function ProfileSetupScreen({
       return;
     }
 
-    await syncPistols(user.id, pistols);
+    const synced = await syncPistols(user.id, pistols);
+    let pistolPhotoFailed = false;
+    if (synced) {
+      for (const { index, id } of synced) {
+        const row = pistols[index];
+        if (row.photoFile) {
+          const path = await uploadPistolPhoto(user.id, id, row.photoFile);
+          if (path) await setPistolPhotoPath(id, path);
+          else pistolPhotoFailed = true;
+        } else if (row.photoRemoved && row.photoPath) {
+          await deletePistolPhoto(row.photoPath);
+          await setPistolPhotoPath(id, null);
+        }
+      }
+    }
 
     setSaving(false);
+    if (!synced) {
+      setWarning("Profile saved, but the pistol list couldn't be updated — try again in a moment.");
+      return;
+    }
+    if (pistolPhotoFailed) {
+      setWarning("Profile saved, but a pistol photo failed to upload — try attaching it again.");
+      return;
+    }
     onComplete();
   }
 
@@ -317,6 +389,48 @@ export function ProfileSetupScreen({
                     placeholder="Other accessories"
                     className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white focus:border-red-600 focus:outline-none"
                   />
+                  {(() => {
+                    const shownUrl =
+                      p.photoPreviewUrl ?? (!p.photoRemoved && p.id ? pistolPhotoUrls[p.id] : undefined);
+                    return (
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handlePistolPhotoSelect(i, e)}
+                          className="hidden"
+                          id={`pistol-photo-input-${i}`}
+                        />
+                        <label htmlFor={`pistol-photo-input-${i}`} className="shrink-0 cursor-pointer">
+                          {shownUrl ? (
+                            <img
+                              src={shownUrl}
+                              alt="Pistol preview"
+                              className="h-12 w-12 rounded border border-zinc-700 object-cover"
+                            />
+                          ) : (
+                            <span className="flex h-12 w-12 items-center justify-center rounded border border-dashed border-zinc-600 text-[9px] uppercase leading-tight tracking-wide text-zinc-500 hover:border-red-700 hover:text-red-400">
+                              Photo
+                            </span>
+                          )}
+                        </label>
+                        <label
+                          htmlFor={`pistol-photo-input-${i}`}
+                          className="cursor-pointer rounded border border-zinc-600 px-2 py-1 text-[10px] uppercase tracking-wide text-zinc-300 hover:bg-zinc-800"
+                        >
+                          {shownUrl ? "Change" : "Add Photo"}
+                        </label>
+                        {shownUrl && (
+                          <button
+                            onClick={() => clearPistolPhoto(i)}
+                            className="rounded border border-zinc-700 px-2 py-1 text-[10px] uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               ))}
             </div>
@@ -324,14 +438,21 @@ export function ProfileSetupScreen({
         </Panel>
 
         {error != null && <div className="text-center text-sm text-amber-400">{error}</div>}
+        {warning != null && <div className="text-center text-sm text-amber-400">{warning}</div>}
 
         <div className="flex gap-2">
           <button
             disabled={!canSave}
-            onClick={handleSave}
+            onClick={warning != null ? onComplete : handleSave}
             className="flex-1 rounded-md bg-red-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-red-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
           >
-            {saving ? "Saving…" : mode === "edit" ? "Save Changes" : "Save & Continue"}
+            {saving
+              ? "Saving…"
+              : warning != null
+                ? "Continue"
+                : mode === "edit"
+                  ? "Save Changes"
+                  : "Save & Continue"}
           </button>
           {onBack && (
             <button

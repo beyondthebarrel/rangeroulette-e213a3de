@@ -47,6 +47,22 @@ export async function recordMatchResult(
   if (error) console.error("Failed to record match result", error);
 }
 
+/** Every shooter who has completed at least one match, for quickly re-adding them in Player Setup. */
+export async function getKnownShooterNames(): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("match_results")
+    .select("player_name, player_name_normalized")
+    .order("player_name");
+
+  if (error || !data) {
+    console.error("Failed to load known shooters", error);
+    return [];
+  }
+  const seen = new Map<string, string>();
+  data.forEach((row) => seen.set(row.player_name_normalized, row.player_name));
+  return [...seen.values()].sort((a, b) => a.localeCompare(b));
+}
+
 export async function getLeaderboardStats(): Promise<LeaderboardBoards> {
   const { data, error } = await supabase
     .from("match_results")

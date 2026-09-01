@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
-import { listMyPistols } from "../profile";
-import { computeAccountAnalytics, type AccountAnalytics } from "../training/analytics";
+import { listMyPistols, pistolLabel, type PistolInput } from "../profile";
+import { computeAccountAnalytics } from "../training/analytics";
 import { getTrainingSessions } from "../training/storage";
+import type { TrainingSession } from "../training/types";
 import { DumbbellChart } from "./charts/DumbbellChart";
 import { LineChart } from "./charts/LineChart";
 import { RankedBarChart } from "./charts/RankedBarChart";
@@ -25,26 +26,69 @@ function Tile({ value, label }: { value: string; label: string }) {
 
 export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
   const { user } = useAuth();
-  const [analytics, setAnalytics] = useState<AccountAnalytics | null>(null);
+  const [allSessions, setAllSessions] = useState<TrainingSession[] | null>(null);
+  const [pistols, setPistols] = useState<PistolInput[]>([]);
+  const [selectedPistolId, setSelectedPistolId] = useState("");
 
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    Promise.all([getTrainingSessions(), listMyPistols(user.id)]).then(([sessions, pistols]) => {
-      if (!cancelled) setAnalytics(computeAccountAnalytics(sessions, pistols));
+    Promise.all([getTrainingSessions(), listMyPistols(user.id)]).then(([sessions, loadedPistols]) => {
+      if (cancelled) return;
+      setAllSessions(sessions);
+      setPistols(loadedPistols);
     });
     return () => {
       cancelled = true;
     };
   }, [user]);
 
+  const selectedPistol = pistols.find((p) => p.id === selectedPistolId) ?? null;
+
+  const filteredSessions = useMemo(() => {
+    if (!allSessions) return null;
+    if (!selectedPistolId) return allSessions;
+    return allSessions.filter((s) => s.pistolId === selectedPistolId);
+  }, [allSessions, selectedPistolId]);
+
+  const analytics = useMemo(
+    () => (filteredSessions ? computeAccountAnalytics(filteredSessions, pistols) : null),
+    [filteredSessions, pistols],
+  );
+
   return (
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <TitleFrame>
           <h1 className="text-2xl font-bold uppercase tracking-wide text-red-500">Analytics</h1>
-          <p className="text-center text-sm text-zinc-400">Every rep logged on this account.</p>
+          <p className="text-center text-sm text-zinc-400">
+            {selectedPistol
+              ? `Every rep logged with the ${pistolLabel(selectedPistol)}.`
+              : "Every rep logged on this account."}
+          </p>
         </TitleFrame>
+
+        {pistols.length > 0 && (
+          <Panel>
+            <div className="flex flex-col gap-1.5">
+              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                Viewing
+              </div>
+              <select
+                value={selectedPistolId}
+                onChange={(e) => setSelectedPistolId(e.target.value)}
+                className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-red-600 focus:outline-none"
+              >
+                <option value="">Whole account</option>
+                {pistols.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {pistolLabel(p)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </Panel>
+        )}
 
         {analytics === null ? (
           <Panel>
@@ -53,7 +97,9 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
         ) : analytics.totalReps === 0 ? (
           <Panel>
             <p className="text-center text-sm text-zinc-400">
-              No sessions logged yet. Run a drill in Train Mode to start tracking.
+              {selectedPistol
+                ? `No sessions tagged with the ${pistolLabel(selectedPistol)} yet.`
+                : "No sessions logged yet. Run a drill in Train Mode to start tracking."}
             </p>
           </Panel>
         ) : (
@@ -225,7 +271,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
               </ul>
             </Panel>
 
-            {analytics.byPistol.length > 0 && (
+            {!selectedPistol && analytics.byPistol.length > 0 && (
               <Panel>
                 <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
                   By Pistol
