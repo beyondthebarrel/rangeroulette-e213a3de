@@ -1,7 +1,9 @@
 import { supabase } from "../integrations/supabase/client";
+import type { Database } from "../integrations/supabase/types";
+import { deleteTrainingPhoto } from "./photos";
 import type { TrainingDrill, TrainingSession } from "./types";
 
-const LAST_NAME_KEY = "range-roulette-training-last-name";
+type TrainingSessionInsert = Database["public"]["Tables"]["training_sessions"]["Insert"];
 
 function normalizeName(name: string): string {
   return name.trim().toLowerCase();
@@ -17,6 +19,8 @@ function fromRow(row: {
   complete_misses: number;
   final_seconds: number;
   saved_drill_name: string | null;
+  photo_path?: string | null;
+  pistol_id?: string | null;
 }): TrainingSession {
   return {
     id: row.id,
@@ -28,6 +32,8 @@ function fromRow(row: {
     completeMisses: row.complete_misses,
     finalSeconds: row.final_seconds,
     savedDrillName: row.saved_drill_name ?? undefined,
+    photoPath: row.photo_path ?? undefined,
+    pistolId: row.pistol_id ?? undefined,
   };
 }
 
@@ -45,9 +51,10 @@ export async function recordTrainingSession(
     complete_misses: session.completeMisses,
     final_seconds: session.finalSeconds,
   };
-  const payload = session.savedDrillName
-    ? { ...basePayload, saved_drill_name: session.savedDrillName }
-    : basePayload;
+  let payload: TrainingSessionInsert = { ...basePayload };
+  if (session.savedDrillName) payload.saved_drill_name = session.savedDrillName;
+  if (session.photoPath) payload.photo_path = session.photoPath;
+  if (session.pistolId) payload.pistol_id = session.pistolId;
 
   let { data, error } = await supabase
     .from("training_sessions")
@@ -55,14 +62,25 @@ export async function recordTrainingSession(
     .select()
     .single();
 
-  // If saved_drill_name is set but the column hasn't been migrated onto the
-  // live project yet, PostgREST rejects the whole insert (PGRST204). Retry
-  // without it so the result still logs — the saved-drill name just won't
-  // show in History until the migration runs.
-  if (error?.code === "PGRST204" && "saved_drill_name" in payload) {
+  // If saved_drill_name/photo_path/pistol_id are set but their columns
+  // haven't been migrated onto the live project yet, PostgREST rejects the
+  // whole insert (PGRST204). Retry with each optional column dropped in turn
+  // so the result still logs — the dropped fields just won't show until the
+  // migration runs.
+  while (error?.code === "PGRST204" && Object.keys(payload).length > Object.keys(basePayload).length) {
+    if ("pistol_id" in payload) {
+      const { pistol_id: _pistolId, ...rest } = payload;
+      payload = rest;
+    } else if ("photo_path" in payload) {
+      const { photo_path: _photoPath, ...rest } = payload;
+      payload = rest;
+    } else if ("saved_drill_name" in payload) {
+      const { saved_drill_name: _savedDrillName, ...rest } = payload;
+      payload = rest;
+    }
     ({ data, error } = await supabase
       .from("training_sessions")
-      .insert(basePayload)
+      .insert(payload)
       .select()
       .single());
   }
@@ -111,61 +129,7 @@ export async function deleteTrainingSession(id: string): Promise<boolean> {
     console.error("Failed to delete training session: no rows affected");
     return false;
   }
+  const photoPath = (data[0] as { photo_path?: string | null }).photo_path;
+  if (photoPath) await deleteTrainingPhoto(photoPath);
   return true;
-}
-
-export async function getTraineeNames(): Promise<string[]> {
-  const { data, error } = await supabase
-    .from("training_sessions")
-    .select("trainee, trainee_normalized")
-    .order("trainee");
-
-  if (error || !data) {
-    console.error("Failed to load trainee names", error);
-    return [];
-  }
-  const seen = new Map<string, string>();
-  data.forEach((row) => seen.set(row.trainee_normalized, row.trainee));
-  return [...seen.values()].sort((a, b) => a.localeCompare(b));
-}
-
-export interface TraineeStats {
-  trainee: string;
-  sessionCount: number;
-  bestSession: TrainingSession;
-  averageSeconds: number;
-}
-
-export async function getTraineeStats(trainee: string): Promise<TraineeStats | null> {
-  const sessions = await getTrainingSessions(trainee);
-  if (sessions.length === 0) return null;
-  const bestSession = sessions.reduce((a, b) =>
-    a.finalSeconds <= b.finalSeconds ? a : b,
-  );
-  const averageSeconds =
-    Math.round(
-      (sessions.reduce((sum, s) => sum + s.finalSeconds, 0) / sessions.length) * 100,
-    ) / 100;
-  return {
-    trainee: sessions[0].trainee,
-    sessionCount: sessions.length,
-    bestSession,
-    averageSeconds,
-  };
-}
-
-export function getLastTraineeName(): string {
-  try {
-    return localStorage.getItem(LAST_NAME_KEY) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-export function setLastTraineeName(name: string) {
-  try {
-    localStorage.setItem(LAST_NAME_KEY, name);
-  } catch {
-    // ignore — non-critical convenience feature
-  }
 }

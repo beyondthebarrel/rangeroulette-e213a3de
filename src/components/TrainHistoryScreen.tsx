@@ -1,20 +1,12 @@
 import { useEffect, useState } from "react";
-import {
-  deleteTrainingSession,
-  getTraineeNames,
-  getTraineeStats,
-  getTrainingSessions,
-  type TraineeStats,
-} from "../training/storage";
-import type { TrainingDrill, TrainingSession } from "../training/types";
+import { drillSummary } from "../training/drillLabel";
+import { getTrainingPhotoUrl } from "../training/photos";
+import { deleteTrainingSession, getTrainingSessions } from "../training/storage";
+import type { TrainingSession } from "../training/types";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
+import { RetryImage } from "./RetryImage";
 import { TitleFrame } from "./TitleFrame";
-
-function drillSummary(drill: TrainingDrill): string {
-  const parts = [drill.time, drill.distance, drill.startPosition, drill.target, drill.courseOfFire];
-  return parts.map((c) => c.label).join(" · ");
-}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
@@ -25,44 +17,46 @@ function formatDate(iso: string): string {
   });
 }
 
+interface Stats {
+  bestSession: TrainingSession;
+  averageSeconds: number;
+  sessionCount: number;
+}
+
+function computeStats(sessions: TrainingSession[]): Stats | null {
+  if (sessions.length === 0) return null;
+  const bestSession = sessions.reduce((a, b) => (a.finalSeconds <= b.finalSeconds ? a : b));
+  const averageSeconds =
+    Math.round((sessions.reduce((sum, s) => sum + s.finalSeconds, 0) / sessions.length) * 100) / 100;
+  return { bestSession, averageSeconds, sessionCount: sessions.length };
+}
+
 export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
-  const [names, setNames] = useState<string[] | null>(null);
-  const [selected, setSelected] = useState("");
-  const [sessions, setSessions] = useState<TrainingSession[]>([]);
-  const [stats, setStats] = useState<TraineeStats | null>(null);
+  const [sessions, setSessions] = useState<TrainingSession[] | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let cancelled = false;
-    getTraineeNames().then((loaded) => {
+    getTrainingSessions().then(async (loaded) => {
       if (cancelled) return;
-      setNames(loaded);
-      setSelected(loaded[0] ?? "");
+      setSessions(loaded);
+      const withPhotos = loaded.filter((s) => s.photoPath);
+      if (withPhotos.length === 0) return;
+      const entries = await Promise.all(
+        withPhotos.map(async (s) => [s.photoPath!, await getTrainingPhotoUrl(s.photoPath!)] as const),
+      );
+      if (cancelled) return;
+      const urls: Record<string, string> = {};
+      for (const [path, url] of entries) if (url) urls[path] = url;
+      setPhotoUrls((prev) => ({ ...prev, ...urls }));
     });
     return () => {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (!selected) {
-      setSessions([]);
-      setStats(null);
-      return;
-    }
-    let cancelled = false;
-    getTrainingSessions(selected).then((loaded) => {
-      if (!cancelled) setSessions(loaded);
-    });
-    getTraineeStats(selected).then((loaded) => {
-      if (!cancelled) setStats(loaded);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [selected]);
 
   async function handleDelete(id: string) {
     setDeletingId(id);
@@ -76,19 +70,10 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
       return;
     }
 
-    const [loadedSessions, loadedStats, loadedNames] = await Promise.all([
-      getTrainingSessions(selected),
-      getTraineeStats(selected),
-      getTraineeNames(),
-    ]);
-    setSessions(loadedSessions);
-    setStats(loadedStats);
-    setNames(loadedNames);
-    // That may have been the trainee's last session — fall back if they've dropped off the list.
-    if (!loadedNames.includes(selected)) {
-      setSelected(loadedNames[0] ?? "");
-    }
+    setSessions(await getTrainingSessions());
   }
+
+  const stats = sessions ? computeStats(sessions) : null;
 
   return (
     <HeroBackdrop>
@@ -98,45 +83,35 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
             Training History
           </h1>
 
-          {names === null ? (
+          {sessions === null ? (
             <p className="text-center text-sm text-zinc-400">Loading…</p>
-          ) : names.length === 0 ? (
+          ) : sessions.length === 0 ? (
             <p className="text-center text-sm text-zinc-400">
               No sessions logged yet. Run a drill in Train Mode to start tracking.
             </p>
-          ) : (
-            <select
-              value={selected}
-              onChange={(e) => setSelected(e.target.value)}
-              className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-red-600 focus:outline-none"
-            >
-              {names.map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          )}
+          ) : null}
         </TitleFrame>
 
         {stats && (
           <Panel>
-            <div className="text-sm font-semibold text-zinc-300">Personal Bests</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              Personal Bests
+            </div>
             <div className="grid grid-cols-3 gap-3 text-center">
               <div>
-                <div className="text-2xl font-bold text-red-400">
+                <div className="font-mono text-2xl font-bold text-red-400">
                   {stats.bestSession.finalSeconds.toFixed(2)}s
                 </div>
                 <div className="text-xs text-zinc-500">Best time</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-white">
+                <div className="font-mono text-2xl font-bold text-white">
                   {stats.averageSeconds.toFixed(2)}s
                 </div>
                 <div className="text-xs text-zinc-500">Average</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-white">{stats.sessionCount}</div>
+                <div className="font-mono text-2xl font-bold text-white">{stats.sessionCount}</div>
                 <div className="text-xs text-zinc-500">Sessions</div>
               </div>
             </div>
@@ -150,9 +125,11 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
           </Panel>
         )}
 
-        {sessions.length > 0 && (
+        {sessions != null && sessions.length > 0 && (
           <Panel>
-            <div className="text-sm font-semibold text-zinc-300">Session History</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              Session History
+            </div>
             {deleteError != null && (
               <div className="text-xs text-amber-400">{deleteError}</div>
             )}
@@ -160,7 +137,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
               {sessions.map((s) => (
                 <li
                   key={s.id}
-                  className="rounded-lg border border-red-900/40 bg-zinc-900/60 p-3"
+                  className="rounded-lg border border-red-900/50 bg-zinc-900/60 p-3"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-mono text-lg text-white">
@@ -201,20 +178,34 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
                       )}
                     </div>
                   </div>
-                  <div className="text-xs text-zinc-400">
-                    {s.savedDrillName && (
-                      <span className="text-red-400">{s.savedDrillName} · </span>
-                    )}
-                    {drillSummary(s.drill)}
-                  </div>
-                  {(s.zoneMisses > 0 || s.completeMisses > 0) && (
-                    <div className="text-xs text-amber-400">
-                      {s.zoneMisses > 0 && `${s.zoneMisses} zone miss${s.zoneMisses > 1 ? "es" : ""}`}
-                      {s.zoneMisses > 0 && s.completeMisses > 0 && ", "}
-                      {s.completeMisses > 0 &&
-                        `${s.completeMisses} complete miss${s.completeMisses > 1 ? "es" : ""}`}
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1">
+                      <div className="text-xs text-zinc-400">
+                        {s.savedDrillName && (
+                          <span className="text-red-400">{s.savedDrillName} · </span>
+                        )}
+                        {drillSummary(s.drill)}
+                      </div>
+                      {(s.zoneMisses > 0 || s.completeMisses > 0) && (
+                        <div className="text-xs text-amber-400">
+                          {s.zoneMisses > 0 &&
+                            `${s.zoneMisses} zone miss${s.zoneMisses > 1 ? "es" : ""}`}
+                          {s.zoneMisses > 0 && s.completeMisses > 0 && ", "}
+                          {s.completeMisses > 0 &&
+                            `${s.completeMisses} complete miss${s.completeMisses > 1 ? "es" : ""}`}
+                        </div>
+                      )}
                     </div>
-                  )}
+                    {s.photoPath && photoUrls[s.photoPath] && (
+                      <a href={photoUrls[s.photoPath]} target="_blank" rel="noreferrer">
+                        <RetryImage
+                          src={photoUrls[s.photoPath]}
+                          alt="Target photo"
+                          className="h-14 w-14 shrink-0 rounded border border-zinc-700 object-cover"
+                        />
+                      </a>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

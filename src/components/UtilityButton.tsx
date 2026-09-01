@@ -1,0 +1,26 @@
+import type { ReactNode } from "react";
+
+/** Medallion-chip style utility button — icon badge echoing TitleFrame's corner medallions. */
+export function UtilityButton({
+  icon,
+  label,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="group flex flex-col items-center gap-1.5 rounded-lg border border-zinc-800 bg-black/40 py-2 hover:border-red-800/80 hover:bg-zinc-900"
+    >
+      <span className="flex h-8 w-8 items-center justify-center rounded-full border border-red-700/80 bg-black text-red-500 group-hover:border-red-500">
+        {icon}
+      </span>
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400 group-hover:text-red-400 sm:text-xs">
+        {label}
+      </span>
+    </button>
+  );
+}

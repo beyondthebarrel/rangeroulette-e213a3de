@@ -1,20 +1,24 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { CATEGORY_ORDER, SCORING, type CategoryKey } from "../data/cards";
+import { getMyDisplayName, listMyPistols, pistolLabel, type PistolInput } from "../profile";
+import { uploadTrainingPhoto } from "../training/photos";
 import {
   deleteSavedDrill,
   listSavedDrills,
   saveDrill,
   type SavedDrill,
 } from "../training/savedDrills";
-import { getLastTraineeName, recordTrainingSession, setLastTraineeName } from "../training/storage";
+import { recordTrainingSession } from "../training/storage";
 import type { TrainingDrill } from "../training/types";
 import { useTrainingDrill } from "../training/useTrainingDrill";
 import { HeroBackdrop } from "./HeroBackdrop";
+import { ChartIcon, GridIcon, HistoryIcon } from "./icons";
 import { Panel } from "./Panel";
 import { PlayingCard } from "./PlayingCard";
 import { Stepper } from "./Stepper";
 import { TitleFrame } from "./TitleFrame";
+import { UtilityButton } from "./UtilityButton";
 
 function computeFinalSeconds(
   rawSeconds: number,
@@ -34,19 +38,29 @@ function computeFinalSeconds(
 export function TrainScreen({
   onBack,
   onOpenHistory,
+  onOpenAnalytics,
 }: {
   onBack: () => void;
   onOpenHistory: () => void;
+  onOpenAnalytics: () => void;
 }) {
   const { user } = useAuth();
   const { drill, drawNew } = useTrainingDrill();
-  const [trainee, setTrainee] = useState(() => getLastTraineeName());
+  const [trainee, setTrainee] = useState<string | null>(null);
   const [rawSeconds, setRawSeconds] = useState<number | null>(null);
   const [zoneMisses, setZoneMisses] = useState(0);
   const [completeMisses, setCompleteMisses] = useState(0);
   const [lastLogged, setLastLogged] = useState<number | null>(null);
   const [logging, setLogging] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
+  const [logWarning, setLogWarning] = useState<string | null>(null);
+
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const [pistols, setPistols] = useState<PistolInput[]>([]);
+  const [selectedPistolId, setSelectedPistolId] = useState("");
 
   const [savedDrills, setSavedDrills] = useState<SavedDrill[]>([]);
   const [selectedSavedId, setSelectedSavedId] = useState("");
@@ -63,6 +77,34 @@ export function TrainScreen({
   useEffect(() => {
     refreshSaved();
   }, [refreshSaved]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    getMyDisplayName(user.id, user.email).then((name) => {
+      if (!cancelled) setTrainee(name);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    listMyPistols(user.id).then((loaded) => {
+      if (!cancelled) setPistols(loaded);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    return () => {
+      if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    };
+  }, [photoPreviewUrl]);
 
   const selectedSaved = savedDrills.find((d) => d.id === selectedSavedId) ?? null;
 
@@ -93,7 +135,7 @@ export function TrainScreen({
 
   const activeDrill: TrainingDrill = selectedSaved ? selectedSaved.drill : randomSnapshot;
   const parSeconds = activeDrill.parSeconds;
-  const canLog = trainee.trim().length > 0 && rawSeconds != null && !logging && !!user;
+  const canLog = !!trainee && rawSeconds != null && !logging && !!user;
 
   function resetScoreFields() {
     setRawSeconds(null);
@@ -101,12 +143,27 @@ export function TrainScreen({
     setCompleteMisses(0);
   }
 
+  function clearPhoto() {
+    setPhotoFile(null);
+    setPhotoPreviewUrl(null);
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  }
+
+  function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoFile(file);
+    setPhotoPreviewUrl(URL.createObjectURL(file));
+  }
+
   function handleNewDrill() {
     setSelectedSavedId("");
     drawNew();
     resetScoreFields();
+    clearPhoto();
     setLastLogged(null);
     setLogError(null);
+    setLogWarning(null);
     setSavedDrillError(null);
   }
 
@@ -139,23 +196,36 @@ export function TrainScreen({
   }
 
   async function handleLog() {
-    if (!canLog || rawSeconds == null || !user) return;
-    const name = trainee.trim();
-    setLastTraineeName(name);
+    if (!canLog || rawSeconds == null || !user || !trainee) return;
 
     const finalSeconds = computeFinalSeconds(rawSeconds, zoneMisses, completeMisses, parSeconds);
     setLogging(true);
     setLogError(null);
+    setLogWarning(null);
     setLastLogged(null);
+
+    let photoPath: string | undefined;
+    let photoWarning: string | null = null;
+    if (photoFile) {
+      const uploaded = await uploadTrainingPhoto(user.id, photoFile);
+      if (uploaded) {
+        photoPath = uploaded;
+      } else {
+        photoWarning = "Result logged, but the photo failed to upload — try attaching it again.";
+      }
+    }
+
     const saved = await recordTrainingSession(
       {
-        trainee: name,
+        trainee,
         drill: activeDrill,
         rawSeconds,
         zoneMisses,
         completeMisses,
         finalSeconds,
         savedDrillName: selectedSaved?.name,
+        photoPath,
+        pistolId: selectedPistolId || undefined,
       },
       user.id,
     );
@@ -167,8 +237,10 @@ export function TrainScreen({
     }
 
     setLastLogged(finalSeconds);
+    setLogWarning(photoWarning);
     if (!selectedSaved) drawNew();
     resetScoreFields();
+    clearPhoto();
   }
 
   return (
@@ -179,17 +251,14 @@ export function TrainScreen({
             Train Mode
           </h1>
 
-          <input
-            value={trainee}
-            onChange={(e) => setTrainee(e.target.value)}
-            placeholder="Trainee name"
-            className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-red-600 focus:outline-none"
-          />
+          <div className="text-center text-sm text-zinc-400">
+            Training as <span className="font-semibold text-white">{trainee ?? "…"}</span>
+          </div>
         </TitleFrame>
 
         <Panel>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="text-sm font-semibold text-zinc-300">
+            <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
               {selectedSaved ? `Saved Drill — ${selectedSaved.name}` : "The Drill"}
             </div>
             <div className="flex gap-2">
@@ -269,6 +338,26 @@ export function TrainScreen({
         </Panel>
 
         <Panel>
+          {pistols.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                Pistol
+              </div>
+              <select
+                value={selectedPistolId}
+                onChange={(e) => setSelectedPistolId(e.target.value)}
+                className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-red-600 focus:outline-none"
+              >
+                <option value="">Not tagged</option>
+                {pistols.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {pistolLabel(p)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="flex items-center gap-2">
             <input
               type="number"
@@ -296,8 +385,57 @@ export function TrainScreen({
             />
           </div>
 
+          <div className="flex flex-col gap-2">
+            <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              Target Photo
+            </div>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handlePhotoSelect}
+              className="hidden"
+              id="target-photo-input"
+            />
+            {photoPreviewUrl ? (
+              <div className="flex items-center gap-3">
+                <img
+                  src={photoPreviewUrl}
+                  alt="Target photo preview"
+                  className="h-20 w-20 rounded border border-zinc-700 object-cover"
+                />
+                <div className="flex flex-col gap-1">
+                  <label
+                    htmlFor="target-photo-input"
+                    className="cursor-pointer rounded border border-zinc-600 px-3 py-1 text-center text-xs uppercase tracking-wide text-zinc-300 hover:bg-zinc-800"
+                  >
+                    Retake / Change
+                  </label>
+                  <button
+                    onClick={clearPhoto}
+                    className="rounded border border-zinc-700 px-3 py-1 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <label
+                htmlFor="target-photo-input"
+                className="w-full cursor-pointer rounded border border-dashed border-zinc-600 px-3 py-3 text-center text-sm text-zinc-400 hover:border-red-700 hover:text-red-400"
+              >
+                Take / Add Photo
+              </label>
+            )}
+          </div>
+
           {logError != null && (
             <div className="text-sm text-amber-400">{logError}</div>
+          )}
+
+          {logWarning != null && (
+            <div className="text-sm text-amber-400">{logWarning}</div>
           )}
 
           {lastLogged != null && (
@@ -315,19 +453,18 @@ export function TrainScreen({
           </button>
         </Panel>
 
-        <div className="flex gap-2">
-          <button
+        <div className="grid grid-cols-3 gap-2">
+          <UtilityButton
+            icon={<HistoryIcon className="h-4 w-4" />}
+            label="History"
             onClick={onOpenHistory}
-            className="flex-1 rounded border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900"
-          >
-            History &amp; Personal Bests
-          </button>
-          <button
-            onClick={onBack}
-            className="rounded border border-zinc-700 px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900"
-          >
-            ← Modes
-          </button>
+          />
+          <UtilityButton
+            icon={<ChartIcon className="h-4 w-4" />}
+            label="Training Analytics"
+            onClick={onOpenAnalytics}
+          />
+          <UtilityButton icon={<GridIcon className="h-4 w-4" />} label="Modes" onClick={onBack} />
         </div>
       </div>
     </HeroBackdrop>

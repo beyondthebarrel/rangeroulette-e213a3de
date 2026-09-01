@@ -6,6 +6,7 @@ import { TitleFrame } from "./TitleFrame";
 export function AuthScreen() {
   const { signIn, signUp } = useAuth();
   const [mode, setMode] = useState<"signIn" | "signUp">("signIn");
+  const [nickname, setNickname] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -18,7 +19,7 @@ export function AuthScreen() {
     setInfo(null);
     setSubmitting(true);
     const result =
-      mode === "signIn" ? await signIn(email, password) : await signUp(email, password);
+      mode === "signIn" ? await signIn(email, password) : await signUp(email, password, nickname);
     setSubmitting(false);
     if (result) {
       setError(result);
@@ -41,6 +42,16 @@ export function AuthScreen() {
         </p>
 
         <form onSubmit={handleSubmit} className="flex w-full flex-col gap-3">
+          {mode === "signUp" && (
+            <input
+              type="text"
+              autoComplete="nickname"
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              placeholder="Nickname (optional)"
+              className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-red-600 focus:outline-none"
+            />
+          )}
           <input
             type="email"
             required

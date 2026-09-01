@@ -1,27 +1,8 @@
 import { HeroBackdrop } from "./HeroBackdrop";
+import { BookIcon, CardsIcon, ChartIcon, StopwatchIcon, TrophyIcon, UserIcon } from "./icons";
 import { RetryImage } from "./RetryImage";
 import { TitleFrame } from "./TitleFrame";
-
-function CardsIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5">
-      <rect x="2" y="6" width="14" height="16" rx="2" transform="rotate(-8 9 14)" />
-      <rect x="8" y="4" width="14" height="16" rx="2" />
-    </svg>
-  );
-}
-
-function StopwatchIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5">
-      <circle cx="12" cy="13" r="8" />
-      <line x1="12" y1="13" x2="12" y2="8" />
-      <line x1="12" y1="13" x2="15.5" y2="14.5" />
-      <line x1="9" y1="2" x2="15" y2="2" />
-      <line x1="12" y1="2" x2="12" y2="5" />
-    </svg>
-  );
-}
+import { UtilityButton } from "./UtilityButton";
 
 function ModeButton({
   icon,
@@ -57,11 +38,15 @@ export function ModeSelectScreen({
   onSelectTrain,
   onOpenLeaderboard,
   onOpenRules,
+  onOpenAnalytics,
+  onOpenProfile,
 }: {
   onSelectGame: () => void;
   onSelectTrain: () => void;
   onOpenLeaderboard: () => void;
   onOpenRules: () => void;
+  onOpenAnalytics: () => void;
+  onOpenProfile: () => void;
 }) {
   return (
     <HeroBackdrop>
@@ -87,19 +72,23 @@ export function ModeSelectScreen({
           />
         </div>
 
-        <div className="flex w-full gap-2">
-          <button
-            onClick={onOpenRules}
-            className="flex-1 rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-900 sm:py-2 sm:text-sm"
-          >
-            How to Play
-          </button>
-          <button
+        <div className="grid w-full grid-cols-2 gap-2">
+          <UtilityButton icon={<BookIcon className="h-4 w-4" />} label="Rules" onClick={onOpenRules} />
+          <UtilityButton
+            icon={<TrophyIcon className="h-4 w-4" />}
+            label="Leaderboard"
             onClick={onOpenLeaderboard}
-            className="flex-1 rounded border border-zinc-700 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-900 sm:py-2 sm:text-sm"
-          >
-            Leaderboard
-          </button>
+          />
+          <UtilityButton
+            icon={<ChartIcon className="h-4 w-4" />}
+            label="Training Analytics"
+            onClick={onOpenAnalytics}
+          />
+          <UtilityButton
+            icon={<UserIcon className="h-4 w-4" />}
+            label="View & Edit Profile"
+            onClick={onOpenProfile}
+          />
         </div>
 
         <RetryImage

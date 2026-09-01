@@ -1,17 +1,89 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { useGame } from "../game/GameContext";
+import { getMyDisplayName, updateMyDisplayName } from "../profile";
 
 export function Header() {
   const { state, dispatch } = useGame();
   const { user, signOut } = useAuth();
   const [confirming, setConfirming] = useState(false);
 
+  const [displayName, setDisplayName] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [draftName, setDraftName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    getMyDisplayName(user.id, user.email).then((name) => {
+      if (!cancelled) setDisplayName(name);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  function startEditing() {
+    setDraftName(displayName ?? "");
+    setEditing(true);
+  }
+
+  async function handleSaveName() {
+    if (!user || draftName.trim().length === 0) return;
+    setSaving(true);
+    const ok = await updateMyDisplayName(user.id, draftName);
+    setSaving(false);
+    if (ok) {
+      setDisplayName(draftName.trim());
+      setEditing(false);
+    }
+  }
+
   if (state.phase === "setup") {
     return (
       <div className="border-b border-red-900/50 bg-black px-4 py-1.5 text-right">
         <div className="mx-auto flex max-w-3xl items-center justify-end gap-2 text-xs text-zinc-500">
-          <span className="truncate">{user?.email}</span>
+          {editing ? (
+            <>
+              <input
+                autoFocus
+                value={draftName}
+                onChange={(e) => setDraftName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveName();
+                  if (e.key === "Escape") setEditing(false);
+                }}
+                placeholder="Nickname"
+                className="w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-xs text-white focus:border-red-600 focus:outline-none"
+              />
+              <button
+                onClick={handleSaveName}
+                disabled={saving || draftName.trim().length === 0}
+                className="text-red-400 hover:text-red-300 disabled:opacity-50"
+              >
+                {saving ? "…" : "Save"}
+              </button>
+              <button onClick={() => setEditing(false)} className="text-zinc-500 hover:text-zinc-300">
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="truncate" title={user?.email ?? undefined}>
+                {displayName ?? user?.email}
+              </span>
+              <button
+                onClick={startEditing}
+                aria-label="Edit nickname"
+                title="Edit nickname"
+                className="text-zinc-600 hover:text-red-400"
+              >
+                ✎
+              </button>
+            </>
+          )}
+          <span className="text-zinc-700">·</span>
           <button onClick={() => signOut()} className="text-zinc-500 hover:text-zinc-300">
             Sign out
           </button>

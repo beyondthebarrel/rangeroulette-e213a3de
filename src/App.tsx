@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "./auth/AuthContext";
+import { AnalyticsScreen } from "./components/AnalyticsScreen";
 import { AuthScreen } from "./components/AuthScreen";
 import { BillDrillScreen } from "./components/BillDrillScreen";
 import { Header } from "./components/Header";
@@ -8,6 +9,7 @@ import { MatchOverScreen } from "./components/MatchOverScreen";
 import { ModeSelectScreen } from "./components/ModeSelectScreen";
 import { PlayChallengesScreen } from "./components/PlayChallengesScreen";
 import { PlayerSetup } from "./components/PlayerSetup";
+import { ProfileSetupScreen } from "./components/ProfileSetupScreen";
 import { RoundBuildScreen } from "./components/RoundBuildScreen";
 import { RoundResultScreen } from "./components/RoundResultScreen";
 import { RulesIntroScreen } from "./components/RulesIntroScreen";
@@ -17,6 +19,7 @@ import { TrainHistoryScreen } from "./components/TrainHistoryScreen";
 import { TrainScreen } from "./components/TrainScreen";
 import { GameProvider, useGame } from "./game/GameContext";
 import { hasSeenRulesIntro, markRulesIntroSeen } from "./onboarding/rulesIntro";
+import { getOnboardedStatus } from "./profile";
 
 type View =
   | "modeSelect"
@@ -25,7 +28,9 @@ type View =
   | "game"
   | "train"
   | "trainHistory"
-  | "leaderboard";
+  | "trainAnalytics"
+  | "leaderboard"
+  | "editProfile";
 type PendingMode = "game" | "train";
 
 function GameScreen({ onBackToModes }: { onBackToModes: () => void }) {
@@ -57,12 +62,36 @@ function App() {
   const [pendingMode, setPendingMode] = useState<PendingMode | null>(null);
   const { session, loading } = useAuth();
 
+  const [onboarded, setOnboarded] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!session?.user) {
+      setOnboarded(null);
+      return;
+    }
+    let cancelled = false;
+    getOnboardedStatus(session.user.id).then((value) => {
+      if (!cancelled) setOnboarded(value);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user]);
+
   if (loading) {
     return <div className="flex min-h-svh items-center justify-center bg-black text-zinc-400">Loading…</div>;
   }
 
   if (!session) {
     return <AuthScreen />;
+  }
+
+  if (onboarded === null) {
+    return <div className="flex min-h-svh items-center justify-center bg-black text-zinc-400">Loading…</div>;
+  }
+
+  if (!onboarded) {
+    return <ProfileSetupScreen onComplete={() => setOnboarded(true)} />;
   }
 
   function selectMode(mode: PendingMode) {
@@ -86,6 +115,15 @@ function App() {
             onSelectTrain={() => selectMode("train")}
             onOpenLeaderboard={() => setView("leaderboard")}
             onOpenRules={() => setView("rulesIntro")}
+            onOpenAnalytics={() => setView("trainAnalytics")}
+            onOpenProfile={() => setView("editProfile")}
+          />
+        )}
+        {view === "editProfile" && (
+          <ProfileSetupScreen
+            mode="edit"
+            onComplete={() => setView("modeSelect")}
+            onBack={() => setView("modeSelect")}
           />
         )}
         {view === "safetyCheck" && pendingMode && (
@@ -103,9 +141,11 @@ function App() {
           <TrainScreen
             onBack={() => setView("modeSelect")}
             onOpenHistory={() => setView("trainHistory")}
+            onOpenAnalytics={() => setView("trainAnalytics")}
           />
         )}
         {view === "trainHistory" && <TrainHistoryScreen onBack={() => setView("train")} />}
+        {view === "trainAnalytics" && <AnalyticsScreen onBack={() => setView("modeSelect")} />}
         {view === "leaderboard" && (
           <LeaderboardScreen onBack={() => setView("modeSelect")} />
         )}

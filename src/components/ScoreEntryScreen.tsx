@@ -18,7 +18,7 @@ function PlayerScoreCard({
   onChange: (entry: ScoreEntry) => void;
 }) {
   return (
-    <div className="rounded-lg border border-red-900/40 bg-zinc-900/60 p-4">
+    <div className="rounded-lg border border-red-900/50 bg-zinc-900/60 p-4">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-lg font-semibold text-white">{name}</h3>
         <label className="flex items-center gap-2 text-sm text-zinc-400">
@@ -93,7 +93,7 @@ export function ScoreEntryScreen({
       <ActiveWhoopsiePanel />
       {drill && (
         <Panel>
-          <div className="text-sm font-semibold text-zinc-300">
+          <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
             The Drill (for reference — run it now)
           </div>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">

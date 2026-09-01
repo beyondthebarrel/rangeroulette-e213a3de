@@ -98,7 +98,7 @@ export function RoundBuildScreen() {
 
       {state.activeChallenges.length > 0 && (
         <Panel>
-          <div className="text-sm font-semibold text-red-400">
+          <div className="text-xs font-semibold uppercase tracking-wider text-red-400">
             Active Challenge Cards
           </div>
           <ul className="flex flex-col gap-1">

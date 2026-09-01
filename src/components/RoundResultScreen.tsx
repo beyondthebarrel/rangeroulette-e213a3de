@@ -85,7 +85,7 @@ export function RoundResultScreen() {
       </Panel>
 
       <Panel>
-        <div className="text-sm font-semibold text-zinc-300">Standings</div>
+        <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Standings</div>
         <div className="flex flex-wrap gap-3">
           {[...state.players]
             .sort((a, b) => b.points - a.points)
@@ -98,7 +98,7 @@ export function RoundResultScreen() {
       </Panel>
 
       <Panel>
-        <div className="text-sm font-semibold text-pink-300">
+        <div className="text-xs font-semibold uppercase tracking-wider text-pink-300">
           Had a mishap? (gear drop, timer glitch, setup error)
         </div>
         <div className="flex flex-wrap gap-2">

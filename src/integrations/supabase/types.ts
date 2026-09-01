@@ -6,6 +6,11 @@ export interface Database {
           id: string;
           user_id: string;
           display_name: string | null;
+          age: number | null;
+          shooting_level: string | null;
+          primary_pistol: string | null;
+          avatar_path: string | null;
+          onboarded: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -13,6 +18,11 @@ export interface Database {
           id?: string;
           user_id: string;
           display_name?: string | null;
+          age?: number | null;
+          shooting_level?: string | null;
+          primary_pistol?: string | null;
+          avatar_path?: string | null;
+          onboarded?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -20,8 +30,52 @@ export interface Database {
           id?: string;
           user_id?: string;
           display_name?: string | null;
+          age?: number | null;
+          shooting_level?: string | null;
+          primary_pistol?: string | null;
+          avatar_path?: string | null;
+          onboarded?: boolean;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      pistols: {
+        Row: {
+          id: string;
+          user_id: string;
+          make: string;
+          model: string;
+          caliber: string | null;
+          optic: string | null;
+          light: string | null;
+          holster: string | null;
+          accessories: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          make: string;
+          model: string;
+          caliber?: string | null;
+          optic?: string | null;
+          light?: string | null;
+          holster?: string | null;
+          accessories?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          make?: string;
+          model?: string;
+          caliber?: string | null;
+          optic?: string | null;
+          light?: string | null;
+          holster?: string | null;
+          accessories?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };
@@ -68,6 +122,8 @@ export interface Database {
           complete_misses: number;
           final_seconds: number;
           saved_drill_name: string | null;
+          photo_path: string | null;
+          pistol_id: string | null;
         };
         Insert: {
           id?: string;
@@ -81,6 +137,8 @@ export interface Database {
           complete_misses: number;
           final_seconds: number;
           saved_drill_name?: string | null;
+          photo_path?: string | null;
+          pistol_id?: string | null;
         };
         Update: {
           id?: string;
@@ -94,6 +152,8 @@ export interface Database {
           complete_misses?: number;
           final_seconds?: number;
           saved_drill_name?: string | null;
+          photo_path?: string | null;
+          pistol_id?: string | null;
         };
         Relationships: [];
       };
