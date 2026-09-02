@@ -106,6 +106,14 @@ Deno.serve(async (req) => {
         // already gated by SQUARE_SETUP_SECRET and only meant to run once by
         // hand, so a random key each time (worst case: a harmless duplicate
         // catalog entry if run twice) is simpler than fighting Square's cache.
+        // Single paid phase, no $0/discounted phase at all. Both a raw $0
+        // STATIC phase and a 100%-off RELATIVE-discount phase made Square's
+        // hosted checkout page render broken/incomplete summaries (one
+        // showed "$0.00" forever, the other dropped the paid phase
+        // entirely and showed the plan "expiring"). Charging immediately
+        // and honoring the 7-day trial as a refund-on-request policy
+        // (handled outside Square, in the business) is what actually
+        // checks out correctly.
         idempotency_key: crypto.randomUUID(),
         batches: [
           {
@@ -117,50 +125,15 @@ Deno.serve(async (req) => {
                   name: "Range Roulette Annual",
                 },
               },
-              // A raw $0 STATIC trial phase makes Square's hosted checkout
-              // page treat the *entire* subscription as free forever — it
-              // shows "$0.00" for the post-trial charge too and never
-              // collects a card. Representing the trial as a 100%-off
-              // discount on the real price (RELATIVE pricing) is the pattern
-              // Square's own docs use for trials, and should signal to
-              // checkout that a real charge is coming later.
-              {
-                type: "DISCOUNT",
-                id: "#rangeroulette-trial-discount",
-                discount_data: {
-                  name: "7-Day Free Trial",
-                  discount_type: "FIXED_PERCENTAGE",
-                  percentage: "100",
-                },
-              },
               {
                 type: "SUBSCRIPTION_PLAN_VARIATION",
                 id: "#rangeroulette-annual-variation",
                 subscription_plan_variation_data: {
-                  name: "Annual — 7-day free trial",
+                  name: "Annual",
                   subscription_plan_id: "#rangeroulette-annual-plan",
-                  // `uid` is Square-assigned on creation, not ours to set — supplying
-                  // one (even a fresh-looking string) makes Square treat it as a
-                  // reference to an existing phase, which fails with "Received
-                  // request to update nonexistent object". And per Square's own
-                  // API_VERSION_INCOMPATIBLE error against Square-Version
-                  // 2026-07-15, price belongs on `pricing`, not
-                  // `recurring_price_money` (that field is for older versions).
                   phases: [
                     {
                       ordinal: 0,
-                      cadence: "WEEKLY",
-                      periods: 1,
-                      // Square: "If subscription phase pricing type is
-                      // RELATIVE, price amount and currency should not be
-                      // set" — the discount alone determines the phase price.
-                      pricing: {
-                        type: "RELATIVE",
-                        discount_ids: ["#rangeroulette-trial-discount"],
-                      },
-                    },
-                    {
-                      ordinal: 1,
                       cadence: "ANNUAL",
                       pricing: {
                         type: "STATIC",

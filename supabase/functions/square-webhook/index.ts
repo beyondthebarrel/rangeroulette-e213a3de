@@ -119,6 +119,19 @@ Deno.serve(async (req) => {
     return new Response("ok", { status: 200 });
   }
 
+  // There's no $0 trial phase in Square anymore (see square-setup-catalog) —
+  // the "7-day free trial" is now a refund-on-request policy the business
+  // honors manually, so trial_ends_at exists purely as the refund-eligibility
+  // deadline to check against, set once when the subscription first goes active.
+  const { data: existing } = await admin
+    .from("subscriptions")
+    .select("trial_ends_at")
+    .eq("user_id", match.data.user_id)
+    .maybeSingle();
+  const trialEndsAt =
+    existing?.trial_ends_at ??
+    (status === "active" ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() : null);
+
   await admin
     .from("subscriptions")
     .update({
@@ -126,6 +139,7 @@ Deno.serve(async (req) => {
       square_subscription_id: subscriptionId,
       status,
       current_period_end: periodEnd,
+      trial_ends_at: trialEndsAt,
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", match.data.user_id);

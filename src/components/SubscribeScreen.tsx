@@ -71,7 +71,7 @@ export function SubscribeScreen({ onSubscribed }: { onSubscribed: () => void }) 
     <HeroBackdrop>
       <TitleFrame>
         <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">
-          Start Your Free Trial
+          Subscribe to Range Roulette
         </h1>
 
         {confirming ? (
@@ -86,8 +86,8 @@ export function SubscribeScreen({ onSubscribed }: { onSubscribed: () => void }) 
                 <span className="text-sm text-zinc-500">/ year</span>
               </div>
               <p className="text-center text-sm text-zinc-400">
-                7 days free, then $39.99/year. Cancel anytime before the trial ends and you won't
-                be charged.
+                Billed annually. Not sure yet? Cancel within 7 days for a full refund — just reach
+                out and we'll take care of it.
               </p>
             </Panel>
 
@@ -105,7 +105,7 @@ export function SubscribeScreen({ onSubscribed }: { onSubscribed: () => void }) 
               onClick={handleStart}
               className="w-full rounded-md bg-orange-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
             >
-              {starting ? "Starting…" : "Start Free Trial"}
+              {starting ? "Starting…" : "Subscribe — $39.99/year"}
             </button>
 
             <button
