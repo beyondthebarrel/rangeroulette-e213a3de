@@ -39,22 +39,22 @@ Deno.serve(async (req) => {
             subscription_plan_variation_data: {
               name: "Annual — 7-day free trial",
               subscription_plan_id: "#rangeroulette-annual-plan",
+              // `uid` is Square-assigned on creation, not ours to set — supplying
+              // one (even a fresh-looking string) makes Square treat it as a
+              // reference to an existing phase, which fails with "Received
+              // request to update nonexistent object". recurring_price_money
+              // (not `pricing`) is the field that's actually required here.
               phases: [
                 {
-                  uid: "trial",
                   ordinal: 0,
                   cadence: "WEEKLY",
                   periods: 1,
-                  pricing: { type: "STATIC", price: { amount: 0, currency: "USD" } },
+                  recurring_price_money: { amount: 0, currency: "USD" },
                 },
                 {
-                  uid: "paid",
                   ordinal: 1,
                   cadence: "ANNUAL",
-                  pricing: {
-                    type: "STATIC",
-                    price: { amount: ANNUAL_PRICE_CENTS, currency: "USD" },
-                  },
+                  recurring_price_money: { amount: ANNUAL_PRICE_CENTS, currency: "USD" },
                 },
               ],
             },
