@@ -77,7 +77,11 @@ Deno.serve(async (req) => {
   };
 
   const { ok, status, data } = await squareFetch<{
-    objects?: { type: string; id: string }[];
+    objects?: {
+      type: string;
+      id: string;
+      subscription_plan_data?: { subscription_plan_variations?: { id: string }[] };
+    }[];
     errors?: unknown[];
   }>("/v2/catalog/batch-upsert", {
     method: "POST",
@@ -91,14 +95,17 @@ Deno.serve(async (req) => {
     });
   }
 
-  const variation = data.objects?.find((o) => o.type === "SUBSCRIPTION_PLAN_VARIATION");
+  // The variation comes back nested inside its plan's subscription_plan_data,
+  // not as its own top-level entry in `objects`.
+  const plan = data.objects?.find((o) => o.type === "SUBSCRIPTION_PLAN");
+  const variationId = plan?.subscription_plan_data?.subscription_plan_variations?.[0]?.id;
 
   return new Response(
     JSON.stringify({
-      message: variation
+      message: variationId
         ? "Catalog created. Set SQUARE_PLAN_VARIATION_ID to the id below."
         : "Request succeeded but no plan variation came back — check `objects` below.",
-      plan_variation_id: variation?.id ?? null,
+      plan_variation_id: variationId ?? null,
       objects: data.objects,
     }),
     { headers: { ...corsHeaders, "Content-Type": "application/json" } },
