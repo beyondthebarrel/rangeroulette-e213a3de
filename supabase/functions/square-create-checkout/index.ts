@@ -1,11 +1,15 @@
 // Called by the signed-in app (supabase.functions.invoke) to get a Square-hosted
-// checkout URL for the annual subscription (7-day free trial, then $39.99/yr).
-// Verifies the caller's Supabase session, reuses/creates a Square Customer tied
-// to that account via `reference_id`, and records a 'pending' row so the
-// webhook has an email/customer to match against once payment completes.
+// checkout URL for the $39.99/yr annual subscription (the "7-day free trial"
+// is a refund-on-request policy, not a $0 Square phase — see
+// square-setup-catalog for why). Verifies the caller's Supabase session,
+// reuses/creates a Square Customer tied to that account via `reference_id`,
+// and records a 'pending' row so the webhook has an email/customer to match
+// against once payment completes.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { squareFetch } from "../_shared/square.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+
+const ANNUAL_PRICE_CENTS = 3999;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -94,7 +98,7 @@ Deno.serve(async (req) => {
         idempotency_key: crypto.randomUUID(),
         quick_pay: {
           name: "Range Roulette Annual",
-          price_money: { amount: 0, currency: "USD" },
+          price_money: { amount: ANNUAL_PRICE_CENTS, currency: "USD" },
           location_id: locationId,
         },
         checkout_options: {
