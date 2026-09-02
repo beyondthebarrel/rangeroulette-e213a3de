@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
       .json()
       .catch(() => ({ redirectOrigin: null, promoCode: null }));
 
-    let discountType: "free" | "half_off" | null = null;
+    let discountType: "free" | "half_off" | "free_year" | null = null;
     if (promoCode) {
       const normalizedCode = String(promoCode).trim().toUpperCase();
       const { data: promo } = await admin
@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
         .update({ redemption_count: promo.redemption_count + 1 })
         .eq("code", normalizedCode);
 
-      discountType = promo.discount_type as "free" | "half_off";
+      discountType = promo.discount_type as "free" | "half_off" | "free_year";
     }
 
     if (discountType === "free") {

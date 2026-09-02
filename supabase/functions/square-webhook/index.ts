@@ -54,6 +54,67 @@ function mapStatus(squareStatus: string | undefined): string {
   }
 }
 
+/**
+ * A 'free_year' promo redemption checks out through the normal $39.99 plan
+ * (no separate $0 phase — that's the exact checkout-page display bug worked
+ * around earlier) and gets auto-refunded here the first time its invoice is
+ * paid. Renewals after that are left alone, converting them to a normal
+ * paying subscriber. Refund correctness relies on tracing
+ * invoice -> order -> tender -> payment_id, per Square's own docs for
+ * refunding a paid invoice.
+ */
+async function refundFirstPaymentIfFreeYear(
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  invoiceId: string | undefined,
+): Promise<void> {
+  if (!invoiceId) return;
+
+  const { data: redemption } = await admin
+    .from("promo_redemptions")
+    .select("id, code, refunded_at, promo_codes!inner(discount_type)")
+    .eq("user_id", userId)
+    .is("refunded_at", null)
+    .eq("promo_codes.discount_type", "free_year")
+    .maybeSingle();
+  if (!redemption) return;
+
+  const { data: invoiceData } = await squareFetch<{ invoice?: { order_id?: string } }>(
+    `/v2/invoices/${invoiceId}`,
+  );
+  const orderId = invoiceData.invoice?.order_id;
+  if (!orderId) {
+    console.error("free_year refund: invoice has no order_id", { invoiceId, userId });
+    return;
+  }
+
+  const { data: orderData } = await squareFetch<{
+    order?: { tenders?: { id: string; payment_id?: string; amount_money?: { amount: number; currency: string } }[] };
+  }>(`/v2/orders/${orderId}`);
+  const tender = orderData.order?.tenders?.[0];
+  const paymentId = tender?.payment_id ?? tender?.id;
+  if (!paymentId || !tender?.amount_money) {
+    console.error("free_year refund: no tender/payment found on order", { orderId, userId });
+    return;
+  }
+
+  const { ok, data: refundData } = await squareFetch<{ errors?: unknown[] }>("/v2/refunds", {
+    method: "POST",
+    body: JSON.stringify({
+      idempotency_key: crypto.randomUUID(),
+      payment_id: paymentId,
+      amount_money: tender.amount_money,
+      reason: `Free year promo code (${redemption.code})`,
+    }),
+  });
+  if (!ok) {
+    console.error("free_year refund: Square rejected the refund", { paymentId, details: refundData });
+    return;
+  }
+
+  await admin.from("promo_redemptions").update({ refunded_at: new Date().toISOString() }).eq("id", redemption.id);
+}
+
 Deno.serve(async (req) => {
   const rawBody = await req.text();
 
@@ -61,11 +122,38 @@ Deno.serve(async (req) => {
     return new Response("Invalid signature", { status: 401 });
   }
 
-  let event: { type?: string; data?: { object?: { subscription?: Record<string, unknown> } } };
+  let event: {
+    type?: string;
+    data?: {
+      object?: {
+        subscription?: Record<string, unknown>;
+        invoice?: { id?: string; subscription_id?: string };
+      };
+    };
+  };
   try {
     event = JSON.parse(rawBody);
   } catch {
     return new Response("Invalid JSON", { status: 400 });
+  }
+
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+
+  if (event.type === "invoice.payment_made") {
+    const invoice = event.data?.object?.invoice;
+    const subscriptionId = invoice?.subscription_id;
+    if (subscriptionId) {
+      const { data: match } = await admin
+        .from("subscriptions")
+        .select("user_id")
+        .eq("square_subscription_id", subscriptionId)
+        .maybeSingle();
+      if (match) await refundFirstPaymentIfFreeYear(admin, match.user_id, invoice?.id);
+    }
+    return new Response("ok", { status: 200 });
   }
 
   const subscription = event.data?.object?.subscription;
@@ -77,11 +165,6 @@ Deno.serve(async (req) => {
     // doesn't retry, but there's nothing to update.
     return new Response("ok", { status: 200 });
   }
-
-  const admin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
 
   const customerId = subscription.customer_id as string | undefined;
   const subscriptionId = subscription.id as string | undefined;
