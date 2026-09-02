@@ -21,6 +21,17 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Quick diagnostic: ?locations=1 returns Square's location list for the
+  // configured access token, so a correct Location ID can be confirmed
+  // without hunting through the dashboard.
+  if (url.searchParams.get("locations")) {
+    const { ok, status, data } = await squareFetch("/v2/locations");
+    return new Response(JSON.stringify(data), {
+      status: ok ? 200 : status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const body = {
     // A fresh key every call, not a fixed one — Square ties a fixed
     // idempotency_key to the exact request body from its *first* use, and our
