@@ -117,6 +117,22 @@ Deno.serve(async (req) => {
                   name: "Range Roulette Annual",
                 },
               },
+              // A raw $0 STATIC trial phase makes Square's hosted checkout
+              // page treat the *entire* subscription as free forever — it
+              // shows "$0.00" for the post-trial charge too and never
+              // collects a card. Representing the trial as a 100%-off
+              // discount on the real price (RELATIVE pricing) is the pattern
+              // Square's own docs use for trials, and should signal to
+              // checkout that a real charge is coming later.
+              {
+                type: "DISCOUNT",
+                id: "#rangeroulette-trial-discount",
+                discount_data: {
+                  name: "7-Day Free Trial",
+                  discount_type: "FIXED_PERCENTAGE",
+                  percentage: "100",
+                },
+              },
               {
                 type: "SUBSCRIPTION_PLAN_VARIATION",
                 id: "#rangeroulette-annual-variation",
@@ -135,7 +151,11 @@ Deno.serve(async (req) => {
                       ordinal: 0,
                       cadence: "WEEKLY",
                       periods: 1,
-                      pricing: { type: "STATIC", price: { amount: 0, currency: "USD" } },
+                      pricing: {
+                        type: "RELATIVE",
+                        price: { amount: ANNUAL_PRICE_CENTS, currency: "USD" },
+                        discount_ids: ["#rangeroulette-trial-discount"],
+                      },
                     },
                     {
                       ordinal: 1,
