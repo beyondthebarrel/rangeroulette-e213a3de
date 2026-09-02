@@ -82,6 +82,34 @@ export async function getOnboardedStatus(userId: string): Promise<boolean> {
   return data?.onboarded ?? true;
 }
 
+/** Sessions logged before this timestamp (if set) are excluded from Analytics — see clearAnalytics. */
+export async function getAnalyticsClearedAt(userId: string): Promise<string | null> {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("analytics_cleared_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) return null;
+  return data?.analytics_cleared_at ?? null;
+}
+
+/**
+ * Resets what Analytics displays going forward — non-destructive, no
+ * training_sessions row is touched or deleted. Analytics simply starts
+ * counting from now on, the same way Clear History hides rows without
+ * losing them.
+ */
+export async function clearAnalytics(userId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from("profiles")
+    .upsert({ user_id: userId, analytics_cleared_at: new Date().toISOString() }, { onConflict: "user_id" });
+  if (error) {
+    console.error("Failed to clear analytics", error);
+    return false;
+  }
+  return true;
+}
+
 export async function getMyShootingLevel(userId: string): Promise<ShootingLevel | null> {
   const cacheKey = `shootingLevel:${userId}`;
   const { data, error } = await supabase

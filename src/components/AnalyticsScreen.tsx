@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { BENCHMARKS, passesBenchmark } from "../data/benchmarks";
 import { CATEGORY_ORDER, type CategoryKey } from "../data/cards";
 import {
+  clearAnalytics,
+  getAnalyticsClearedAt,
   getMyShootingLevel,
   listMyPistols,
   pistolLabel,
@@ -53,23 +55,50 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
   const [shootingLevel, setShootingLevel] = useState<ShootingLevel | null>(null);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    Promise.all([
-      getTrainingSessions(),
-      listMyPistols(user.id),
-      getMyShootingLevel(user.id),
-    ]).then(([sessions, loadedPistols, level]) => {
-      if (cancelled) return;
-      setAllSessions(sessions);
+  const [confirmingClear, setConfirmingClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
+
+  const loadAnalytics = useCallback(
+    async (signal?: { cancelled: boolean }) => {
+      if (!user) return;
+      const [sessions, loadedPistols, level, clearedAt] = await Promise.all([
+        getTrainingSessions(),
+        listMyPistols(user.id),
+        getMyShootingLevel(user.id),
+        getAnalyticsClearedAt(user.id),
+      ]);
+      if (signal?.cancelled) return;
+      // Non-destructive reset: sessions logged before a "Clear Analytics" are
+      // simply excluded here, never deleted — see clearAnalytics for why.
+      setAllSessions(clearedAt ? sessions.filter((s) => s.loggedAt > clearedAt) : sessions);
       setPistols(loadedPistols);
       setShootingLevel(level);
-    });
+    },
+    [user],
+  );
+
+  useEffect(() => {
+    const signal = { cancelled: false };
+    loadAnalytics(signal);
     return () => {
-      cancelled = true;
+      signal.cancelled = true;
     };
-  }, [user]);
+  }, [loadAnalytics]);
+
+  async function handleClearAnalytics() {
+    if (!user) return;
+    setClearing(true);
+    setClearError(null);
+    const ok = await clearAnalytics(user.id);
+    setClearing(false);
+    setConfirmingClear(false);
+    if (!ok) {
+      setClearError("Couldn't clear analytics — check your connection and try again.");
+      return;
+    }
+    await loadAnalytics();
+  }
 
   const benchmark = shootingLevel ? BENCHMARKS[shootingLevel] : null;
 
@@ -144,6 +173,41 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
               : "Every rep logged on this account."}
           </p>
         </TitleFrame>
+
+        <div className="flex flex-col items-center gap-1">
+          {confirmingClear ? (
+            <>
+              <span className="flex items-center gap-1.5 text-xs">
+                <span className="text-zinc-400">Reset all analytics stats?</span>
+                <button
+                  onClick={handleClearAnalytics}
+                  disabled={clearing}
+                  className="rounded bg-orange-700 px-2 py-1 text-white hover:bg-orange-600 disabled:opacity-60"
+                >
+                  {clearing ? "…" : "Yes, Clear"}
+                </button>
+                <button
+                  onClick={() => setConfirmingClear(false)}
+                  disabled={clearing}
+                  className="rounded bg-zinc-700 px-2 py-1 text-white hover:bg-zinc-600"
+                >
+                  Cancel
+                </button>
+              </span>
+              <p className="text-[11px] leading-snug text-zinc-500">
+                Starts your stats fresh from today — your logged sessions aren't deleted.
+              </p>
+            </>
+          ) : (
+            <button
+              onClick={() => setConfirmingClear(true)}
+              className="text-xs uppercase tracking-wide text-zinc-500 hover:text-orange-400"
+            >
+              Clear Analytics
+            </button>
+          )}
+          {clearError != null && <p className="text-xs text-amber-400">{clearError}</p>}
+        </div>
 
         {pistols.length > 0 && (
           <Panel>
