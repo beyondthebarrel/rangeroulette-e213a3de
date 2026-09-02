@@ -47,6 +47,21 @@ Deno.serve(async (req) => {
     });
   }
 
+  // ?email=<address> — lists every Square customer with that email, so we
+  // can tell whether checkout completion created a second customer instead
+  // of reusing the one we pre-created with reference_id set.
+  const email = url.searchParams.get("email");
+  if (email) {
+    const { ok, status, data } = await squareFetch("/v2/customers/search", {
+      method: "POST",
+      body: JSON.stringify({ query: { filter: { email_address: { exact: email } } } }),
+    });
+    return new Response(JSON.stringify(data), {
+      status: ok ? 200 : status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const body = {
     // A fresh key every call, not a fixed one — Square ties a fixed
     // idempotency_key to the exact request body from its *first* use, and our
