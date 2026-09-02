@@ -49,19 +49,24 @@ Deno.serve(async (req) => {
               // `uid` is Square-assigned on creation, not ours to set — supplying
               // one (even a fresh-looking string) makes Square treat it as a
               // reference to an existing phase, which fails with "Received
-              // request to update nonexistent object". recurring_price_money
-              // (not `pricing`) is the field that's actually required here.
+              // request to update nonexistent object". And per Square's own
+              // API_VERSION_INCOMPATIBLE error against Square-Version
+              // 2026-07-15, price belongs on `pricing`, not
+              // `recurring_price_money` (that field is for older versions).
               phases: [
                 {
                   ordinal: 0,
                   cadence: "WEEKLY",
                   periods: 1,
-                  recurring_price_money: { amount: 0, currency: "USD" },
+                  pricing: { type: "STATIC", price: { amount: 0, currency: "USD" } },
                 },
                 {
                   ordinal: 1,
                   cadence: "ANNUAL",
-                  recurring_price_money: { amount: ANNUAL_PRICE_CENTS, currency: "USD" },
+                  pricing: {
+                    type: "STATIC",
+                    price: { amount: ANNUAL_PRICE_CENTS, currency: "USD" },
+                  },
                 },
               ],
             },
