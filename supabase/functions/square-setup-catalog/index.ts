@@ -151,9 +151,11 @@ Deno.serve(async (req) => {
                       ordinal: 0,
                       cadence: "WEEKLY",
                       periods: 1,
+                      // Square: "If subscription phase pricing type is
+                      // RELATIVE, price amount and currency should not be
+                      // set" — the discount alone determines the phase price.
                       pricing: {
                         type: "RELATIVE",
-                        price: { amount: ANNUAL_PRICE_CENTS, currency: "USD" },
                         discount_ids: ["#rangeroulette-trial-discount"],
                       },
                     },
