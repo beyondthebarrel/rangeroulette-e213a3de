@@ -32,6 +32,21 @@ Deno.serve(async (req) => {
     });
   }
 
+  // ?customer=<square_customer_id> — checks whether Square actually created
+  // a Subscription object for that customer yet, independent of whether a
+  // webhook for it has arrived.
+  const customerId = url.searchParams.get("customer");
+  if (customerId) {
+    const { ok, status, data } = await squareFetch("/v2/subscriptions/search", {
+      method: "POST",
+      body: JSON.stringify({ query: { filter: { customer_ids: [customerId] } } }),
+    });
+    return new Response(JSON.stringify(data), {
+      status: ok ? 200 : status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const body = {
     // A fresh key every call, not a fixed one — Square ties a fixed
     // idempotency_key to the exact request body from its *first* use, and our
