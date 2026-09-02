@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
-import { createCheckoutUrl, getMySubscriptionStatus } from "../subscription";
+import { getMySubscriptionStatus, startCheckout } from "../subscription";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
 import { TitleFrame } from "./TitleFrame";
@@ -14,6 +14,8 @@ export function SubscribeScreen({ onSubscribed }: { onSubscribed: () => void }) 
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [confirmTimedOut, setConfirmTimedOut] = useState(false);
+  const [showCode, setShowCode] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   function stopPolling() {
@@ -58,13 +60,18 @@ export function SubscribeScreen({ onSubscribed }: { onSubscribed: () => void }) 
   async function handleStart() {
     setStarting(true);
     setError(null);
-    const url = await createCheckoutUrl();
+    const result = await startCheckout(promoCode);
     setStarting(false);
-    if (!url) {
-      setError("Couldn't start checkout — check your connection and try again.");
+    if (result.granted) {
+      // A "free" code grants access directly — no Square checkout to redirect to.
+      pollForActivation();
       return;
     }
-    window.location.href = url;
+    if (!result.url) {
+      setError(result.error ?? "Couldn't start checkout — check your connection and try again.");
+      return;
+    }
+    window.location.href = result.url;
   }
 
   return (
@@ -100,12 +107,29 @@ export function SubscribeScreen({ onSubscribed }: { onSubscribed: () => void }) 
 
             {error != null && <p className="text-center text-sm text-amber-400">{error}</p>}
 
+            {showCode ? (
+              <input
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+                placeholder="Enter code"
+                autoFocus
+                className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-center text-sm uppercase tracking-widest text-white focus:border-orange-600 focus:outline-none"
+              />
+            ) : (
+              <button
+                onClick={() => setShowCode(true)}
+                className="text-center text-xs uppercase tracking-wide text-zinc-500 hover:text-orange-400"
+              >
+                Have a code?
+              </button>
+            )}
+
             <button
               disabled={starting}
               onClick={handleStart}
               className="w-full rounded-md bg-orange-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
             >
-              {starting ? "Starting…" : "Subscribe — $39.99/year"}
+              {starting ? "Starting…" : promoCode.trim() ? "Apply Code & Continue" : "Subscribe — $39.99/year"}
             </button>
 
             <button

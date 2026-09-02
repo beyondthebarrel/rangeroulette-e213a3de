@@ -8,6 +8,7 @@ import { squareFetch } from "../_shared/square.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
 const ANNUAL_PRICE_CENTS = 3999;
+const HALF_OFF_PRICE_CENTS = 1999;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -67,6 +68,11 @@ Deno.serve(async (req) => {
   // (Sandbox can't — see the comment on the webhook handler) without ever
   // touching the real $39.99 plan's price.
   const isTest = url.searchParams.get("test") === "1";
+  // ?halfoff=1 creates a second real plan at half price, for BETA50 code
+  // redemptions — a separate catalog plan (not a per-checkout price
+  // override) so the discount is genuinely permanent on renewal, not just a
+  // first-payment quirk.
+  const isHalfOff = url.searchParams.get("halfoff") === "1";
 
   const body = isTest
     ? {
@@ -98,7 +104,40 @@ Deno.serve(async (req) => {
           },
         ],
       }
-    : {
+    : isHalfOff
+      ? {
+          idempotency_key: crypto.randomUUID(),
+          batches: [
+            {
+              objects: [
+                {
+                  type: "SUBSCRIPTION_PLAN",
+                  id: "#rangeroulette-halfoff-plan",
+                  subscription_plan_data: { name: "Range Roulette Annual (50% off)" },
+                },
+                {
+                  type: "SUBSCRIPTION_PLAN_VARIATION",
+                  id: "#rangeroulette-halfoff-variation",
+                  subscription_plan_variation_data: {
+                    name: "Annual — 50% off",
+                    subscription_plan_id: "#rangeroulette-halfoff-plan",
+                    phases: [
+                      {
+                        ordinal: 0,
+                        cadence: "ANNUAL",
+                        pricing: {
+                          type: "STATIC",
+                          price: { amount: HALF_OFF_PRICE_CENTS, currency: "USD" },
+                        },
+                      },
+                    ],
+                  },
+                },
+              ],
+            },
+          ],
+        }
+      : {
         // A fresh key every call, not a fixed one — Square ties a fixed
         // idempotency_key to the exact request body from its *first* use, and our
         // request body changed across debugging attempts, which kept tripping

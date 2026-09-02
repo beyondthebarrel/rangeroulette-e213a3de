@@ -10,6 +10,7 @@ import { squareFetch } from "../_shared/square.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
 const ANNUAL_PRICE_CENTS = 3999;
+const HALF_OFF_PRICE_CENTS = 1999;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -36,6 +37,58 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+
+    const { redirectOrigin, promoCode } = await req
+      .json()
+      .catch(() => ({ redirectOrigin: null, promoCode: null }));
+
+    let discountType: "free" | "half_off" | null = null;
+    if (promoCode) {
+      const normalizedCode = String(promoCode).trim().toUpperCase();
+      const { data: promo } = await admin
+        .from("promo_codes")
+        .select("code, discount_type, max_redemptions, redemption_count")
+        .eq("code", normalizedCode)
+        .maybeSingle();
+
+      if (!promo || promo.redemption_count >= promo.max_redemptions) {
+        return new Response(JSON.stringify({ error: "That code isn't valid or has been fully redeemed." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { error: redemptionError } = await admin
+        .from("promo_redemptions")
+        .insert({ code: normalizedCode, user_id: user.id });
+      if (redemptionError) {
+        // Unique violation on (code, user_id) — already redeemed by this account.
+        return new Response(JSON.stringify({ error: "You've already used this code." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      await admin
+        .from("promo_codes")
+        .update({ redemption_count: promo.redemption_count + 1 })
+        .eq("code", normalizedCode);
+
+      discountType = promo.discount_type as "free" | "half_off";
+    }
+
+    if (discountType === "free") {
+      await admin.from("subscriptions").upsert(
+        {
+          user_id: user.id,
+          email: user.email,
+          status: "active",
+        },
+        { onConflict: "user_id" },
+      );
+      return new Response(JSON.stringify({ granted: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: existing } = await admin
       .from("subscriptions")
@@ -75,16 +128,19 @@ Deno.serve(async (req) => {
       { onConflict: "user_id" },
     );
 
-    const planVariationId = Deno.env.get("SQUARE_PLAN_VARIATION_ID");
+    const planVariationId =
+      discountType === "half_off"
+        ? Deno.env.get("SQUARE_HALF_OFF_PLAN_VARIATION_ID")
+        : Deno.env.get("SQUARE_PLAN_VARIATION_ID");
+    const priceCents = discountType === "half_off" ? HALF_OFF_PRICE_CENTS : ANNUAL_PRICE_CENTS;
     const locationId = Deno.env.get("SQUARE_LOCATION_ID");
     if (!planVariationId || !locationId) {
       return new Response(
-        JSON.stringify({ error: "SQUARE_PLAN_VARIATION_ID or SQUARE_LOCATION_ID not configured" }),
+        JSON.stringify({ error: "Plan variation ID or SQUARE_LOCATION_ID not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const { redirectOrigin } = await req.json().catch(() => ({ redirectOrigin: null }));
     const redirectUrl = redirectOrigin
       ? `${redirectOrigin}/?sub=success`
       : Deno.env.get("PUBLIC_APP_URL");
@@ -97,8 +153,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         idempotency_key: crypto.randomUUID(),
         quick_pay: {
-          name: "Range Roulette Annual",
-          price_money: { amount: ANNUAL_PRICE_CENTS, currency: "USD" },
+          name: discountType === "half_off" ? "Range Roulette Annual (50% off)" : "Range Roulette Annual",
+          price_money: { amount: priceCents, currency: "USD" },
           location_id: locationId,
         },
         checkout_options: {
