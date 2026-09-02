@@ -6,6 +6,7 @@ import {
   PENDING_ID_PREFIX,
   pendingSessionToTrainingSession,
   removePendingSession,
+  updatePendingSessionNotes,
 } from "./offlineQueue";
 import { deleteTrainingPhoto } from "./photos";
 import type { TrainingDrill, TrainingSession } from "./types";
@@ -38,6 +39,7 @@ function fromRow(row: {
   photo_path?: string | null;
   pistol_id?: string | null;
   archived_at?: string | null;
+  notes?: string | null;
 }): TrainingSession {
   return {
     id: row.id,
@@ -52,6 +54,7 @@ function fromRow(row: {
     photoPath: row.photo_path ?? undefined,
     pistolId: row.pistol_id ?? undefined,
     archivedAt: row.archived_at ?? undefined,
+    notes: row.notes ?? undefined,
   };
 }
 
@@ -73,6 +76,7 @@ export async function recordTrainingSession(
   if (session.savedDrillName) payload.saved_drill_name = session.savedDrillName;
   if (session.photoPath) payload.photo_path = session.photoPath;
   if (session.pistolId) payload.pistol_id = session.pistolId;
+  if (session.notes) payload.notes = session.notes;
 
   let { data, error } = await supabase
     .from("training_sessions")
@@ -80,13 +84,16 @@ export async function recordTrainingSession(
     .select()
     .single();
 
-  // If saved_drill_name/photo_path/pistol_id are set but their columns
+  // If saved_drill_name/photo_path/pistol_id/notes are set but their columns
   // haven't been migrated onto the live project yet, PostgREST rejects the
   // whole insert (PGRST204). Retry with each optional column dropped in turn
   // so the result still logs — the dropped fields just won't show until the
   // migration runs.
   while (error?.code === "PGRST204" && Object.keys(payload).length > Object.keys(basePayload).length) {
-    if ("pistol_id" in payload) {
+    if ("notes" in payload) {
+      const { notes: _notes, ...rest } = payload;
+      payload = rest;
+    } else if ("pistol_id" in payload) {
       const { pistol_id: _pistolId, ...rest } = payload;
       payload = rest;
     } else if ("photo_path" in payload) {
@@ -198,6 +205,27 @@ export async function deleteTrainingSession(id: string): Promise<boolean> {
   }
   const photoPath = (data[0] as { photo_path?: string | null }).photo_path;
   if (photoPath) await deleteTrainingPhoto(photoPath);
+  return true;
+}
+
+/** Sets (or clears, if blank) the note on a logged session — including one still queued offline. */
+export async function updateSessionNotes(id: string, notes: string): Promise<boolean> {
+  const trimmed = notes.trim();
+
+  if (id.startsWith(PENDING_ID_PREFIX)) {
+    updatePendingSessionNotes(id.slice(PENDING_ID_PREFIX.length), trimmed || undefined);
+    return true;
+  }
+
+  const { error } = await supabase
+    .from("training_sessions")
+    .update({ notes: trimmed || null })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Failed to update session notes", error);
+    return false;
+  }
   return true;
 }
 

@@ -10,7 +10,7 @@ import {
   pistolLabel,
   type PistolInput,
 } from "../profile";
-import { enqueueSession, getPendingSessions } from "../training/offlineQueue";
+import { enqueueSession, getPendingSessions, PENDING_ID_PREFIX } from "../training/offlineQueue";
 import { uploadTrainingPhoto } from "../training/photos";
 import {
   deleteAllSavedDrills,
@@ -19,7 +19,7 @@ import {
   saveDrill,
   type SavedDrill,
 } from "../training/savedDrills";
-import { recordTrainingSession } from "../training/storage";
+import { recordTrainingSession, updateSessionNotes } from "../training/storage";
 import type { TrainingDrill } from "../training/types";
 import { useTrainingDrill } from "../training/useTrainingDrill";
 import { HeroBackdrop } from "./HeroBackdrop";
@@ -53,6 +53,12 @@ export function TrainScreen({
   const [logging, setLogging] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
   const [logWarning, setLogWarning] = useState<string | null>(null);
+
+  const [lastLoggedSessionId, setLastLoggedSessionId] = useState<string | null>(null);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+  const [noteSaved, setNoteSaved] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
@@ -177,6 +183,16 @@ export function TrainScreen({
     setCompleteMisses(0);
   }
 
+  // The note opportunity is tied to whichever session was just logged — once
+  // the drill changes, that window closes rather than silently attaching a
+  // stray note to whatever gets logged next.
+  function resetNoteState() {
+    setLastLoggedSessionId(null);
+    setNoteDraft("");
+    setNoteSaved(false);
+    setNoteError(null);
+  }
+
   function clearPhoto() {
     setPhotoFile(null);
     setPhotoPreviewUrl(null);
@@ -195,6 +211,7 @@ export function TrainScreen({
     drawNew();
     resetScoreFields();
     clearPhoto();
+    resetNoteState();
     setLastLogged(null);
     setBenchmarkResult(null);
     setLogError(null);
@@ -269,6 +286,7 @@ export function TrainScreen({
     setLogWarning(null);
     setLastLogged(null);
     setBenchmarkResult(null);
+    resetNoteState();
 
     let photoPath: string | undefined;
     let photoWarning: string | null = null;
@@ -302,10 +320,13 @@ export function TrainScreen({
     setLogging(false);
 
     let queuedOffline = false;
-    if (!saved) {
+    if (saved) {
+      setLastLoggedSessionId(saved.id);
+    } else {
       if (!navigator.onLine) {
-        enqueueSession(sessionPayload, user.id);
+        const queued = enqueueSession(sessionPayload, user.id);
         setPendingCount(getPendingSessions(user.id).length);
+        setLastLoggedSessionId(`${PENDING_ID_PREFIX}${queued.localId}`);
         queuedOffline = true;
       } else {
         setLogError("Couldn't save that result — check your connection and try again.");
@@ -330,6 +351,19 @@ export function TrainScreen({
     // different one is always an explicit "Next Drill" click, not automatic.
     resetScoreFields();
     clearPhoto();
+  }
+
+  async function handleSaveNote() {
+    if (!lastLoggedSessionId) return;
+    setSavingNote(true);
+    setNoteError(null);
+    const ok = await updateSessionNotes(lastLoggedSessionId, noteDraft);
+    setSavingNote(false);
+    if (!ok) {
+      setNoteError("Couldn't save that note — check your connection and try again.");
+      return;
+    }
+    setNoteSaved(true);
   }
 
   return (
@@ -371,6 +405,7 @@ export function TrainScreen({
                   onClick={() => {
                     setSelectedSavedId(BENCHMARK_OPTION_VALUE);
                     resetScoreFields();
+                    resetNoteState();
                     setLastLogged(null);
                     setBenchmarkResult(null);
                     setSavedDrillError(null);
@@ -425,6 +460,7 @@ export function TrainScreen({
               onChange={(e) => {
                 setSelectedSavedId(e.target.value);
                 resetScoreFields();
+                resetNoteState();
                 setLastLogged(null);
                 setBenchmarkResult(null);
                 setSavedDrillError(null);
@@ -668,6 +704,35 @@ export function TrainScreen({
               }`}
             >
               {benchmarkResult ? "🎯 Benchmark achieved!" : "Not yet — beat the standard to pass."}
+            </div>
+          )}
+
+          {lastLoggedSessionId != null && (
+            <div className="flex flex-col gap-1.5 border-t border-zinc-800 pt-3">
+              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                Notes on this rep
+              </div>
+              <textarea
+                value={noteDraft}
+                onChange={(e) => {
+                  setNoteDraft(e.target.value);
+                  setNoteSaved(false);
+                }}
+                placeholder="e.g. throwing low left, check grip — before the next drill"
+                rows={2}
+                className="w-full resize-none rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-orange-600 focus:outline-none"
+              />
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleSaveNote}
+                  disabled={savingNote}
+                  className="rounded border border-zinc-600 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-300 enabled:hover:bg-zinc-800 disabled:opacity-60"
+                >
+                  {savingNote ? "Saving…" : "Save Note"}
+                </button>
+                {noteSaved && <span className="text-xs text-emerald-400">✓ Saved</span>}
+              </div>
+              {noteError != null && <div className="text-xs text-amber-400">{noteError}</div>}
             </div>
           )}
 

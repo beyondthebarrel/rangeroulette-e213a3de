@@ -128,6 +128,7 @@ export interface Database {
           photo_path: string | null;
           pistol_id: string | null;
           archived_at: string | null;
+          notes: string | null;
         };
         Insert: {
           id?: string;
@@ -144,6 +145,7 @@ export interface Database {
           photo_path?: string | null;
           pistol_id?: string | null;
           archived_at?: string | null;
+          notes?: string | null;
         };
         Update: {
           id?: string;
@@ -160,6 +162,43 @@ export interface Database {
           photo_path?: string | null;
           pistol_id?: string | null;
           archived_at?: string | null;
+          notes?: string | null;
+        };
+        Relationships: [];
+      };
+      subscriptions: {
+        Row: {
+          user_id: string;
+          email: string;
+          square_customer_id: string | null;
+          square_subscription_id: string | null;
+          status: string;
+          trial_ends_at: string | null;
+          current_period_end: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          email: string;
+          square_customer_id?: string | null;
+          square_subscription_id?: string | null;
+          status?: string;
+          trial_ends_at?: string | null;
+          current_period_end?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          email?: string;
+          square_customer_id?: string | null;
+          square_subscription_id?: string | null;
+          status?: string;
+          trial_ends_at?: string | null;
+          current_period_end?: string | null;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };

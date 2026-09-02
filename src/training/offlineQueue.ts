@@ -51,6 +51,13 @@ export function removePendingSession(localId: string): void {
   writeQueue(readQueue().filter((q) => q.localId !== localId));
 }
 
+/** Updates the note on a session still queued offline — it'll carry over once the session syncs. */
+export function updatePendingSessionNotes(localId: string, notes: string | undefined): void {
+  writeQueue(
+    readQueue().map((q) => (q.localId === localId ? { ...q, session: { ...q.session, notes } } : q)),
+  );
+}
+
 /** Renders a queued item as a TrainingSession so it can sit alongside synced ones in History/Analytics before it reaches the server. */
 export function pendingSessionToTrainingSession(q: QueuedSession): TrainingSession {
   return {

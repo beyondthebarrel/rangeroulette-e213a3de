@@ -29,4 +29,6 @@ export interface TrainingSession {
   archivedAt?: string;
   /** True for a session logged while offline that hasn't synced to the server yet — a local, not-yet-real id. */
   pendingSync?: boolean;
+  /** Free-text note added after logging, before moving to the next drill. */
+  notes?: string;
 }

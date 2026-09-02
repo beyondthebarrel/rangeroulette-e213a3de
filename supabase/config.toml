@@ -1,0 +1,10 @@
+project_id = "rangeroulette-e213a3de"
+
+# These two are called directly by Square (webhook deliveries) or by hand
+# (one-time catalog setup) — neither carries a Supabase user session, so
+# Supabase's default JWT check has to be off or every call gets a 401.
+[functions.square-webhook]
+verify_jwt = false
+
+[functions.square-setup-catalog]
+verify_jwt = false

@@ -15,11 +15,13 @@ import { RoundResultScreen } from "./components/RoundResultScreen";
 import { RulesIntroScreen } from "./components/RulesIntroScreen";
 import { SafetyChecklistScreen } from "./components/SafetyChecklistScreen";
 import { ScoreScreen } from "./components/ScoreScreen";
+import { SubscribeScreen } from "./components/SubscribeScreen";
 import { TrainHistoryScreen } from "./components/TrainHistoryScreen";
 import { TrainScreen } from "./components/TrainScreen";
 import { GameProvider, useGame } from "./game/GameContext";
 import { hasSeenRulesIntro, markRulesIntroSeen } from "./onboarding/rulesIntro";
 import { getOnboardedStatus } from "./profile";
+import { getMySubscriptionStatus } from "./subscription";
 import { useOfflineSync } from "./training/useOfflineSync";
 
 type View =
@@ -68,6 +70,7 @@ function App() {
   useOfflineSync(session?.user?.id);
 
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
+  const [subscribed, setSubscribed] = useState<boolean | null>(null);
 
   useEffect(() => {
     if (!session?.user) {
@@ -83,12 +86,34 @@ function App() {
     };
   }, [session?.user]);
 
+  useEffect(() => {
+    if (!session?.user) {
+      setSubscribed(null);
+      return;
+    }
+    let cancelled = false;
+    getMySubscriptionStatus(session.user.id).then((status) => {
+      if (!cancelled) setSubscribed(status === "active");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user]);
+
   if (loading) {
     return <div className="flex min-h-svh items-center justify-center bg-black text-zinc-400">Loading…</div>;
   }
 
   if (!session) {
     return <AuthScreen />;
+  }
+
+  if (subscribed === null) {
+    return <div className="flex min-h-svh items-center justify-center bg-black text-zinc-400">Loading…</div>;
+  }
+
+  if (!subscribed) {
+    return <SubscribeScreen onSubscribed={() => setSubscribed(true)} />;
   }
 
   if (onboarded === null) {

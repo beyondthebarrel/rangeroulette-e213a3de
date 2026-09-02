@@ -284,6 +284,9 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
                             `${s.completeMisses} complete miss${s.completeMisses > 1 ? "es" : ""}`}
                         </div>
                       )}
+                      {s.notes && (
+                        <div className="mt-1 text-xs italic text-zinc-400">"{s.notes}"</div>
+                      )}
                     </div>
                     {s.photoPath && photoUrls[s.photoPath] && (
                       <a href={photoUrls[s.photoPath]} target="_blank" rel="noreferrer">
