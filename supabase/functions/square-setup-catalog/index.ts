@@ -62,60 +62,96 @@ Deno.serve(async (req) => {
     });
   }
 
-  const body = {
-    // A fresh key every call, not a fixed one — Square ties a fixed
-    // idempotency_key to the exact request body from its *first* use, and our
-    // request body changed across debugging attempts, which kept tripping
-    // IDEMPOTENCY_KEY_REUSED even under a new fixed string. This endpoint is
-    // already gated by SQUARE_SETUP_SECRET and only meant to run once by
-    // hand, so a random key each time (worst case: a harmless duplicate
-    // catalog entry if run twice) is simpler than fighting Square's cache.
-    idempotency_key: crypto.randomUUID(),
-    batches: [
-      {
-        objects: [
+  // ?test=1 creates a completely separate, single-phase $0/year plan for
+  // proving the checkout → webhook → activation chain works in Production
+  // (Sandbox can't — see the comment on the webhook handler) without ever
+  // touching the real $39.99 plan's price.
+  const isTest = url.searchParams.get("test") === "1";
+
+  const body = isTest
+    ? {
+        idempotency_key: crypto.randomUUID(),
+        batches: [
           {
-            type: "SUBSCRIPTION_PLAN",
-            id: "#rangeroulette-annual-plan",
-            subscription_plan_data: {
-              name: "Range Roulette Annual",
-            },
-          },
-          {
-            type: "SUBSCRIPTION_PLAN_VARIATION",
-            id: "#rangeroulette-annual-variation",
-            subscription_plan_variation_data: {
-              name: "Annual — 7-day free trial",
-              subscription_plan_id: "#rangeroulette-annual-plan",
-              // `uid` is Square-assigned on creation, not ours to set — supplying
-              // one (even a fresh-looking string) makes Square treat it as a
-              // reference to an existing phase, which fails with "Received
-              // request to update nonexistent object". And per Square's own
-              // API_VERSION_INCOMPATIBLE error against Square-Version
-              // 2026-07-15, price belongs on `pricing`, not
-              // `recurring_price_money` (that field is for older versions).
-              phases: [
-                {
-                  ordinal: 0,
-                  cadence: "WEEKLY",
-                  periods: 1,
-                  pricing: { type: "STATIC", price: { amount: 0, currency: "USD" } },
+            objects: [
+              {
+                type: "SUBSCRIPTION_PLAN",
+                id: "#rangeroulette-test-plan",
+                subscription_plan_data: { name: "Range Roulette Test ($0)" },
+              },
+              {
+                type: "SUBSCRIPTION_PLAN_VARIATION",
+                id: "#rangeroulette-test-variation",
+                subscription_plan_variation_data: {
+                  name: "Test — $0/year",
+                  subscription_plan_id: "#rangeroulette-test-plan",
+                  phases: [
+                    {
+                      ordinal: 0,
+                      cadence: "ANNUAL",
+                      pricing: { type: "STATIC", price: { amount: 0, currency: "USD" } },
+                    },
+                  ],
                 },
-                {
-                  ordinal: 1,
-                  cadence: "ANNUAL",
-                  pricing: {
-                    type: "STATIC",
-                    price: { amount: ANNUAL_PRICE_CENTS, currency: "USD" },
-                  },
-                },
-              ],
-            },
+              },
+            ],
           },
         ],
-      },
-    ],
-  };
+      }
+    : {
+        // A fresh key every call, not a fixed one — Square ties a fixed
+        // idempotency_key to the exact request body from its *first* use, and our
+        // request body changed across debugging attempts, which kept tripping
+        // IDEMPOTENCY_KEY_REUSED even under a new fixed string. This endpoint is
+        // already gated by SQUARE_SETUP_SECRET and only meant to run once by
+        // hand, so a random key each time (worst case: a harmless duplicate
+        // catalog entry if run twice) is simpler than fighting Square's cache.
+        idempotency_key: crypto.randomUUID(),
+        batches: [
+          {
+            objects: [
+              {
+                type: "SUBSCRIPTION_PLAN",
+                id: "#rangeroulette-annual-plan",
+                subscription_plan_data: {
+                  name: "Range Roulette Annual",
+                },
+              },
+              {
+                type: "SUBSCRIPTION_PLAN_VARIATION",
+                id: "#rangeroulette-annual-variation",
+                subscription_plan_variation_data: {
+                  name: "Annual — 7-day free trial",
+                  subscription_plan_id: "#rangeroulette-annual-plan",
+                  // `uid` is Square-assigned on creation, not ours to set — supplying
+                  // one (even a fresh-looking string) makes Square treat it as a
+                  // reference to an existing phase, which fails with "Received
+                  // request to update nonexistent object". And per Square's own
+                  // API_VERSION_INCOMPATIBLE error against Square-Version
+                  // 2026-07-15, price belongs on `pricing`, not
+                  // `recurring_price_money` (that field is for older versions).
+                  phases: [
+                    {
+                      ordinal: 0,
+                      cadence: "WEEKLY",
+                      periods: 1,
+                      pricing: { type: "STATIC", price: { amount: 0, currency: "USD" } },
+                    },
+                    {
+                      ordinal: 1,
+                      cadence: "ANNUAL",
+                      pricing: {
+                        type: "STATIC",
+                        price: { amount: ANNUAL_PRICE_CENTS, currency: "USD" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      };
 
   const { ok, status, data } = await squareFetch<{
     objects?: {
