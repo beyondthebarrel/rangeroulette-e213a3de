@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
   }
 
   const body = {
-    idempotency_key: "rangeroulette-annual-plan-setup-v1",
+    idempotency_key: "rangeroulette-annual-plan-setup-v2",
     batches: [
       {
         objects: [
