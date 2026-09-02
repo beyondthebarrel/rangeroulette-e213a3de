@@ -22,7 +22,14 @@ Deno.serve(async (req) => {
   }
 
   const body = {
-    idempotency_key: "rangeroulette-annual-plan-setup-v2",
+    // A fresh key every call, not a fixed one — Square ties a fixed
+    // idempotency_key to the exact request body from its *first* use, and our
+    // request body changed across debugging attempts, which kept tripping
+    // IDEMPOTENCY_KEY_REUSED even under a new fixed string. This endpoint is
+    // already gated by SQUARE_SETUP_SECRET and only meant to run once by
+    // hand, so a random key each time (worst case: a harmless duplicate
+    // catalog entry if run twice) is simpler than fighting Square's cache.
+    idempotency_key: crypto.randomUUID(),
     batches: [
       {
         objects: [
