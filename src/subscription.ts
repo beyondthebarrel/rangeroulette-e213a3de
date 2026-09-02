@@ -13,6 +13,28 @@ export async function getMySubscriptionStatus(userId: string): Promise<Subscript
   return (data.status as SubscriptionStatus) ?? null;
 }
 
+export interface SubscriptionDetails {
+  status: SubscriptionStatus;
+  currentPeriodEnd: string | null;
+  /** No square_subscription_id means a "free" (lifetime) promo grant — there's nothing to ever renew or bill. */
+  hasSquareSubscription: boolean;
+}
+
+/** Fuller membership info for display (e.g. on the profile page) — see getMySubscriptionStatus for the plain gate check. */
+export async function getMySubscriptionDetails(userId: string): Promise<SubscriptionDetails | null> {
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select("status, current_period_end, square_subscription_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return {
+    status: (data.status as SubscriptionStatus) ?? null,
+    currentPeriodEnd: data.current_period_end,
+    hasSquareSubscription: !!data.square_subscription_id,
+  };
+}
+
 export interface CheckoutResult {
   /** Set when a "free" promo code granted access directly — no Square checkout needed. */
   granted?: boolean;

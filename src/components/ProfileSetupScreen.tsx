@@ -15,9 +15,11 @@ import {
   type PistolInput,
   type ShootingLevel,
 } from "../profile";
+import { getMySubscriptionDetails, type SubscriptionDetails } from "../subscription";
 import { getTrainingSessions } from "../training/storage";
 import type { TrainingSession } from "../training/types";
 import { HeroBackdrop } from "./HeroBackdrop";
+import { MembershipPanel } from "./MembershipPanel";
 import { Panel } from "./Panel";
 import { PlayingCard } from "./PlayingCard";
 import { TitleFrame } from "./TitleFrame";
@@ -74,6 +76,7 @@ export function ProfileSetupScreen({
   const [pistols, setPistols] = useState<PistolFormRow[]>([]);
   const [pistolPhotoUrls, setPistolPhotoUrls] = useState<Record<string, string>>({});
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
+  const [membership, setMembership] = useState<SubscriptionDetails | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,13 +86,15 @@ export function ProfileSetupScreen({
     if (!user) return;
     let cancelled = false;
     (async () => {
-      const [profile, savedPistols, loggedSessions] = await Promise.all([
+      const [profile, savedPistols, loggedSessions, subscriptionDetails] = await Promise.all([
         getMyProfile(user.id),
         listMyPistols(user.id),
         getTrainingSessions(),
+        getMySubscriptionDetails(user.id),
       ]);
       if (cancelled) return;
       setSessions(loggedSessions);
+      setMembership(subscriptionDetails);
       if (profile) {
         setName(profile.displayName);
         setAge(profile.age != null ? String(profile.age) : "");
@@ -254,6 +259,8 @@ export function ProfileSetupScreen({
               : "Tell us about yourself before your first drill."}
           </p>
         </TitleFrame>
+
+        {membership && <MembershipPanel details={membership} />}
 
         <Panel>
           <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Basics</div>
