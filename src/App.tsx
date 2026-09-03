@@ -10,6 +10,7 @@ import { ModeSelectScreen } from "./components/ModeSelectScreen";
 import { PlayChallengesScreen } from "./components/PlayChallengesScreen";
 import { PlayerSetup } from "./components/PlayerSetup";
 import { ProfileSetupScreen } from "./components/ProfileSetupScreen";
+import { RangeLocatorScreen } from "./components/RangeLocatorScreen";
 import { RoundBuildScreen } from "./components/RoundBuildScreen";
 import { RoundResultScreen } from "./components/RoundResultScreen";
 import { RulesIntroScreen } from "./components/RulesIntroScreen";
@@ -33,7 +34,8 @@ type View =
   | "trainHistory"
   | "trainAnalytics"
   | "leaderboard"
-  | "editProfile";
+  | "editProfile"
+  | "rangeLocator";
 type PendingMode = "game" | "train";
 
 function GameScreen({ onBackToModes }: { onBackToModes: () => void }) {
@@ -147,7 +149,11 @@ function App() {
             onOpenRules={() => setView("rulesIntro")}
             onOpenAnalytics={() => setView("trainAnalytics")}
             onOpenProfile={() => setView("editProfile")}
+            onOpenRangeLocator={() => setView("rangeLocator")}
           />
+        )}
+        {view === "rangeLocator" && (
+          <RangeLocatorScreen onBack={() => setView("modeSelect")} />
         )}
         {view === "editProfile" && (
           <ProfileSetupScreen
