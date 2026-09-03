@@ -35,7 +35,8 @@ export function RangeLocatorScreen({ onBack }: { onBack: () => void }) {
     } catch (err) {
       console.error("Failed to search for nearby ranges", err);
       setStatus("error");
-      setError("Couldn't reach the range database — check your connection and try again.");
+      const detail = err instanceof Error ? err.message : String(err);
+      setError(`Couldn't reach the range database — check your connection and try again. (${detail})`);
     }
   }
 
