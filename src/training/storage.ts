@@ -10,6 +10,7 @@ import {
 } from "./offlineQueue";
 import { deleteTrainingPhoto } from "./photos";
 import type { TrainingDrill, TrainingSession } from "./types";
+import { deleteTrainingVideo } from "./videos";
 
 type TrainingSessionInsert = Database["public"]["Tables"]["training_sessions"]["Insert"];
 
@@ -37,6 +38,7 @@ function fromRow(row: {
   final_seconds: number;
   saved_drill_name: string | null;
   photo_path?: string | null;
+  video_path?: string | null;
   pistol_id?: string | null;
   archived_at?: string | null;
   notes?: string | null;
@@ -52,6 +54,7 @@ function fromRow(row: {
     finalSeconds: row.final_seconds,
     savedDrillName: row.saved_drill_name ?? undefined,
     photoPath: row.photo_path ?? undefined,
+    videoPath: row.video_path ?? undefined,
     pistolId: row.pistol_id ?? undefined,
     archivedAt: row.archived_at ?? undefined,
     notes: row.notes ?? undefined,
@@ -75,6 +78,7 @@ export async function recordTrainingSession(
   let payload: TrainingSessionInsert = { ...basePayload };
   if (session.savedDrillName) payload.saved_drill_name = session.savedDrillName;
   if (session.photoPath) payload.photo_path = session.photoPath;
+  if (session.videoPath) payload.video_path = session.videoPath;
   if (session.pistolId) payload.pistol_id = session.pistolId;
   if (session.notes) payload.notes = session.notes;
 
@@ -84,17 +88,20 @@ export async function recordTrainingSession(
     .select()
     .single();
 
-  // If saved_drill_name/photo_path/pistol_id/notes are set but their columns
-  // haven't been migrated onto the live project yet, PostgREST rejects the
-  // whole insert (PGRST204). Retry with each optional column dropped in turn
-  // so the result still logs — the dropped fields just won't show until the
-  // migration runs.
+  // If saved_drill_name/photo_path/video_path/pistol_id/notes are set but
+  // their columns haven't been migrated onto the live project yet, PostgREST
+  // rejects the whole insert (PGRST204). Retry with each optional column
+  // dropped in turn so the result still logs — the dropped fields just won't
+  // show until the migration runs.
   while (error?.code === "PGRST204" && Object.keys(payload).length > Object.keys(basePayload).length) {
     if ("notes" in payload) {
       const { notes: _notes, ...rest } = payload;
       payload = rest;
     } else if ("pistol_id" in payload) {
       const { pistol_id: _pistolId, ...rest } = payload;
+      payload = rest;
+    } else if ("video_path" in payload) {
+      const { video_path: _videoPath, ...rest } = payload;
       payload = rest;
     } else if ("photo_path" in payload) {
       const { photo_path: _photoPath, ...rest } = payload;
@@ -205,6 +212,8 @@ export async function deleteTrainingSession(id: string): Promise<boolean> {
   }
   const photoPath = (data[0] as { photo_path?: string | null }).photo_path;
   if (photoPath) await deleteTrainingPhoto(photoPath);
+  const videoPath = (data[0] as { video_path?: string | null }).video_path;
+  if (videoPath) await deleteTrainingVideo(videoPath);
   return true;
 }
 

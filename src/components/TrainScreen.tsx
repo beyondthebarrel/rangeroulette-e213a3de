@@ -22,6 +22,7 @@ import {
 import { recordTrainingSession, updateSessionNotes } from "../training/storage";
 import type { TrainingDrill } from "../training/types";
 import { useTrainingDrill } from "../training/useTrainingDrill";
+import { uploadTrainingVideo } from "../training/videos";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { ChartIcon, GridIcon, HistoryIcon } from "./icons";
 import { Panel } from "./Panel";
@@ -29,6 +30,7 @@ import { PlayingCard } from "./PlayingCard";
 import { Stepper } from "./Stepper";
 import { TitleFrame } from "./TitleFrame";
 import { UtilityButton } from "./UtilityButton";
+import { VideoCapture, type CapturedVideo } from "./VideoCapture";
 
 const BENCHMARK_OPTION_VALUE = "__benchmark__";
 
@@ -63,6 +65,8 @@ export function TrainScreen({
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const [video, setVideo] = useState<CapturedVideo | null>(null);
 
   const [pistols, setPistols] = useState<PistolInput[]>([]);
   const [selectedPistolId, setSelectedPistolId] = useState("");
@@ -130,6 +134,12 @@ export function TrainScreen({
       if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
     };
   }, [photoPreviewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (video) URL.revokeObjectURL(video.previewUrl);
+    };
+  }, [video]);
 
   useEffect(() => {
     if (!user) return;
@@ -211,6 +221,7 @@ export function TrainScreen({
     drawNew();
     resetScoreFields();
     clearPhoto();
+    setVideo(null);
     resetNoteState();
     setLastLogged(null);
     setBenchmarkResult(null);
@@ -288,17 +299,30 @@ export function TrainScreen({
     setBenchmarkResult(null);
     resetNoteState();
 
+    const mediaWarnings: string[] = [];
+
     let photoPath: string | undefined;
-    let photoWarning: string | null = null;
     if (photoFile && navigator.onLine) {
       const uploaded = await uploadTrainingPhoto(user.id, photoFile);
       if (uploaded) {
         photoPath = uploaded;
       } else {
-        photoWarning = "Result logged, but the photo failed to upload — try attaching it again.";
+        mediaWarnings.push("the photo failed to upload — try attaching it again");
       }
     } else if (photoFile) {
-      photoWarning = "Saved offline without the photo — photos need a connection to attach.";
+      mediaWarnings.push("the photo needs a connection to attach, so it was skipped");
+    }
+
+    let videoPath: string | undefined;
+    if (video && navigator.onLine) {
+      const uploaded = await uploadTrainingVideo(user.id, video.file);
+      if (uploaded) {
+        videoPath = uploaded;
+      } else {
+        mediaWarnings.push("the video failed to upload — try attaching it again");
+      }
+    } else if (video) {
+      mediaWarnings.push("the video needs a connection to attach, so it was skipped");
     }
 
     const sessionPayload = {
@@ -310,6 +334,7 @@ export function TrainScreen({
       finalSeconds,
       savedDrillName: selectedSaved?.name,
       photoPath,
+      videoPath,
       pistolId: selectedPistolId || undefined,
     };
 
@@ -336,7 +361,11 @@ export function TrainScreen({
 
     setLastLogged(finalSeconds);
     setLogWarning(
-      queuedOffline ? "Saved offline — will sync automatically once you're back online." : photoWarning,
+      queuedOffline
+        ? "Saved offline — will sync automatically once you're back online."
+        : mediaWarnings.length > 0
+          ? `Result logged, but ${mediaWarnings.join(" and ")}.`
+          : null,
     );
     if (isBenchmarkSelected && benchmark) {
       const par = benchmark.drill.parSeconds ?? Infinity;
@@ -351,6 +380,7 @@ export function TrainScreen({
     // different one is always an explicit "Next Drill" click, not automatic.
     resetScoreFields();
     clearPhoto();
+    setVideo(null);
   }
 
   async function handleSaveNote() {
@@ -681,6 +711,13 @@ export function TrainScreen({
                 Take / Add Photo
               </label>
             )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              Target Video{!online && <span className="ml-1 normal-case text-zinc-500">(needs a connection to attach)</span>}
+            </div>
+            <VideoCapture value={video} onChange={setVideo} disabled={!online} />
           </div>
 
           {logError != null && (

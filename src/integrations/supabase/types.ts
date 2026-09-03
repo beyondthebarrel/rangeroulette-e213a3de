@@ -129,6 +129,7 @@ export interface Database {
           final_seconds: number;
           saved_drill_name: string | null;
           photo_path: string | null;
+          video_path: string | null;
           pistol_id: string | null;
           archived_at: string | null;
           notes: string | null;
@@ -146,6 +147,7 @@ export interface Database {
           final_seconds: number;
           saved_drill_name?: string | null;
           photo_path?: string | null;
+          video_path?: string | null;
           pistol_id?: string | null;
           archived_at?: string | null;
           notes?: string | null;
@@ -163,6 +165,7 @@ export interface Database {
           final_seconds?: number;
           saved_drill_name?: string | null;
           photo_path?: string | null;
+          video_path?: string | null;
           pistol_id?: string | null;
           archived_at?: string | null;
           notes?: string | null;

@@ -23,6 +23,8 @@ export interface TrainingSession {
   savedDrillName?: string;
   /** Storage path of an attached target photo, if any (`training-photos` bucket). */
   photoPath?: string;
+  /** Storage path of an attached target video, if any (`training-videos` bucket). */
+  videoPath?: string;
   /** Which pistol (from the profile's pistol list) this was logged with, if tagged. */
   pistolId?: string;
   /** Set when the user "clears" Training History — hides it from History while Analytics still counts it. */

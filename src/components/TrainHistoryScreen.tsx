@@ -9,6 +9,7 @@ import {
   getVisibleTrainingSessions,
 } from "../training/storage";
 import type { TrainingSession } from "../training/types";
+import { getTrainingVideoUrl } from "../training/videos";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
 import { RetryImage } from "./RetryImage";
@@ -44,6 +45,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
+  const [videoUrls, setVideoUrls] = useState<Record<string, string>>({});
   const [pistols, setPistols] = useState<PistolInput[]>([]);
 
   const [confirmingClear, setConfirmingClear] = useState(false);
@@ -54,15 +56,28 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
     const loaded = await getVisibleTrainingSessions();
     if (signal?.cancelled) return;
     setSessions(loaded);
+
     const withPhotos = loaded.filter((s) => s.photoPath);
-    if (withPhotos.length === 0) return;
-    const entries = await Promise.all(
-      withPhotos.map(async (s) => [s.photoPath!, await getTrainingPhotoUrl(s.photoPath!)] as const),
-    );
-    if (signal?.cancelled) return;
-    const urls: Record<string, string> = {};
-    for (const [path, url] of entries) if (url) urls[path] = url;
-    setPhotoUrls((prev) => ({ ...prev, ...urls }));
+    if (withPhotos.length > 0) {
+      const entries = await Promise.all(
+        withPhotos.map(async (s) => [s.photoPath!, await getTrainingPhotoUrl(s.photoPath!)] as const),
+      );
+      if (signal?.cancelled) return;
+      const urls: Record<string, string> = {};
+      for (const [path, url] of entries) if (url) urls[path] = url;
+      setPhotoUrls((prev) => ({ ...prev, ...urls }));
+    }
+
+    const withVideos = loaded.filter((s) => s.videoPath);
+    if (withVideos.length > 0) {
+      const entries = await Promise.all(
+        withVideos.map(async (s) => [s.videoPath!, await getTrainingVideoUrl(s.videoPath!)] as const),
+      );
+      if (signal?.cancelled) return;
+      const urls: Record<string, string> = {};
+      for (const [path, url] of entries) if (url) urls[path] = url;
+      setVideoUrls((prev) => ({ ...prev, ...urls }));
+    }
   }
 
   useEffect(() => {
@@ -296,6 +311,13 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
                           className="h-14 w-14 shrink-0 rounded border border-zinc-700 object-cover"
                         />
                       </a>
+                    )}
+                    {s.videoPath && videoUrls[s.videoPath] && (
+                      <video
+                        src={videoUrls[s.videoPath]}
+                        controls
+                        className="h-14 w-24 shrink-0 rounded border border-zinc-700 object-cover"
+                      />
                     )}
                   </div>
                 </li>
