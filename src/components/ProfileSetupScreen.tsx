@@ -31,6 +31,13 @@ const LEVEL_LABELS: Record<ShootingLevel, string> = {
   pro: "Pro",
 };
 
+const LEVEL_ACTIVE_CLASSES: Record<ShootingLevel, string> = {
+  beginner: "border-emerald-500 bg-emerald-950/40 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.35)]",
+  intermediate: "border-sky-500 bg-sky-950/40 text-sky-400 shadow-[0_0_10px_rgba(14,165,233,0.35)]",
+  advanced: "border-orange-500 bg-orange-950/40 text-orange-400 shadow-[0_0_10px_rgba(234,88,12,0.35)]",
+  pro: "border-red-500 bg-red-950/40 text-red-400 shadow-[0_0_10px_rgba(220,38,38,0.35)]",
+};
+
 interface PistolFormRow extends PistolInput {
   photoFile?: File | null;
   photoPreviewUrl?: string | null;
@@ -339,9 +346,9 @@ export function ProfileSetupScreen({
                 <button
                   key={level}
                   onClick={() => setShootingLevel(level)}
-                  className={`rounded border px-2 py-2 text-xs font-semibold uppercase tracking-wide ${
+                  className={`rounded-md border-2 px-2 py-2 text-xs font-bold uppercase tracking-wide ${
                     shootingLevel === level
-                      ? "border-orange-500 bg-orange-950/40 text-orange-400"
+                      ? LEVEL_ACTIVE_CLASSES[level]
                       : "border-zinc-700 text-zinc-400 hover:border-zinc-500"
                   }`}
                 >

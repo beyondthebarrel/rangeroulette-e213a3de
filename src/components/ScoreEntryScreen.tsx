@@ -43,8 +43,8 @@ function PlayerScoreCard({
                 const n = parseFloat(e.target.value);
                 onChange({ ...entry, rawSeconds: Number.isNaN(n) ? null : n });
               }}
-              placeholder="seconds"
-              className="w-28 rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 text-white"
+              placeholder="0.00"
+              className="w-28 rounded-md border-2 border-orange-700 bg-zinc-900 px-2 py-1.5 text-xl font-bold text-orange-400 focus:border-orange-500 focus:outline-none"
             />
             <span className="text-sm text-zinc-500">seconds</span>
           </div>
@@ -54,11 +54,13 @@ function PlayerScoreCard({
               label="Zone misses (+0.5s)"
               value={entry.zoneMisses}
               onChange={(v) => onChange({ ...entry, zoneMisses: v })}
+              color="amber"
             />
             <Stepper
               label="Complete misses (+1.0s)"
               value={entry.completeMisses}
               onChange={(v) => onChange({ ...entry, completeMisses: v })}
+              color="red"
             />
           </div>
         </>

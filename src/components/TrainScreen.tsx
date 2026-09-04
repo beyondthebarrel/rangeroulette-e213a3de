@@ -704,8 +704,8 @@ export function TrainScreen({
                 const n = parseFloat(e.target.value);
                 setRawSeconds(Number.isNaN(n) ? null : n);
               }}
-              placeholder="seconds"
-              className="w-28 rounded border border-zinc-600 bg-zinc-800 px-2 py-1.5 text-white"
+              placeholder="0.00"
+              className="w-28 rounded-md border-2 border-orange-700 bg-zinc-900 px-2 py-1.5 text-xl font-bold text-orange-400 focus:border-orange-500 focus:outline-none"
             />
             <span className="text-sm text-zinc-500">
               seconds{parSeconds != null ? ` — par ${parSeconds}s` : ""}
@@ -713,8 +713,8 @@ export function TrainScreen({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <Stepper label="Zone misses" value={zoneMisses} onChange={setZoneMisses} />
-            <Stepper label="Complete misses" value={completeMisses} onChange={setCompleteMisses} />
+            <Stepper label="Zone misses" value={zoneMisses} onChange={setZoneMisses} color="amber" />
+            <Stepper label="Complete misses" value={completeMisses} onChange={setCompleteMisses} color="red" />
           </div>
 
           <div className="flex flex-col gap-2">
