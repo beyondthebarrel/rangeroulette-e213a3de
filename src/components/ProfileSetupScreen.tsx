@@ -309,22 +309,28 @@ export function ProfileSetupScreen({
             </div>
           </div>
 
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Name"
-            className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-orange-600 focus:outline-none"
-          />
+          <div className="flex flex-col gap-1.5">
+            <div className="text-xs text-zinc-500">Name</div>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Name"
+              className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-orange-600 focus:outline-none"
+            />
+          </div>
 
-          <input
-            type="number"
-            min="0"
-            max="120"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            placeholder="Age (optional)"
-            className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-orange-600 focus:outline-none"
-          />
+          <div className="flex flex-col gap-1.5">
+            <div className="text-xs text-zinc-500">Age (optional)</div>
+            <input
+              type="number"
+              min="0"
+              max="120"
+              value={age}
+              onChange={(e) => setAge(e.target.value)}
+              placeholder="Age"
+              className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-orange-600 focus:outline-none"
+            />
+          </div>
 
           <div className="flex flex-col gap-1.5">
             <div className="text-xs text-zinc-500">Shooting level</div>
@@ -345,12 +351,15 @@ export function ProfileSetupScreen({
             </div>
           </div>
 
-          <input
-            value={primaryPistol}
-            onChange={(e) => setPrimaryPistol(e.target.value)}
-            placeholder="Primary pistol trained with (e.g. Glock 19)"
-            className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-orange-600 focus:outline-none"
-          />
+          <div className="flex flex-col gap-1.5">
+            <div className="text-xs text-zinc-500">Primary pistol</div>
+            <input
+              value={primaryPistol}
+              onChange={(e) => setPrimaryPistol(e.target.value)}
+              placeholder="e.g. Glock 19"
+              className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-orange-600 focus:outline-none"
+            />
+          </div>
         </Panel>
 
         {shootingLevel &&
@@ -424,21 +433,30 @@ export function ProfileSetupScreen({
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {PISTOL_FIELDS.map((f) => (
-                      <input
-                        key={f.key}
-                        value={p[f.key]}
-                        onChange={(e) => updatePistol(i, { [f.key]: e.target.value })}
-                        placeholder={f.placeholder}
-                        className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white focus:border-orange-600 focus:outline-none"
-                      />
+                      <div key={f.key} className="flex flex-col gap-1">
+                        <div className="text-[10px] uppercase tracking-wide text-zinc-500">
+                          {f.placeholder}
+                        </div>
+                        <input
+                          value={p[f.key]}
+                          onChange={(e) => updatePistol(i, { [f.key]: e.target.value })}
+                          placeholder={f.placeholder}
+                          className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white focus:border-orange-600 focus:outline-none"
+                        />
+                      </div>
                     ))}
                   </div>
-                  <input
-                    value={p.accessories}
-                    onChange={(e) => updatePistol(i, { accessories: e.target.value })}
-                    placeholder="Other accessories"
-                    className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white focus:border-orange-600 focus:outline-none"
-                  />
+                  <div className="flex flex-col gap-1">
+                    <div className="text-[10px] uppercase tracking-wide text-zinc-500">
+                      Other accessories
+                    </div>
+                    <input
+                      value={p.accessories}
+                      onChange={(e) => updatePistol(i, { accessories: e.target.value })}
+                      placeholder="Other accessories"
+                      className="rounded border border-zinc-700 bg-zinc-800 px-2 py-1.5 text-sm text-white focus:border-orange-600 focus:outline-none"
+                    />
+                  </div>
                   {(() => {
                     const shownUrl =
                       p.photoPreviewUrl ?? (!p.photoRemoved && p.id ? pistolPhotoUrls[p.id] : undefined);
