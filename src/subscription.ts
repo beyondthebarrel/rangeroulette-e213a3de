@@ -18,15 +18,13 @@ export interface SubscriptionDetails {
   currentPeriodEnd: string | null;
   /** No square_subscription_id means a "free" (lifetime) promo grant — there's nothing to ever renew or bill. */
   hasSquareSubscription: boolean;
-  /** Still within this timestamp means a cancel request qualifies for a full refund. */
-  trialEndsAt: string | null;
 }
 
 /** Fuller membership info for display (e.g. on the profile page) — see getMySubscriptionStatus for the plain gate check. */
 export async function getMySubscriptionDetails(userId: string): Promise<SubscriptionDetails | null> {
   const { data, error } = await supabase
     .from("subscriptions")
-    .select("status, current_period_end, square_subscription_id, trial_ends_at")
+    .select("status, current_period_end, square_subscription_id")
     .eq("user_id", userId)
     .maybeSingle();
   if (error || !data) return null;
@@ -34,21 +32,18 @@ export async function getMySubscriptionDetails(userId: string): Promise<Subscrip
     status: (data.status as SubscriptionStatus) ?? null,
     currentPeriodEnd: data.current_period_end,
     hasSquareSubscription: !!data.square_subscription_id,
-    trialEndsAt: data.trial_ends_at,
   };
 }
 
 export interface CancelResult {
   ok?: boolean;
-  refunded?: boolean;
   error?: string;
 }
 
-/** Asks the square-cancel-subscription Edge Function to cancel billing and, if still within the refund window, refund the last payment. */
+/** Asks the square-cancel-subscription Edge Function to cancel future billing — no refund is issued. */
 export async function cancelMySubscription(): Promise<CancelResult> {
   const { data, error } = await supabase.functions.invoke<{
     ok?: boolean;
-    refunded?: boolean;
     error?: string;
   }>("square-cancel-subscription");
 
@@ -70,6 +65,8 @@ export async function cancelMySubscription(): Promise<CancelResult> {
   return { error: message ?? "Couldn't cancel — check your connection and try again." };
 }
 
+export type PlanType = "annual" | "six_month";
+
 export interface CheckoutResult {
   /** Set when a "free" promo code granted access directly — no Square checkout needed. */
   granted?: boolean;
@@ -79,14 +76,14 @@ export interface CheckoutResult {
   error?: string;
 }
 
-/** Asks the square-create-checkout Edge Function to start checkout, optionally with a promo code. */
-export async function startCheckout(promoCode?: string): Promise<CheckoutResult> {
+/** Asks the square-create-checkout Edge Function to start checkout for the given plan, optionally with a promo code (annual only). */
+export async function startCheckout(plan: PlanType, promoCode?: string): Promise<CheckoutResult> {
   const { data, error } = await supabase.functions.invoke<{
     url?: string;
     granted?: boolean;
     error?: string;
   }>("square-create-checkout", {
-    body: { redirectOrigin: window.location.origin, promoCode: promoCode || undefined },
+    body: { redirectOrigin: window.location.origin, plan, promoCode: promoCode || undefined },
   });
 
   if (data?.url || data?.granted) return data;

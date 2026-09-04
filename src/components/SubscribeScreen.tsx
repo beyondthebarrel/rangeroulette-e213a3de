@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
-import { getMySubscriptionStatus, startCheckout } from "../subscription";
+import { getMySubscriptionStatus, startCheckout, type PlanType } from "../subscription";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
 import { TitleFrame } from "./TitleFrame";
@@ -8,8 +8,14 @@ import { TitleFrame } from "./TitleFrame";
 const POLL_INTERVAL_MS = 2500;
 const POLL_TIMEOUT_MS = 30000;
 
+const PLANS: { id: PlanType; price: string; cadence: string; blurb: string }[] = [
+  { id: "annual", price: "$39.99", cadence: "/ year", blurb: "Billed once a year." },
+  { id: "six_month", price: "$19.99", cadence: "/ 6 months", blurb: "Same rate, smaller charge, shorter commitment." },
+];
+
 export function SubscribeScreen({ onSubscribed }: { onSubscribed: () => void }) {
   const { user, signOut } = useAuth();
+  const [plan, setPlan] = useState<PlanType>("annual");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
@@ -60,7 +66,8 @@ export function SubscribeScreen({ onSubscribed }: { onSubscribed: () => void }) 
   async function handleStart() {
     setStarting(true);
     setError(null);
-    const result = await startCheckout(promoCode);
+    // A promo code only ever discounts the annual plan.
+    const result = await startCheckout(plan, plan === "annual" ? promoCode : undefined);
     setStarting(false);
     if (result.granted) {
       // A "free" code grants access directly — no Square checkout to redirect to.
@@ -73,6 +80,8 @@ export function SubscribeScreen({ onSubscribed }: { onSubscribed: () => void }) 
     }
     window.location.href = result.url;
   }
+
+  const selected = PLANS.find((p) => p.id === plan)!;
 
   return (
     <HeroBackdrop>
@@ -87,15 +96,25 @@ export function SubscribeScreen({ onSubscribed }: { onSubscribed: () => void }) 
           </p>
         ) : (
           <>
+            <div className="grid w-full grid-cols-2 gap-2">
+              {PLANS.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setPlan(p.id)}
+                  className={`rounded-lg border-2 px-3 py-3 text-center ${
+                    plan === p.id
+                      ? "border-orange-600 bg-orange-950/40"
+                      : "border-zinc-700 bg-zinc-900/60 hover:bg-zinc-900"
+                  }`}
+                >
+                  <div className="font-mono text-xl font-bold text-white">{p.price}</div>
+                  <div className="text-xs text-zinc-500">{p.cadence}</div>
+                </button>
+              ))}
+            </div>
+
             <Panel>
-              <div className="flex items-baseline justify-center gap-2">
-                <span className="font-mono text-3xl font-bold text-white">$39.99</span>
-                <span className="text-sm text-zinc-500">/ year</span>
-              </div>
-              <p className="text-center text-sm text-zinc-400">
-                Billed annually. Not sure yet? Cancel within 7 days for a full refund — just reach
-                out and we'll take care of it.
-              </p>
+              <p className="text-center text-sm text-zinc-400">{selected.blurb}</p>
             </Panel>
 
             {confirmTimedOut && (
@@ -107,29 +126,34 @@ export function SubscribeScreen({ onSubscribed }: { onSubscribed: () => void }) 
 
             {error != null && <p className="text-center text-sm text-amber-400">{error}</p>}
 
-            {showCode ? (
-              <input
-                value={promoCode}
-                onChange={(e) => setPromoCode(e.target.value)}
-                placeholder="Enter code"
-                autoFocus
-                className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-center text-sm uppercase tracking-widest text-white focus:border-orange-600 focus:outline-none"
-              />
-            ) : (
-              <button
-                onClick={() => setShowCode(true)}
-                className="text-center text-xs uppercase tracking-wide text-zinc-500 hover:text-orange-400"
-              >
-                Have a code?
-              </button>
-            )}
+            {plan === "annual" &&
+              (showCode ? (
+                <input
+                  value={promoCode}
+                  onChange={(e) => setPromoCode(e.target.value)}
+                  placeholder="Enter code"
+                  autoFocus
+                  className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-center text-sm uppercase tracking-widest text-white focus:border-orange-600 focus:outline-none"
+                />
+              ) : (
+                <button
+                  onClick={() => setShowCode(true)}
+                  className="text-center text-xs uppercase tracking-wide text-zinc-500 hover:text-orange-400"
+                >
+                  Have a code?
+                </button>
+              ))}
 
             <button
               disabled={starting}
               onClick={handleStart}
               className="w-full rounded-md bg-orange-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
             >
-              {starting ? "Starting…" : promoCode.trim() ? "Apply Code & Continue" : "Subscribe — $39.99/year"}
+              {starting
+                ? "Starting…"
+                : plan === "annual" && promoCode.trim()
+                  ? "Apply Code & Continue"
+                  : `Subscribe — ${selected.price}${selected.cadence}`}
             </button>
 
             <button

@@ -1,10 +1,9 @@
 // Self-service "Cancel Subscription" for the signed-in user's own account.
 // Verifies the caller's Supabase session, tells Square to stop billing, and
-// — if this is still within the 7-day refund window and a payment was
-// recorded for it — issues a full refund of that payment. Our own
-// `subscriptions.status` is set to 'canceled' immediately regardless of
-// Square's own cancellation timing, since that column (not Square's live
-// subscription state) is what actually gates access in the app.
+// sets our own `subscriptions.status` to 'canceled' immediately regardless
+// of Square's own cancellation timing, since that column (not Square's live
+// subscription state) is what actually gates access in the app. No refund
+// is issued — see the two lower-priced plans instead of a refund policy.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { squareFetch } from "../_shared/square.ts";
 import { corsHeaders } from "../_shared/cors.ts";
@@ -37,9 +36,7 @@ Deno.serve(async (req) => {
 
     const { data: sub, error: subError } = await admin
       .from("subscriptions")
-      .select(
-        "status, square_subscription_id, trial_ends_at, last_payment_id, last_payment_amount_cents, refunded_at",
-      )
+      .select("status, square_subscription_id")
       .eq("user_id", user.id)
       .maybeSingle();
 
@@ -51,8 +48,8 @@ Deno.serve(async (req) => {
     }
 
     if (!sub.square_subscription_id) {
-      // A "free" promo grant has no Square subscription — nothing to cancel
-      // or refund, and lifetime access is exactly what that code granted.
+      // A "free" promo grant has no Square subscription — nothing to cancel,
+      // and lifetime access is exactly what that code granted.
       return new Response(
         JSON.stringify({ error: "This is a free lifetime grant — there's no billing to cancel." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -60,7 +57,7 @@ Deno.serve(async (req) => {
     }
 
     if (sub.status === "canceled") {
-      return new Response(JSON.stringify({ ok: true, alreadyCanceled: true, refunded: false }), {
+      return new Response(JSON.stringify({ ok: true, alreadyCanceled: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -77,39 +74,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    const withinRefundWindow = !!sub.trial_ends_at && new Date(sub.trial_ends_at) > new Date();
-    let refunded = false;
-
-    if (withinRefundWindow && sub.last_payment_id && !sub.refunded_at) {
-      const { ok: refundOk, data: refundData } = await squareFetch<{ errors?: unknown[] }>("/v2/refunds", {
-        method: "POST",
-        body: JSON.stringify({
-          idempotency_key: crypto.randomUUID(),
-          payment_id: sub.last_payment_id,
-          amount_money: {
-            amount: sub.last_payment_amount_cents,
-            currency: "USD",
-          },
-          reason: "Customer-requested cancellation within 7-day refund window",
-        }),
-      });
-      if (refundOk) {
-        refunded = true;
-      } else {
-        console.error("square-cancel-subscription: refund failed", refundData);
-      }
-    }
-
     await admin
       .from("subscriptions")
-      .update({
-        status: "canceled",
-        refunded_at: refunded ? new Date().toISOString() : sub.refunded_at,
-        updated_at: new Date().toISOString(),
-      })
+      .update({ status: "canceled", updated_at: new Date().toISOString() })
       .eq("user_id", user.id);
 
-    return new Response(JSON.stringify({ ok: true, refunded }), {
+    return new Response(JSON.stringify({ ok: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {

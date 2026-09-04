@@ -54,7 +54,12 @@ function mapStatus(squareStatus: string | undefined): string {
   }
 }
 
-/** Resolves invoice -> order -> tender -> payment_id/amount, per Square's docs for refunding a paid invoice. */
+/**
+ * Resolves invoice -> order -> tender -> payment_id/amount, per Square's docs.
+ * Recorded on the subscription row purely as a support/bookkeeping reference
+ * (e.g. "what did this customer's last charge look like") — nothing in the
+ * app issues refunds automatically or on request anymore.
+ */
 async function resolvePaymentFromInvoice(
   invoiceId: string,
 ): Promise<{ paymentId: string; amountMoney: { amount: number; currency: string } } | null> {
@@ -77,46 +82,6 @@ async function resolvePaymentFromInvoice(
     return null;
   }
   return { paymentId, amountMoney: tender.amount_money };
-}
-
-/**
- * A 'free_year' promo redemption checks out through the normal $39.99 plan
- * (no separate $0 phase — that's the exact checkout-page display bug worked
- * around earlier) and gets auto-refunded here the first time its invoice is
- * paid. Renewals after that are left alone, converting them to a normal
- * paying subscriber.
- */
-async function refundFirstPaymentIfFreeYear(
-  admin: ReturnType<typeof createClient>,
-  userId: string,
-  payment: { paymentId: string; amountMoney: { amount: number; currency: string } } | null,
-): Promise<void> {
-  if (!payment) return;
-
-  const { data: redemption } = await admin
-    .from("promo_redemptions")
-    .select("id, code, refunded_at, promo_codes!inner(discount_type)")
-    .eq("user_id", userId)
-    .is("refunded_at", null)
-    .eq("promo_codes.discount_type", "free_year")
-    .maybeSingle();
-  if (!redemption) return;
-
-  const { ok, data: refundData } = await squareFetch<{ errors?: unknown[] }>("/v2/refunds", {
-    method: "POST",
-    body: JSON.stringify({
-      idempotency_key: crypto.randomUUID(),
-      payment_id: payment.paymentId,
-      amount_money: payment.amountMoney,
-      reason: `Free year promo code (${redemption.code})`,
-    }),
-  });
-  if (!ok) {
-    console.error("free_year refund: Square rejected the refund", { paymentId: payment.paymentId, details: refundData });
-    return;
-  }
-
-  await admin.from("promo_redemptions").update({ refunded_at: new Date().toISOString() }).eq("id", redemption.id);
 }
 
 Deno.serve(async (req) => {
@@ -157,9 +122,6 @@ Deno.serve(async (req) => {
         .maybeSingle();
       if (match) {
         const payment = invoice?.id ? await resolvePaymentFromInvoice(invoice.id) : null;
-        // Recorded for every payment (not just free_year) so a later
-        // self-service cancel-and-refund request has a payment_id ready
-        // to hand straight to Square, without re-deriving it then.
         if (payment) {
           await admin
             .from("subscriptions")
@@ -169,7 +131,6 @@ Deno.serve(async (req) => {
             })
             .eq("user_id", match.user_id);
         }
-        await refundFirstPaymentIfFreeYear(admin, match.user_id, payment);
       }
     }
     return new Response("ok", { status: 200 });
@@ -221,19 +182,6 @@ Deno.serve(async (req) => {
     return new Response("ok", { status: 200 });
   }
 
-  // There's no $0 trial phase in Square anymore (see square-setup-catalog) —
-  // the "7-day free trial" is now a refund-on-request policy the business
-  // honors manually, so trial_ends_at exists purely as the refund-eligibility
-  // deadline to check against, set once when the subscription first goes active.
-  const { data: existing } = await admin
-    .from("subscriptions")
-    .select("trial_ends_at")
-    .eq("user_id", match.data.user_id)
-    .maybeSingle();
-  const trialEndsAt =
-    existing?.trial_ends_at ??
-    (status === "active" ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() : null);
-
   await admin
     .from("subscriptions")
     .update({
@@ -241,7 +189,6 @@ Deno.serve(async (req) => {
       square_subscription_id: subscriptionId,
       status,
       current_period_end: periodEnd,
-      trial_ends_at: trialEndsAt,
       updated_at: new Date().toISOString(),
     })
     .eq("user_id", match.data.user_id);

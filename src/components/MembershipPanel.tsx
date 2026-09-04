@@ -25,15 +25,14 @@ export function MembershipPanel({
   /** Called after a successful cancel so the parent can drop the app's subscribed gate. */
   onCanceled?: () => void;
 }) {
-  const { status, currentPeriodEnd, hasSquareSubscription, trialEndsAt } = details;
+  const { status, currentPeriodEnd, hasSquareSubscription } = details;
 
   const [confirming, setConfirming] = useState(false);
   const [canceling, setCanceling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
-  const [result, setResult] = useState<{ refunded: boolean } | null>(null);
+  const [canceled, setCanceled] = useState(false);
 
-  const withinRefundWindow = !!trialEndsAt && new Date(trialEndsAt) > new Date();
-  const canCancel = hasSquareSubscription && status !== "canceled" && !result;
+  const canCancel = hasSquareSubscription && status !== "canceled" && !canceled;
 
   async function handleCancel() {
     setCanceling(true);
@@ -45,7 +44,7 @@ export function MembershipPanel({
       setCancelError(res.error ?? "Couldn't cancel — check your connection and try again.");
       return;
     }
-    setResult({ refunded: !!res.refunded });
+    setCanceled(true);
     onCanceled?.();
   }
 
@@ -53,7 +52,7 @@ export function MembershipPanel({
     <Panel>
       <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Membership</div>
       <div className="flex items-center justify-between">
-        <span className="text-sm text-white">Range Roulette Annual</span>
+        <span className="text-sm text-white">Range Roulette</span>
         <span
           className={`rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide ${
             status === "active"
@@ -86,20 +85,15 @@ export function MembershipPanel({
         <p className="text-xs text-zinc-500">Renewal date pending confirmation from Square.</p>
       )}
 
-      {result && (
-        <p className="text-xs font-semibold text-emerald-400">
-          ✓ Canceled{result.refunded ? " and refunded in full." : "."}
-        </p>
-      )}
+      {canceled && <p className="text-xs font-semibold text-emerald-400">✓ Canceled.</p>}
 
       {canCancel && (
         <div className="flex flex-col gap-1.5 border-t border-zinc-800 pt-3">
           {confirming ? (
             <>
               <p className="text-xs leading-snug text-zinc-400">
-                {withinRefundWindow
-                  ? "You're within your 7-day window — this cancels billing and refunds your last payment in full."
-                  : "Your 7-day refund window has passed, so this stops future billing but doesn't refund past payments."}
+                Cancel your subscription? This stops future billing — it doesn't refund past
+                payments.
               </p>
               <div className="flex items-center gap-2">
                 <button
@@ -107,7 +101,7 @@ export function MembershipPanel({
                   disabled={canceling}
                   className="rounded bg-orange-700 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white enabled:hover:bg-orange-600 disabled:opacity-60"
                 >
-                  {canceling ? "…" : withinRefundWindow ? "Yes, Cancel & Refund" : "Yes, Cancel"}
+                  {canceling ? "…" : "Yes, Cancel"}
                 </button>
                 <button
                   onClick={() => setConfirming(false)}

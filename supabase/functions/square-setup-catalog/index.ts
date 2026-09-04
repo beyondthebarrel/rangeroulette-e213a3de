@@ -1,14 +1,16 @@
-// One-time setup: creates the "Range Roulette Annual" subscription plan (7-day
-// free trial, then $39.99/year) in Square's Catalog. Trigger it once by GET-ing
-// this function's URL with ?key=<SQUARE_SETUP_SECRET>, then copy the
+// One-time setup: creates the "Range Roulette Annual" subscription plan
+// ($39.99/year) in Square's Catalog. Trigger it once by GET-ing this
+// function's URL with ?key=<SQUARE_SETUP_SECRET>, then copy the
 // plan_variation_id from the response into a SQUARE_PLAN_VARIATION_ID secret.
-// Safe to re-run — the idempotency keys are fixed, so Square returns the same
-// objects instead of creating duplicates.
+// ?sixmonth=1 does the same for the $19.99/6-month plan (SQUARE_SIX_MONTH_PLAN_VARIATION_ID).
+// Each variant uses a fresh idempotency_key per call, so it's safe to re-run —
+// worst case is a harmless duplicate catalog entry, never a mixed-up price.
 import { squareFetch } from "../_shared/square.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
 const ANNUAL_PRICE_CENTS = 3999;
 const HALF_OFF_PRICE_CENTS = 1999;
+const SIX_MONTH_PRICE_CENTS = 1999;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -73,8 +75,45 @@ Deno.serve(async (req) => {
   // override) so the discount is genuinely permanent on renewal, not just a
   // first-payment quirk.
   const isHalfOff = url.searchParams.get("halfoff") === "1";
+  // ?sixmonth=1 creates the standing "6-Month" plan offered alongside Annual
+  // at signup (not a promo code) — same effective per-year rate as Annual,
+  // just a smaller charge on a shorter, easier-to-try commitment.
+  const isSixMonth = url.searchParams.get("sixmonth") === "1";
 
-  const body = isTest
+  const body = isSixMonth
+    ? {
+        idempotency_key: crypto.randomUUID(),
+        batches: [
+          {
+            objects: [
+              {
+                type: "SUBSCRIPTION_PLAN",
+                id: "#rangeroulette-sixmonth-plan",
+                subscription_plan_data: { name: "Range Roulette 6-Month" },
+              },
+              {
+                type: "SUBSCRIPTION_PLAN_VARIATION",
+                id: "#rangeroulette-sixmonth-variation",
+                subscription_plan_variation_data: {
+                  name: "6-Month",
+                  subscription_plan_id: "#rangeroulette-sixmonth-plan",
+                  phases: [
+                    {
+                      ordinal: 0,
+                      cadence: "EVERY_SIX_MONTHS",
+                      pricing: {
+                        type: "STATIC",
+                        price: { amount: SIX_MONTH_PRICE_CENTS, currency: "USD" },
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      }
+    : isTest
     ? {
         idempotency_key: crypto.randomUUID(),
         batches: [
@@ -150,9 +189,9 @@ Deno.serve(async (req) => {
         // hosted checkout page render broken/incomplete summaries (one
         // showed "$0.00" forever, the other dropped the paid phase
         // entirely and showed the plan "expiring"). Charging immediately
-        // and honoring the 7-day trial as a refund-on-request policy
-        // (handled outside Square, in the business) is what actually
-        // checks out correctly.
+        // is what actually checks out correctly — see the 6-Month plan
+        // below for a lower-priced, shorter-commitment alternative instead
+        // of a refund policy.
         idempotency_key: crypto.randomUUID(),
         batches: [
           {

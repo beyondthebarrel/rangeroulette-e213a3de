@@ -1,16 +1,16 @@
 // Called by the signed-in app (supabase.functions.invoke) to get a Square-hosted
-// checkout URL for the $39.99/yr annual subscription (the "7-day free trial"
-// is a refund-on-request policy, not a $0 Square phase — see
-// square-setup-catalog for why). Verifies the caller's Supabase session,
-// reuses/creates a Square Customer tied to that account via `reference_id`,
-// and records a 'pending' row so the webhook has an email/customer to match
-// against once payment completes.
+// checkout URL for either the $39.99/yr annual plan or the $19.99/6-month
+// plan. Verifies the caller's Supabase session, reuses/creates a Square
+// Customer tied to that account via `reference_id`, and records a 'pending'
+// row so the webhook has an email/customer to match against once payment
+// completes.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { squareFetch } from "../_shared/square.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
 const ANNUAL_PRICE_CENTS = 3999;
 const HALF_OFF_PRICE_CENTS = 1999;
+const SIX_MONTH_PRICE_CENTS = 1999;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -38,9 +38,10 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { redirectOrigin, promoCode } = await req
+    const { redirectOrigin, plan, promoCode } = await req
       .json()
-      .catch(() => ({ redirectOrigin: null, promoCode: null }));
+      .catch(() => ({ redirectOrigin: null, plan: "annual", promoCode: null }));
+    const isSixMonth = plan === "six_month";
 
     let discountType: "free" | "half_off" | "free_year" | null = null;
     if (promoCode) {
@@ -128,11 +129,23 @@ Deno.serve(async (req) => {
       { onConflict: "user_id" },
     );
 
-    const planVariationId =
-      discountType === "half_off"
+    // A promo code only ever discounts the annual plan — six_month has its
+    // own standing lower price already, so discountType is ignored there.
+    const planVariationId = isSixMonth
+      ? Deno.env.get("SQUARE_SIX_MONTH_PLAN_VARIATION_ID")
+      : discountType === "half_off"
         ? Deno.env.get("SQUARE_HALF_OFF_PLAN_VARIATION_ID")
         : Deno.env.get("SQUARE_PLAN_VARIATION_ID");
-    const priceCents = discountType === "half_off" ? HALF_OFF_PRICE_CENTS : ANNUAL_PRICE_CENTS;
+    const priceCents = isSixMonth
+      ? SIX_MONTH_PRICE_CENTS
+      : discountType === "half_off"
+        ? HALF_OFF_PRICE_CENTS
+        : ANNUAL_PRICE_CENTS;
+    const planName = isSixMonth
+      ? "Range Roulette 6-Month"
+      : discountType === "half_off"
+        ? "Range Roulette Annual (50% off)"
+        : "Range Roulette Annual";
     const locationId = Deno.env.get("SQUARE_LOCATION_ID");
     if (!planVariationId || !locationId) {
       return new Response(
@@ -153,7 +166,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         idempotency_key: crypto.randomUUID(),
         quick_pay: {
-          name: discountType === "half_off" ? "Range Roulette Annual (50% off)" : "Range Roulette Annual",
+          name: planName,
           price_money: { amount: priceCents, currency: "USD" },
           location_id: locationId,
         },
