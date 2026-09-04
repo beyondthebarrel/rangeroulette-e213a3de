@@ -67,7 +67,7 @@ export function ModeSelectScreen({
         <img
           src="/rr-logo.webp"
           alt="Range Roulette"
-          className="w-full max-w-[220px] sm:max-w-[340px]"
+          className="w-full max-w-[320px] sm:max-w-[460px]"
         />
 
         <div className="flex w-full flex-col gap-2">
