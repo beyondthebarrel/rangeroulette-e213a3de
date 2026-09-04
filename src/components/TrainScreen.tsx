@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { BENCHMARKS, type BenchmarkDrill } from "../data/benchmarks";
-import { CATEGORY_ORDER, type CategoryKey } from "../data/cards";
+import { CATEGORY_DECKS, CATEGORY_LABELS, CATEGORY_ORDER, type CategoryCardDef, type CategoryKey } from "../data/cards";
 import { useOnlineStatus } from "../offline/useOnlineStatus";
 import {
   getMyDisplayName,
@@ -76,6 +76,10 @@ export function TrainScreen({
 
   const [benchmarks, setBenchmarks] = useState<BenchmarkDrill[]>([]);
   const [benchmarkResult, setBenchmarkResult] = useState<boolean | null>(null);
+
+  // Hand-picked substitutions for the current random draw, one per category
+  // at most — cleared whenever "Next Drill" deals a fresh hand.
+  const [overrides, setOverrides] = useState<Partial<Record<CategoryKey, CategoryCardDef>>>({});
 
   const [savedDrills, setSavedDrills] = useState<SavedDrill[]>([]);
   const [selectedSavedId, setSelectedSavedId] = useState("");
@@ -158,29 +162,18 @@ export function TrainScreen({
   const selectedBenchmark =
     benchmarks.find((b) => selectedSavedId === benchmarkOptionValue(b.id)) ?? null;
 
+  function drillCardFor(cat: CategoryKey) {
+    const def = overrides[cat] ?? drill[cat].def;
+    return def.detail ? { cardId: def.id, label: def.label, detail: def.detail } : { cardId: def.id, label: def.label };
+  }
+
   const randomSnapshot: TrainingDrill = {
-    time: { cardId: drill.time.def.id, label: drill.time.def.label, detail: drill.time.def.detail },
-    distance: {
-      cardId: drill.distance.def.id,
-      label: drill.distance.def.label,
-      detail: drill.distance.def.detail,
-    },
-    startPosition: {
-      cardId: drill.startPosition.def.id,
-      label: drill.startPosition.def.label,
-      detail: drill.startPosition.def.detail,
-    },
-    target: {
-      cardId: drill.target.def.id,
-      label: drill.target.def.label,
-      detail: drill.target.def.detail,
-    },
-    courseOfFire: {
-      cardId: drill.courseOfFire.def.id,
-      label: drill.courseOfFire.def.label,
-      detail: drill.courseOfFire.def.detail,
-    },
-    parSeconds: drill.time.def.parSeconds,
+    time: drillCardFor("time"),
+    distance: drillCardFor("distance"),
+    startPosition: drillCardFor("startPosition"),
+    target: drillCardFor("target"),
+    courseOfFire: drillCardFor("courseOfFire"),
+    parSeconds: (overrides.time ?? drill.time.def).parSeconds,
   };
 
   const activeDrill: TrainingDrill = selectedBenchmark
@@ -190,6 +183,22 @@ export function TrainScreen({
       : randomSnapshot;
   const parSeconds = activeDrill.parSeconds;
   const canLog = !!trainee && rawSeconds != null && !logging && !!user;
+  // Hand-picking only applies to a live random draw — a saved drill or
+  // benchmark is a fixed, named configuration, not something to tweak here.
+  const canHandPick = !selectedSaved && !selectedBenchmark;
+
+  function cycleCard(cat: CategoryKey, direction: 1 | -1) {
+    const options = CATEGORY_DECKS[cat];
+    const currentId = overrides[cat]?.id ?? drill[cat].def.id;
+    const idx = options.findIndex((o) => o.id === currentId);
+    const nextIdx = ((idx === -1 ? 0 : idx) + direction + options.length) % options.length;
+    setOverrides((prev) => ({ ...prev, [cat]: options[nextIdx] }));
+    resetScoreFields();
+    resetNoteState();
+    setLastLogged(null);
+    setBenchmarkResult(null);
+    setSavedDrillError(null);
+  }
 
   function resetScoreFields() {
     setRawSeconds(null);
@@ -222,6 +231,7 @@ export function TrainScreen({
 
   function handleNewDrill() {
     setSelectedSavedId("");
+    setOverrides({});
     drawNew();
     resetScoreFields();
     clearPhoto();
@@ -627,9 +637,34 @@ export function TrainScreen({
 
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
             {CATEGORY_ORDER.map((cat: CategoryKey) => (
-              <PlayingCard key={cat} cardId={activeDrill[cat].cardId} />
+              <div key={cat} className="flex flex-col gap-1">
+                <PlayingCard cardId={activeDrill[cat].cardId} />
+                {canHandPick && (
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => cycleCard(cat, -1)}
+                      aria-label={`Previous ${CATEGORY_LABELS[cat]}`}
+                      className="flex-1 rounded border border-zinc-700 py-1 text-xs text-zinc-400 hover:border-orange-600 hover:text-orange-400"
+                    >
+                      ‹
+                    </button>
+                    <button
+                      onClick={() => cycleCard(cat, 1)}
+                      aria-label={`Next ${CATEGORY_LABELS[cat]}`}
+                      className="flex-1 rounded border border-zinc-700 py-1 text-xs text-zinc-400 hover:border-orange-600 hover:text-orange-400"
+                    >
+                      ›
+                    </button>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
+          {canHandPick && (
+            <p className="text-center text-[11px] text-zinc-500">
+              Use ‹ › under each card to hand-pick that category.
+            </p>
+          )}
         </Panel>
 
         <Panel>
