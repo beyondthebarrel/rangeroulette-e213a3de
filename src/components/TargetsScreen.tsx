@@ -11,11 +11,6 @@ interface PrintableTarget {
 
 const TARGETS: PrintableTarget[] = [
   {
-    id: "uspsa-a-zone",
-    name: "A-Zone Silhouette",
-    description: "Body silhouette with A/C/D scoring zones — matches the A-Zone drill cards.",
-  },
-  {
     id: "uspsa-head-box",
     name: "Head Box",
     description: "Head-and-shoulders silhouette with a marked head box — matches the Head Box drill cards.",
