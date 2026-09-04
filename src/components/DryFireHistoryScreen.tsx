@@ -119,7 +119,7 @@ export function DryFireHistoryScreen({ onBack }: { onBack: () => void }) {
   return (
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-        <TitleFrame>
+        <TitleFrame variant="sky">
           <h1 className="text-2xl font-bold uppercase tracking-wide text-sky-400">
             🔒 Dry Fire History
           </h1>
@@ -134,7 +134,7 @@ export function DryFireHistoryScreen({ onBack }: { onBack: () => void }) {
         </TitleFrame>
 
         {stats && (
-          <Panel>
+          <Panel variant="sky">
             <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
               Personal Bests
             </div>
@@ -167,7 +167,7 @@ export function DryFireHistoryScreen({ onBack }: { onBack: () => void }) {
         )}
 
         {sessions != null && sessions.length > 0 && (
-          <Panel>
+          <Panel variant="sky">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                 Session History

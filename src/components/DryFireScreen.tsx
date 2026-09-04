@@ -1,6 +1,26 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { CATEGORY_DECKS, CATEGORY_LABELS, CATEGORY_ORDER, type CategoryCardDef, type CategoryKey } from "../data/cards";
+
+// Dry fire has no live rounds and often happens in a smaller space than a
+// range bay, so a few cards from the shared decks don't fit here — everything
+// else (including all Time cards) stays exactly what Live Fire Train Mode uses.
+const EXCLUDED_CARD_IDS = new Set([
+  "distance-10",
+  "distance-12",
+  "sp-kneeling-wrists-above-shoulders",
+  "cof-failure-drill",
+  "cof-3-each-target",
+  "cof-2-strong-hand",
+]);
+
+const DRY_FIRE_DECKS: Record<CategoryKey, CategoryCardDef[]> = CATEGORY_ORDER.reduce(
+  (acc, cat) => {
+    acc[cat] = CATEGORY_DECKS[cat].filter((c) => !EXCLUDED_CARD_IDS.has(c.id));
+    return acc;
+  },
+  {} as Record<CategoryKey, CategoryCardDef[]>,
+);
 import { useOnlineStatus } from "../offline/useOnlineStatus";
 import { getMyDisplayName, listMyPistols, pistolLabel, type PistolInput } from "../profile";
 import { enqueueSession, getPendingSessions, PENDING_ID_PREFIX } from "../training/offlineQueue";
@@ -33,7 +53,7 @@ export function DryFireScreen({
   onOpenAnalytics: () => void;
 }) {
   const { user } = useAuth();
-  const { drill, drawNew } = useTrainingDrill();
+  const { drill, drawNew } = useTrainingDrill(DRY_FIRE_DECKS);
   const online = useOnlineStatus();
   const [pendingCount, setPendingCount] = useState(0);
   const [trainee, setTrainee] = useState<string | null>(null);
@@ -142,7 +162,7 @@ export function DryFireScreen({
   const canHandPick = !selectedSaved;
 
   function cycleCard(cat: CategoryKey, direction: 1 | -1) {
-    const options = CATEGORY_DECKS[cat];
+    const options = DRY_FIRE_DECKS[cat];
     const currentId = overrides[cat]?.id ?? drill[cat].def.id;
     const idx = options.findIndex((o) => o.id === currentId);
     const nextIdx = ((idx === -1 ? 0 : idx) + direction + options.length) % options.length;
@@ -323,7 +343,7 @@ export function DryFireScreen({
   return (
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-        <TitleFrame>
+        <TitleFrame variant="sky">
           <h1 className="text-2xl font-bold uppercase tracking-wide text-sky-400">
             🔒 Dry Fire Mode
           </h1>
@@ -348,7 +368,7 @@ export function DryFireScreen({
           </div>
         )}
 
-        <Panel>
+        <Panel variant="sky">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
               {selectedSaved ? `Saved Drill — ${selectedSaved.name}` : "The Drill"}
@@ -365,7 +385,7 @@ export function DryFireScreen({
                   setShowSave((v) => !v);
                   setSavedDrillError(null);
                 }}
-                className="rounded border border-zinc-600 px-3 py-1 text-xs uppercase tracking-wide text-zinc-300 hover:bg-zinc-800"
+                className="rounded border border-sky-800 px-3 py-1 text-xs uppercase tracking-wide text-zinc-300 hover:bg-sky-950/60"
               >
                 Save Drill
               </button>
@@ -379,8 +399,8 @@ export function DryFireScreen({
                   }}
                   className={`rounded border px-3 py-1 text-xs uppercase tracking-wide ${
                     showManageSaved
-                      ? "border-zinc-400 bg-zinc-800 text-white"
-                      : "border-zinc-600 text-zinc-300 hover:bg-zinc-800"
+                      ? "border-sky-500 bg-sky-950/60 text-sky-400"
+                      : "border-sky-800 text-zinc-300 hover:bg-sky-950/60"
                   }`}
                 >
                   Manage Saved
@@ -401,7 +421,7 @@ export function DryFireScreen({
                   setLastLogged(null);
                   setSavedDrillError(null);
                 }}
-                className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-sky-600 focus:outline-none"
+                className="flex-1 rounded border border-sky-900/60 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-sky-600 focus:outline-none"
               >
                 <option value="">Random draw</option>
                 {savedDrills.map((d) => (
@@ -413,7 +433,7 @@ export function DryFireScreen({
               {selectedSaved && (
                 <button
                   onClick={handleDeleteSaved}
-                  className="rounded border border-zinc-700 px-3 py-2 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
+                  className="rounded border border-sky-900/60 px-3 py-2 text-xs uppercase tracking-wide text-zinc-400 hover:bg-sky-950/60 hover:text-sky-400"
                 >
                   Delete
                 </button>
@@ -422,7 +442,7 @@ export function DryFireScreen({
           </div>
 
           {showManageSaved && (
-            <div className="flex flex-col gap-2 rounded-lg border border-zinc-700 bg-zinc-900/60 p-3">
+            <div className="flex flex-col gap-2 rounded-lg border border-sky-900/60 bg-zinc-900/60 p-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                   Saved Drills
@@ -448,7 +468,7 @@ export function DryFireScreen({
                 ) : (
                   <button
                     onClick={() => setConfirmingClearSaved(true)}
-                    className="rounded border border-zinc-600 px-2 py-1 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
+                    className="rounded border border-sky-800 px-2 py-1 text-xs uppercase tracking-wide text-zinc-400 hover:bg-sky-950/60 hover:text-sky-400"
                   >
                     Clear All
                   </button>
@@ -462,7 +482,7 @@ export function DryFireScreen({
                 {savedDrills.map((d) => (
                   <li
                     key={d.id}
-                    className="flex items-center justify-between gap-2 rounded border border-zinc-800 bg-zinc-900 px-2.5 py-1.5"
+                    className="flex items-center justify-between gap-2 rounded border border-sky-950 bg-zinc-900 px-2.5 py-1.5"
                   >
                     <span className="text-sm text-white">{d.name}</span>
                     {confirmingDeleteSavedId === d.id ? (
@@ -505,7 +525,7 @@ export function DryFireScreen({
                 value={saveName}
                 onChange={(e) => setSaveName(e.target.value)}
                 placeholder="Drill name"
-                className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-sky-600 focus:outline-none"
+                className="flex-1 rounded border border-sky-900/60 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-sky-600 focus:outline-none"
               />
               <button
                 disabled={saving || saveName.trim().length === 0 || !user}
@@ -530,14 +550,14 @@ export function DryFireScreen({
                     <button
                       onClick={() => cycleCard(cat, -1)}
                       aria-label={`Previous ${CATEGORY_LABELS[cat]}`}
-                      className="flex-1 rounded border border-zinc-700 py-1 text-xs text-zinc-400 hover:border-sky-600 hover:text-sky-400"
+                      className="flex-1 rounded border border-sky-900/60 py-1 text-xs text-zinc-400 hover:border-sky-600 hover:text-sky-400"
                     >
                       ‹
                     </button>
                     <button
                       onClick={() => cycleCard(cat, 1)}
                       aria-label={`Next ${CATEGORY_LABELS[cat]}`}
-                      className="flex-1 rounded border border-zinc-700 py-1 text-xs text-zinc-400 hover:border-sky-600 hover:text-sky-400"
+                      className="flex-1 rounded border border-sky-900/60 py-1 text-xs text-zinc-400 hover:border-sky-600 hover:text-sky-400"
                     >
                       ›
                     </button>
@@ -547,13 +567,13 @@ export function DryFireScreen({
             ))}
           </div>
           {canHandPick && (
-            <p className="text-center text-[11px] text-zinc-500">
+            <p className="text-center text-[11px] text-sky-300/50">
               Use ‹ › under each card to hand-pick that category.
             </p>
           )}
         </Panel>
 
-        <Panel>
+        <Panel variant="sky">
           {pistols.length > 0 && (
             <div className="flex flex-col gap-1.5">
               <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
@@ -562,7 +582,7 @@ export function DryFireScreen({
               <select
                 value={selectedPistolId}
                 onChange={(e) => setSelectedPistolId(e.target.value)}
-                className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-sky-600 focus:outline-none"
+                className="w-full rounded border border-sky-900/60 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-sky-600 focus:outline-none"
               >
                 <option value="">Not tagged</option>
                 {pistols.map((p) => (
@@ -587,19 +607,19 @@ export function DryFireScreen({
               placeholder="0.00"
               className="w-28 rounded-md border-2 border-sky-700 bg-zinc-900 px-2 py-1.5 text-xl font-bold text-sky-400 focus:border-sky-500 focus:outline-none"
             />
-            <span className="text-sm text-zinc-500">
+            <span className="text-sm text-sky-300/50">
               seconds{parSeconds != null ? ` — par ${parSeconds}s` : ""}
             </span>
           </div>
 
-          <p className="text-center text-xs text-zinc-500">
+          <p className="text-center text-xs text-sky-300/50">
             No live impact to score — this rep logs time only.
           </p>
 
           <div className="flex flex-col gap-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
               Draw Review Video
-              {!online && <span className="ml-1 normal-case text-zinc-500">(needs a connection to attach)</span>}
+              {!online && <span className="ml-1 normal-case text-sky-300/50">(needs a connection to attach)</span>}
             </div>
             <VideoCapture value={video} onChange={setVideo} disabled={!online} />
           </div>
@@ -619,7 +639,7 @@ export function DryFireScreen({
           )}
 
           {lastLoggedSessionId != null && (
-            <div className="flex flex-col gap-1.5 border-t border-zinc-800 pt-3">
+            <div className="flex flex-col gap-1.5 border-t border-sky-900/50 pt-3">
               <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                 Notes on this rep
               </div>
@@ -631,13 +651,13 @@ export function DryFireScreen({
                 }}
                 placeholder="e.g. staging the trigger too much — before the next drill"
                 rows={2}
-                className="w-full resize-none rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-sky-600 focus:outline-none"
+                className="w-full resize-none rounded border border-sky-900/60 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-sky-600 focus:outline-none"
               />
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleSaveNote}
                   disabled={savingNote}
-                  className="rounded border border-zinc-600 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-300 enabled:hover:bg-zinc-800 disabled:opacity-60"
+                  className="rounded border border-sky-800 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-300 enabled:hover:bg-sky-950/60 disabled:opacity-60"
                 >
                   {savingNote ? "Saving…" : "Save Note"}
                 </button>

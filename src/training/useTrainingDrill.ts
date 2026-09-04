@@ -1,21 +1,21 @@
 import { useCallback, useState } from "react";
-import { CATEGORY_DECKS, CATEGORY_ORDER, type CategoryKey } from "../data/cards";
+import { CATEGORY_DECKS, CATEGORY_ORDER, type CategoryCardDef, type CategoryKey } from "../data/cards";
 import { buildDeck, discardTo, drawOne } from "../game/deck";
 import type { CategoryCardInstance, DeckState } from "../game/types";
 
 type Decks = Record<CategoryKey, DeckState<CategoryCardInstance>>;
 type Drill = Record<CategoryKey, CategoryCardInstance>;
 
-function freshDecks(): Decks {
-  const decks = {} as Decks;
+function freshDecks(decks: Record<CategoryKey, CategoryCardDef[]>): Decks {
+  const built = {} as Decks;
   CATEGORY_ORDER.forEach((cat) => {
-    decks[cat] = buildDeck<CategoryCardInstance["def"], CategoryCardInstance>(
-      CATEGORY_DECKS[cat],
+    built[cat] = buildDeck<CategoryCardInstance["def"], CategoryCardInstance>(
+      decks[cat],
       `train-${cat}`,
       (def, instanceId) => ({ instanceId, def }),
     );
   });
-  return decks;
+  return built;
 }
 
 function drawAll(decks: Decks): { drill: Drill; decks: Decks } {
@@ -30,10 +30,9 @@ function drawAll(decks: Decks): { drill: Drill; decks: Decks } {
 }
 
 /** Manages a solo training drill: a fresh 5-card draw with reshuffle-on-empty, no dealer/challenge mechanics. */
-export function useTrainingDrill() {
+export function useTrainingDrill(decks: Record<CategoryKey, CategoryCardDef[]> = CATEGORY_DECKS) {
   const [state, setState] = useState<{ decks: Decks; drill: Drill }>(() => {
-    const decks = freshDecks();
-    return drawAll(decks);
+    return drawAll(freshDecks(decks));
   });
 
   const drawNew = useCallback(() => {

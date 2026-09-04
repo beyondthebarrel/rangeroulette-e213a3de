@@ -90,7 +90,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
   return (
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-        <TitleFrame>
+        <TitleFrame variant="sky">
           <h1 className="text-2xl font-bold uppercase tracking-wide text-sky-400">
             🔒 Dry Fire Analytics
           </h1>
@@ -138,7 +138,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
         </div>
 
         {pistols.length > 0 && (
-          <Panel>
+          <Panel variant="sky">
             <div className="flex flex-col gap-1.5">
               <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                 Viewing
@@ -160,11 +160,11 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
         )}
 
         {analytics === null ? (
-          <Panel>
+          <Panel variant="sky">
             <p className="text-center text-sm text-zinc-400">Loading…</p>
           </Panel>
         ) : analytics.totalReps === 0 ? (
-          <Panel>
+          <Panel variant="sky">
             <p className="text-center text-sm text-zinc-400">
               {selectedPistol
                 ? `No dry fire reps tagged with the ${pistolLabel(selectedPistol)} yet.`
@@ -173,7 +173,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
           </Panel>
         ) : (
           <>
-            <Panel>
+            <Panel variant="sky">
               <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">Overview</div>
               <div className="grid grid-cols-3 gap-4">
                 <Tile value={String(analytics.totalReps)} label="Total dry reps" />
@@ -195,7 +195,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
               )}
             </Panel>
 
-            <Panel>
+            <Panel variant="sky">
               <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                 Overall Best Drills
               </div>
@@ -231,7 +231,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
             </Panel>
 
             {analytics.mostImproved.length > 0 && (
-              <Panel>
+              <Panel variant="sky">
                 <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                   Most Progress
                 </div>
@@ -270,7 +270,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
               </Panel>
             )}
 
-            <Panel>
+            <Panel variant="sky">
               <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                 Most Repeated Drills
               </div>
@@ -304,7 +304,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
             </Panel>
 
             {!selectedPistol && analytics.byPistol.length > 0 && (
-              <Panel>
+              <Panel variant="sky">
                 <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                   By Pistol
                 </div>
