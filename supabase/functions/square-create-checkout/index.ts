@@ -43,6 +43,13 @@ Deno.serve(async (req) => {
       .catch(() => ({ redirectOrigin: null, plan: "annual", promoCode: null }));
     const isSixMonth = plan === "six_month";
 
+    if (isSixMonth && promoCode) {
+      return new Response(JSON.stringify({ error: "Promo codes only work with the Annual plan." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     let discountType: "free" | "half_off" | "free_year" | null = null;
     if (promoCode) {
       const normalizedCode = String(promoCode).trim().toUpperCase();
