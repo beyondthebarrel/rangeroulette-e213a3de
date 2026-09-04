@@ -45,6 +45,11 @@ const TARGETS: PrintableTarget[] = [
     name: "Zeroing Grid",
     description: "1/2\" grid with 1\" reference ticks for measuring group offset and adjusting sights.",
   },
+  {
+    id: "playing-cards",
+    name: "Playing Card Targets",
+    description: "6 actual-size (2.5\"×3.5\") playing cards to cut apart and staple up as aim points.",
+  },
 ];
 
 function targetUrl(id: string): string {
