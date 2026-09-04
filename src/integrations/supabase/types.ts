@@ -133,6 +133,7 @@ export interface Database {
           pistol_id: string | null;
           archived_at: string | null;
           notes: string | null;
+          dry_fire: boolean;
         };
         Insert: {
           id?: string;
@@ -151,6 +152,7 @@ export interface Database {
           pistol_id?: string | null;
           archived_at?: string | null;
           notes?: string | null;
+          dry_fire?: boolean;
         };
         Update: {
           id?: string;
@@ -169,6 +171,7 @@ export interface Database {
           pistol_id?: string | null;
           archived_at?: string | null;
           notes?: string | null;
+          dry_fire?: boolean;
         };
         Relationships: [];
       };

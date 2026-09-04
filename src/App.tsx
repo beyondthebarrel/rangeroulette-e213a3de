@@ -3,6 +3,9 @@ import { useAuth } from "./auth/AuthContext";
 import { AnalyticsScreen } from "./components/AnalyticsScreen";
 import { AuthScreen } from "./components/AuthScreen";
 import { BillDrillScreen } from "./components/BillDrillScreen";
+import { DryFireAnalyticsScreen } from "./components/DryFireAnalyticsScreen";
+import { DryFireHistoryScreen } from "./components/DryFireHistoryScreen";
+import { DryFireScreen } from "./components/DryFireScreen";
 import { Header } from "./components/Header";
 import { LeaderboardScreen } from "./components/LeaderboardScreen";
 import { MatchOverScreen } from "./components/MatchOverScreen";
@@ -34,11 +37,14 @@ type View =
   | "train"
   | "trainHistory"
   | "trainAnalytics"
+  | "dryFire"
+  | "dryFireHistory"
+  | "dryFireAnalytics"
   | "leaderboard"
   | "editProfile"
   | "rangeLocator"
   | "targets";
-type PendingMode = "game" | "train";
+type PendingMode = "game" | "train" | "dryFire";
 
 function GameScreen({ onBackToModes }: { onBackToModes: () => void }) {
   const { state } = useGame();
@@ -147,6 +153,7 @@ function App() {
           <ModeSelectScreen
             onSelectGame={() => selectMode("game")}
             onSelectTrain={() => selectMode("train")}
+            onSelectDryFire={() => selectMode("dryFire")}
             onOpenLeaderboard={() => setView("leaderboard")}
             onOpenRules={() => setView("rulesIntro")}
             onOpenAnalytics={() => setView("trainAnalytics")}
@@ -187,6 +194,19 @@ function App() {
         )}
         {view === "trainHistory" && <TrainHistoryScreen onBack={() => setView("train")} />}
         {view === "trainAnalytics" && <AnalyticsScreen onBack={() => setView("train")} />}
+        {view === "dryFire" && (
+          <DryFireScreen
+            onBack={() => setView("modeSelect")}
+            onOpenHistory={() => setView("dryFireHistory")}
+            onOpenAnalytics={() => setView("dryFireAnalytics")}
+          />
+        )}
+        {view === "dryFireHistory" && (
+          <DryFireHistoryScreen onBack={() => setView("dryFire")} />
+        )}
+        {view === "dryFireAnalytics" && (
+          <DryFireAnalyticsScreen onBack={() => setView("dryFire")} />
+        )}
         {view === "leaderboard" && (
           <LeaderboardScreen onBack={() => setView("modeSelect")} />
         )}

@@ -42,6 +42,7 @@ function fromRow(row: {
   pistol_id?: string | null;
   archived_at?: string | null;
   notes?: string | null;
+  dry_fire?: boolean | null;
 }): TrainingSession {
   return {
     id: row.id,
@@ -58,6 +59,7 @@ function fromRow(row: {
     pistolId: row.pistol_id ?? undefined,
     archivedAt: row.archived_at ?? undefined,
     notes: row.notes ?? undefined,
+    dryFire: row.dry_fire ?? false,
   };
 }
 
@@ -81,6 +83,7 @@ export async function recordTrainingSession(
   if (session.videoPath) payload.video_path = session.videoPath;
   if (session.pistolId) payload.pistol_id = session.pistolId;
   if (session.notes) payload.notes = session.notes;
+  if (session.dryFire) payload.dry_fire = session.dryFire;
 
   let { data, error } = await supabase
     .from("training_sessions")
@@ -88,13 +91,16 @@ export async function recordTrainingSession(
     .select()
     .single();
 
-  // If saved_drill_name/photo_path/video_path/pistol_id/notes are set but
-  // their columns haven't been migrated onto the live project yet, PostgREST
-  // rejects the whole insert (PGRST204). Retry with each optional column
-  // dropped in turn so the result still logs — the dropped fields just won't
-  // show until the migration runs.
+  // If saved_drill_name/photo_path/video_path/pistol_id/notes/dry_fire are
+  // set but their columns haven't been migrated onto the live project yet,
+  // PostgREST rejects the whole insert (PGRST204). Retry with each optional
+  // column dropped in turn so the result still logs — the dropped fields
+  // just won't show until the migration runs.
   while (error?.code === "PGRST204" && Object.keys(payload).length > Object.keys(basePayload).length) {
-    if ("notes" in payload) {
+    if ("dry_fire" in payload) {
+      const { dry_fire: _dryFire, ...rest } = payload;
+      payload = rest;
+    } else if ("notes" in payload) {
       const { notes: _notes, ...rest } = payload;
       payload = rest;
     } else if ("pistol_id" in payload) {
@@ -169,12 +175,18 @@ export async function getVisibleTrainingSessions(): Promise<TrainingSession[]> {
   return mergeWithPending((data ?? []).map(fromRow));
 }
 
-/** Clears Training History by archiving every visible session for this account — data stays intact for Analytics. */
-export async function clearTrainingHistory(userId: string): Promise<boolean> {
+/**
+ * Clears Training History by archiving every visible session for this
+ * account — data stays intact for Analytics. `dryFire` scopes the clear to
+ * just that mode's sessions, so clearing Dry Fire History never touches
+ * Live Fire History and vice versa.
+ */
+export async function clearTrainingHistory(userId: string, dryFire: boolean): Promise<boolean> {
   const { error } = await supabase
     .from("training_sessions")
     .update({ archived_at: new Date().toISOString() })
     .eq("recorded_by", userId)
+    .eq("dry_fire", dryFire)
     .is("archived_at", null);
 
   if (error) {

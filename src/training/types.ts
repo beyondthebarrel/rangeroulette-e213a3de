@@ -33,4 +33,6 @@ export interface TrainingSession {
   pendingSync?: boolean;
   /** Free-text note added after logging, before moving to the next drill. */
   notes?: string;
+  /** No live ammunition — zone/complete misses are meaningless and excluded from accuracy analytics. */
+  dryFire?: boolean;
 }

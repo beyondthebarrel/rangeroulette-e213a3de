@@ -1,15 +1,16 @@
 import { HeroBackdrop } from "./HeroBackdrop";
-import { IOSInstallBanner } from "./IOSInstallBanner";
 import {
   BookIcon,
   CardsIcon,
   ChartIcon,
+  LockIcon,
   MapPinIcon,
   StopwatchIcon,
   TargetIcon,
   TrophyIcon,
   UserIcon,
 } from "./icons";
+import { IOSInstallBanner } from "./IOSInstallBanner";
 import { RetryImage } from "./RetryImage";
 import { TitleFrame } from "./TitleFrame";
 import { UtilityButton } from "./UtilityButton";
@@ -19,18 +20,22 @@ function ModeButton({
   title,
   description,
   onClick,
+  variant = "orange",
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
   onClick: () => void;
+  variant?: "orange" | "sky";
 }) {
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-2.5 rounded-xl border-2 border-orange-700 bg-zinc-900/60 p-2 text-left hover:bg-zinc-900 sm:gap-3 sm:p-4"
+      className={`flex w-full items-center gap-2.5 rounded-xl border-2 bg-zinc-900/60 p-2 text-left hover:bg-zinc-900 sm:gap-3 sm:p-4 ${
+        variant === "sky" ? "border-sky-700" : "border-orange-700"
+      }`}
     >
-      <span className="shrink-0 text-orange-500">{icon}</span>
+      <span className={`shrink-0 ${variant === "sky" ? "text-sky-500" : "text-orange-500"}`}>{icon}</span>
       <span>
         <span className="block text-sm font-bold uppercase tracking-wide text-white sm:text-lg">
           {title}
@@ -46,6 +51,7 @@ function ModeButton({
 export function ModeSelectScreen({
   onSelectGame,
   onSelectTrain,
+  onSelectDryFire,
   onOpenLeaderboard,
   onOpenRules,
   onOpenAnalytics,
@@ -55,6 +61,7 @@ export function ModeSelectScreen({
 }: {
   onSelectGame: () => void;
   onSelectTrain: () => void;
+  onSelectDryFire: () => void;
   onOpenLeaderboard: () => void;
   onOpenRules: () => void;
   onOpenAnalytics: () => void;
@@ -84,6 +91,13 @@ export function ModeSelectScreen({
             title="Train Mode"
             description="Solo random drill generator & performance log"
             onClick={onSelectTrain}
+          />
+          <ModeButton
+            icon={<LockIcon className="h-7 w-7 sm:h-10 sm:w-10" />}
+            title="Dry Fire Mode"
+            description="No ammo — time-only reps with their own history & stats"
+            onClick={onSelectDryFire}
+            variant="sky"
           />
         </div>
 

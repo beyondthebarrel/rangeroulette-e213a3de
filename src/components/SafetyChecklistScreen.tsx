@@ -11,16 +11,19 @@ const SAFETY_RULES = [
   "I will comply with all range rules and policies.",
 ];
 
+const DRY_FIRE_RULE = "I have verified the chamber is clear and removed all ammunition from the training area.";
+
 export function SafetyChecklistScreen({
   mode,
   onAcknowledge,
   onBack,
 }: {
-  mode: "game" | "train";
+  mode: "game" | "train" | "dryFire";
   onAcknowledge: () => void;
   onBack: () => void;
 }) {
-  const [checked, setChecked] = useState<boolean[]>(() => SAFETY_RULES.map(() => false));
+  const rules = mode === "dryFire" ? [DRY_FIRE_RULE, ...SAFETY_RULES] : SAFETY_RULES;
+  const [checked, setChecked] = useState<boolean[]>(() => rules.map(() => false));
   const allChecked = checked.every(Boolean);
 
   function toggle(i: number) {
@@ -30,7 +33,11 @@ export function SafetyChecklistScreen({
   return (
     <HeroBackdrop>
       <TitleFrame>
-        <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500 sm:text-3xl">
+        <h1
+          className={`text-2xl font-bold uppercase tracking-wide sm:text-3xl ${
+            mode === "dryFire" ? "text-sky-400" : "text-orange-500"
+          }`}
+        >
           Safety Rules
         </h1>
 
@@ -41,14 +48,20 @@ export function SafetyChecklistScreen({
         )}
 
         <ul className="flex w-full flex-col gap-2">
-          {SAFETY_RULES.map((rule, i) => (
+          {rules.map((rule, i) => (
             <li key={rule}>
-              <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3 text-sm text-zinc-200 hover:bg-zinc-900">
+              <label
+                className={`flex cursor-pointer items-start gap-2.5 rounded-lg border bg-zinc-900/60 p-3 text-sm text-zinc-200 hover:bg-zinc-900 ${
+                  mode === "dryFire" && i === 0 ? "border-sky-700/50" : "border-orange-900/50"
+                }`}
+              >
                 <input
                   type="checkbox"
                   checked={checked[i]}
                   onChange={() => toggle(i)}
-                  className="mt-0.5 h-4 w-4 shrink-0 accent-orange-600"
+                  className={`mt-0.5 h-4 w-4 shrink-0 ${
+                    mode === "dryFire" && i === 0 ? "accent-sky-600" : "accent-orange-600"
+                  }`}
                 />
                 <span>{rule}</span>
               </label>
@@ -68,7 +81,9 @@ export function SafetyChecklistScreen({
         <button
           disabled={!allChecked}
           onClick={onAcknowledge}
-          className="w-full rounded-md bg-orange-700 px-4 py-3 font-semibold uppercase tracking-wide text-white enabled:hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+          className={`w-full rounded-md px-4 py-3 font-semibold uppercase tracking-wide text-white disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500 ${
+            mode === "dryFire" ? "bg-sky-700 enabled:hover:bg-sky-600" : "bg-orange-700 enabled:hover:bg-orange-600"
+          }`}
         >
           I Understand — Continue
         </button>

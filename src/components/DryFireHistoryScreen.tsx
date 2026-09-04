@@ -2,17 +2,11 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { listMyPistols, pistolLabel, type PistolInput } from "../profile";
 import { drillSummary } from "../training/drillLabel";
-import { getTrainingPhotoUrl } from "../training/photos";
-import {
-  clearTrainingHistory,
-  deleteTrainingSession,
-  getVisibleTrainingSessions,
-} from "../training/storage";
+import { clearTrainingHistory, deleteTrainingSession, getVisibleTrainingSessions } from "../training/storage";
 import type { TrainingSession } from "../training/types";
 import { getTrainingVideoUrl } from "../training/videos";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
-import { RetryImage } from "./RetryImage";
 import { TitleFrame } from "./TitleFrame";
 
 function formatDate(iso: string): string {
@@ -38,13 +32,12 @@ function computeStats(sessions: TrainingSession[]): Stats | null {
   return { bestSession, averageSeconds, sessionCount: sessions.length };
 }
 
-export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
+export function DryFireHistoryScreen({ onBack }: { onBack: () => void }) {
   const { user } = useAuth();
   const [sessions, setSessions] = useState<TrainingSession[] | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [photoUrls, setPhotoUrls] = useState<Record<string, string>>({});
   const [videoUrls, setVideoUrls] = useState<Record<string, string>>({});
   const [pistols, setPistols] = useState<PistolInput[]>([]);
 
@@ -53,21 +46,9 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
   const [clearError, setClearError] = useState<string | null>(null);
 
   async function loadSessions(signal?: { cancelled: boolean }) {
-    // Dry fire has its own dedicated History screen — keep this one live-fire only.
-    const loaded = (await getVisibleTrainingSessions()).filter((s) => !s.dryFire);
+    const loaded = (await getVisibleTrainingSessions()).filter((s) => s.dryFire);
     if (signal?.cancelled) return;
     setSessions(loaded);
-
-    const withPhotos = loaded.filter((s) => s.photoPath);
-    if (withPhotos.length > 0) {
-      const entries = await Promise.all(
-        withPhotos.map(async (s) => [s.photoPath!, await getTrainingPhotoUrl(s.photoPath!)] as const),
-      );
-      if (signal?.cancelled) return;
-      const urls: Record<string, string> = {};
-      for (const [path, url] of entries) if (url) urls[path] = url;
-      setPhotoUrls((prev) => ({ ...prev, ...urls }));
-    }
 
     const withVideos = loaded.filter((s) => s.videoPath);
     if (withVideos.length > 0) {
@@ -121,7 +102,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
     if (!user) return;
     setClearing(true);
     setClearError(null);
-    const ok = await clearTrainingHistory(user.id, false);
+    const ok = await clearTrainingHistory(user.id, true);
     setClearing(false);
     setConfirmingClear(false);
 
@@ -139,15 +120,15 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <TitleFrame>
-          <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">
-            Training History
+          <h1 className="text-2xl font-bold uppercase tracking-wide text-sky-400">
+            🔒 Dry Fire History
           </h1>
 
           {sessions === null ? (
             <p className="text-center text-sm text-zinc-400">Loading…</p>
           ) : sessions.length === 0 ? (
             <p className="text-center text-sm text-zinc-400">
-              No sessions logged yet. Run a drill in Train Mode to start tracking.
+              No dry fire reps logged yet. Run a drill in Dry Fire Mode to start tracking.
             </p>
           ) : null}
         </TitleFrame>
@@ -159,7 +140,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
             </div>
             <div className="grid grid-cols-3 gap-3 text-center">
               <div>
-                <div className="font-mono text-2xl font-bold text-orange-400">
+                <div className="font-mono text-2xl font-bold text-sky-400">
                   {stats.bestSession.finalSeconds.toFixed(2)}s
                 </div>
                 <div className="text-xs text-zinc-500">Best time</div>
@@ -172,13 +153,13 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
               </div>
               <div>
                 <div className="font-mono text-2xl font-bold text-white">{stats.sessionCount}</div>
-                <div className="text-xs text-zinc-500">Sessions</div>
+                <div className="text-xs text-zinc-500">Reps</div>
               </div>
             </div>
             <div className="text-xs text-zinc-500">
               Best run:{" "}
               {stats.bestSession.savedDrillName && (
-                <span className="text-orange-400">{stats.bestSession.savedDrillName} · </span>
+                <span className="text-sky-400">{stats.bestSession.savedDrillName} · </span>
               )}
               {drillSummary(stats.bestSession.drill)}
             </div>
@@ -197,7 +178,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
                   <button
                     onClick={handleClearHistory}
                     disabled={clearing}
-                    className="rounded bg-orange-700 px-2 py-1 text-white hover:bg-orange-600 disabled:opacity-60"
+                    className="rounded bg-sky-700 px-2 py-1 text-white hover:bg-sky-600 disabled:opacity-60"
                   >
                     {clearing ? "…" : "Yes, Clear"}
                   </button>
@@ -222,7 +203,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
               )}
             </div>
             <p className="text-[11px] leading-snug text-zinc-500">
-              Clears this list only — your lifetime records stay intact in Analytics.
+              Clears this list only — your lifetime records stay intact in Dry Fire Analytics.
             </p>
             {clearError != null && <div className="text-xs text-amber-400">{clearError}</div>}
             {deleteError != null && (
@@ -232,7 +213,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
               {sessions.map((s) => (
                 <li
                   key={s.id}
-                  className="rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3"
+                  className="rounded-lg border border-sky-900/50 bg-zinc-900/60 p-3"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-mono text-lg text-white">
@@ -251,7 +232,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
                           <button
                             onClick={() => handleDelete(s.id)}
                             disabled={deletingId === s.id}
-                            className="rounded bg-orange-700 px-1.5 py-0.5 text-white hover:bg-orange-600 disabled:opacity-60"
+                            className="rounded bg-sky-700 px-1.5 py-0.5 text-white hover:bg-sky-600 disabled:opacity-60"
                           >
                             {deletingId === s.id ? "…" : "Yes"}
                           </button>
@@ -271,7 +252,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
                           }}
                           aria-label="Delete session"
                           title="Delete session"
-                          className="text-zinc-500 hover:text-orange-400"
+                          className="text-zinc-500 hover:text-sky-400"
                         >
                           ✕
                         </button>
@@ -282,7 +263,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
                     <div className="flex-1">
                       <div className="text-xs text-zinc-400">
                         {s.savedDrillName && (
-                          <span className="text-orange-400">{s.savedDrillName} · </span>
+                          <span className="text-sky-400">{s.savedDrillName} · </span>
                         )}
                         {drillSummary(s.drill)}
                       </div>
@@ -291,28 +272,10 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
                           🔫 {pistolLabel(pistolById.get(s.pistolId)!)}
                         </div>
                       )}
-                      {(s.zoneMisses > 0 || s.completeMisses > 0) && (
-                        <div className="text-xs text-amber-400">
-                          {s.zoneMisses > 0 &&
-                            `${s.zoneMisses} zone miss${s.zoneMisses > 1 ? "es" : ""}`}
-                          {s.zoneMisses > 0 && s.completeMisses > 0 && ", "}
-                          {s.completeMisses > 0 &&
-                            `${s.completeMisses} complete miss${s.completeMisses > 1 ? "es" : ""}`}
-                        </div>
-                      )}
                       {s.notes && (
                         <div className="mt-1 text-xs italic text-zinc-400">"{s.notes}"</div>
                       )}
                     </div>
-                    {s.photoPath && photoUrls[s.photoPath] && (
-                      <a href={photoUrls[s.photoPath]} target="_blank" rel="noreferrer">
-                        <RetryImage
-                          src={photoUrls[s.photoPath]}
-                          alt="Target photo"
-                          className="h-14 w-14 shrink-0 rounded border border-zinc-700 object-cover"
-                        />
-                      </a>
-                    )}
                     {s.videoPath && videoUrls[s.videoPath] && (
                       <video
                         src={videoUrls[s.videoPath]}
@@ -329,7 +292,7 @@ export function TrainHistoryScreen({ onBack }: { onBack: () => void }) {
 
         <button
           onClick={onBack}
-          className="w-full rounded-md bg-orange-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white hover:bg-orange-600"
+          className="w-full rounded-md bg-sky-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white hover:bg-sky-600"
         >
           Back
         </button>

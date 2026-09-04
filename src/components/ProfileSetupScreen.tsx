@@ -102,7 +102,9 @@ export function ProfileSetupScreen({
         getMySubscriptionDetails(user.id),
       ]);
       if (cancelled) return;
-      setSessions(loggedSessions);
+      // Dry fire has no live impact to verify against, so it can't count
+      // toward a benchmark's "Achieved" status here.
+      setSessions(loggedSessions.filter((s) => !s.dryFire));
       setMembership(subscriptionDetails);
       if (profile) {
         setName(profile.displayName);

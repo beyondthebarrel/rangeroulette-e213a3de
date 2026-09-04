@@ -65,6 +65,8 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
   const [leveling, setLeveling] = useState(false);
   const [levelError, setLevelError] = useState<string | null>(null);
 
+  const [dryFireCount, setDryFireCount] = useState(0);
+
   const loadAnalytics = useCallback(
     async (signal?: { cancelled: boolean }) => {
       if (!user) return;
@@ -77,7 +79,12 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
       if (signal?.cancelled) return;
       // Non-destructive reset: sessions logged before a "Clear Analytics" are
       // simply excluded here, never deleted — see clearAnalytics for why.
-      setAllSessions(clearedAt ? sessions.filter((s) => s.loggedAt > clearedAt) : sessions);
+      const inWindow = clearedAt ? sessions.filter((s) => s.loggedAt > clearedAt) : sessions;
+      // Dry fire has no live impact to verify accuracy/benchmarks against, so
+      // it's excluded from every stat below (PRs would be unfairly fast, and
+      // "clean" would always read 100%) — counted separately instead.
+      setAllSessions(inWindow.filter((s) => !s.dryFire));
+      setDryFireCount(inWindow.filter((s) => s.dryFire).length);
       setPistols(loadedPistols);
       setShootingLevel(level);
     },
@@ -268,8 +275,14 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
             <p className="text-center text-sm text-zinc-400">
               {selectedPistol
                 ? `No sessions tagged with the ${pistolLabel(selectedPistol)} yet.`
-                : "No sessions logged yet. Run a drill in Train Mode to start tracking."}
+                : "No live-fire sessions logged yet. Run a drill in Train Mode to start tracking."}
             </p>
+            {dryFireCount > 0 && (
+              <p className="text-center text-xs text-sky-400">
+                🔒 {dryFireCount} dry-fire rep{dryFireCount === 1 ? "" : "s"} logged — see Dry Fire
+                Analytics from the mode select screen.
+              </p>
+            )}
           </Panel>
         ) : (
           <>
@@ -287,6 +300,12 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                 Training since {formatDate(analytics.firstLoggedAt!)} · last logged{" "}
                 {formatDate(analytics.lastLoggedAt!)}
               </div>
+              {dryFireCount > 0 && (
+                <div className="text-xs text-sky-400">
+                  🔒 {dryFireCount} dry-fire rep{dryFireCount === 1 ? "" : "s"} also logged — see Dry
+                  Fire Analytics for those.
+                </div>
+              )}
               {analytics.dailyVolume.length > 1 && (
                 <div className="flex flex-col gap-2 border-t border-zinc-800 pt-3">
                   <div className="text-xs text-zinc-500">Training volume by day</div>
