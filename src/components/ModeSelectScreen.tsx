@@ -1,4 +1,5 @@
 import { HeroBackdrop } from "./HeroBackdrop";
+import { IOSInstallBanner } from "./IOSInstallBanner";
 import {
   BookIcon,
   CardsIcon,
@@ -64,6 +65,7 @@ export function ModeSelectScreen({
   return (
     <HeroBackdrop>
       <TitleFrame>
+        <IOSInstallBanner />
         <img
           src="/rr-logo.webp"
           alt="Range Roulette"

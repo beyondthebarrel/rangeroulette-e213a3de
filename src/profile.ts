@@ -110,6 +110,18 @@ export async function clearAnalytics(userId: string): Promise<boolean> {
   return true;
 }
 
+export async function updateShootingLevel(userId: string, level: ShootingLevel): Promise<boolean> {
+  const { error } = await supabase
+    .from("profiles")
+    .upsert({ user_id: userId, shooting_level: level }, { onConflict: "user_id" });
+  if (error) {
+    console.error("Failed to update shooting level", error);
+    return false;
+  }
+  writeCache(`shootingLevel:${userId}`, level);
+  return true;
+}
+
 export async function getMyShootingLevel(userId: string): Promise<ShootingLevel | null> {
   const cacheKey = `shootingLevel:${userId}`;
   const { data, error } = await supabase

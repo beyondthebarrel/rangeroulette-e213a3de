@@ -8,6 +8,8 @@ import {
   getMyShootingLevel,
   listMyPistols,
   pistolLabel,
+  SHOOTING_LEVELS,
+  updateShootingLevel,
   type PistolInput,
   type ShootingLevel,
 } from "../profile";
@@ -59,6 +61,9 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
   const [confirmingClear, setConfirmingClear] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [clearError, setClearError] = useState<string | null>(null);
+
+  const [leveling, setLeveling] = useState(false);
+  const [levelError, setLevelError] = useState<string | null>(null);
 
   const loadAnalytics = useCallback(
     async (signal?: { cancelled: boolean }) => {
@@ -124,6 +129,25 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
         })),
     }));
   }, [allSessions, benchmarks]);
+
+  const allBenchmarksPassed =
+    benchmarkProgress.length > 0 && benchmarkProgress.every((bp) => bp.attempts.some((a) => a.passed));
+  const nextLevel: ShootingLevel | null = shootingLevel
+    ? (SHOOTING_LEVELS[SHOOTING_LEVELS.indexOf(shootingLevel) + 1] ?? null)
+    : null;
+
+  async function handleLevelUp() {
+    if (!user || !nextLevel) return;
+    setLeveling(true);
+    setLevelError(null);
+    const ok = await updateShootingLevel(user.id, nextLevel);
+    setLeveling(false);
+    if (!ok) {
+      setLevelError("Couldn't update your level — check your connection and try again.");
+      return;
+    }
+    setShootingLevel(nextLevel);
+  }
 
   const selectedPistol = pistols.find((p) => p.id === selectedPistolId) ?? null;
 
@@ -302,6 +326,34 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                     ),
                   )}
                 </div>
+              </Panel>
+            )}
+
+            {allBenchmarksPassed && shootingLevel && (
+              <Panel>
+                {nextLevel ? (
+                  <>
+                    <div className="text-sm font-semibold text-emerald-400">
+                      🎉 You've passed all {benchmarkProgress.length} {LEVEL_LABELS[shootingLevel]}{" "}
+                      benchmarks!
+                    </div>
+                    <p className="text-xs text-zinc-400">
+                      Ready to move up to {LEVEL_LABELS[nextLevel]}?
+                    </p>
+                    <button
+                      onClick={handleLevelUp}
+                      disabled={leveling}
+                      className="w-full rounded-md bg-orange-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white enabled:hover:bg-orange-600 disabled:opacity-60"
+                    >
+                      {leveling ? "…" : `Level Up to ${LEVEL_LABELS[nextLevel]}`}
+                    </button>
+                    {levelError != null && <p className="text-xs text-amber-400">{levelError}</p>}
+                  </>
+                ) : (
+                  <div className="text-sm font-semibold text-emerald-400">
+                    🏆 You've passed every Pro benchmark — top of the ladder.
+                  </div>
+                )}
               </Panel>
             )}
 
