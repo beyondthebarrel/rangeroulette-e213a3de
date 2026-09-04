@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
-import { BENCHMARKS, passesBenchmark } from "../data/benchmarks";
+import { BENCHMARKS, passesBenchmark, type BenchmarkDrill } from "../data/benchmarks";
 import { CATEGORY_ORDER, type CategoryKey } from "../data/cards";
 import {
   clearAnalytics,
@@ -26,6 +26,7 @@ import { RetryImage } from "./RetryImage";
 import { TitleFrame } from "./TitleFrame";
 
 const RECENT_PHOTO_LIMIT = 12;
+const NO_BENCHMARKS: BenchmarkDrill[] = [];
 
 const LEVEL_LABELS: Record<ShootingLevel, string> = {
   beginner: "Beginner",
@@ -100,26 +101,29 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
     await loadAnalytics();
   }
 
-  const benchmark = shootingLevel ? BENCHMARKS[shootingLevel] : null;
+  const benchmarks = shootingLevel ? BENCHMARKS[shootingLevel] : NO_BENCHMARKS;
 
-  const benchmarkAttempts = useMemo(() => {
-    if (!allSessions || !benchmark) return [];
-    return allSessions
-      .filter(
-        (s) =>
-          s.drill.time.cardId === benchmark.drill.time.cardId &&
-          s.drill.distance.cardId === benchmark.drill.distance.cardId &&
-          s.drill.startPosition.cardId === benchmark.drill.startPosition.cardId &&
-          s.drill.target.cardId === benchmark.drill.target.cardId &&
-          s.drill.courseOfFire.cardId === benchmark.drill.courseOfFire.cardId,
-      )
-      .sort((a, b) => new Date(a.loggedAt).getTime() - new Date(b.loggedAt).getTime())
-      .map((s) => ({
-        date: s.loggedAt,
-        seconds: s.rawSeconds,
-        passed: passesBenchmark(s, benchmark),
-      }));
-  }, [allSessions, benchmark]);
+  const benchmarkProgress = useMemo(() => {
+    if (!allSessions) return [];
+    return benchmarks.map((benchmark) => ({
+      benchmark,
+      attempts: allSessions
+        .filter(
+          (s) =>
+            s.drill.time.cardId === benchmark.drill.time.cardId &&
+            s.drill.distance.cardId === benchmark.drill.distance.cardId &&
+            s.drill.startPosition.cardId === benchmark.drill.startPosition.cardId &&
+            s.drill.target.cardId === benchmark.drill.target.cardId &&
+            s.drill.courseOfFire.cardId === benchmark.drill.courseOfFire.cardId,
+        )
+        .sort((a, b) => new Date(a.loggedAt).getTime() - new Date(b.loggedAt).getTime())
+        .map((s) => ({
+          date: s.loggedAt,
+          seconds: s.rawSeconds,
+          passed: passesBenchmark(s, benchmark),
+        })),
+    }));
+  }, [allSessions, benchmarks]);
 
   const selectedPistol = pistols.find((p) => p.id === selectedPistolId) ?? null;
 
@@ -301,13 +305,13 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
               </Panel>
             )}
 
-            {benchmark && (
-              <Panel>
+            {benchmarkProgress.map(({ benchmark, attempts }, i) => (
+              <Panel key={benchmark.id}>
                 <div className="flex items-center justify-between">
                   <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                    {LEVEL_LABELS[benchmark.level]} Benchmark
+                    {LEVEL_LABELS[benchmark.level]} Benchmark {i + 1}
                   </div>
-                  {benchmarkAttempts.some((a) => a.passed) ? (
+                  {attempts.some((a) => a.passed) ? (
                     <span className="text-xs font-semibold text-emerald-400">✓ Achieved</span>
                   ) : (
                     <span className="text-xs text-zinc-500">Not yet achieved</span>
@@ -324,24 +328,21 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
                   {benchmark.maxCompleteMisses} complete miss
                   {benchmark.maxCompleteMisses === 1 ? "" : "es"}
                 </div>
-                {benchmarkAttempts.length > 0 ? (
+                {attempts.length > 0 ? (
                   <div className="flex flex-col gap-2 border-t border-zinc-800 pt-3">
                     <div className="text-xs text-zinc-500">
-                      Progress toward par ({benchmarkAttempts.length} attempt
-                      {benchmarkAttempts.length === 1 ? "" : "s"})
+                      Progress toward par ({attempts.length} attempt
+                      {attempts.length === 1 ? "" : "s"})
                     </div>
-                    <BenchmarkProgressChart
-                      attempts={benchmarkAttempts}
-                      par={benchmark.drill.parSeconds!}
-                    />
+                    <BenchmarkProgressChart attempts={attempts} par={benchmark.drill.parSeconds!} />
                   </div>
                 ) : (
                   <p className="text-xs text-zinc-500">
-                    No attempts logged yet — select the benchmark from Train Mode's drill picker.
+                    No attempts logged yet — select this benchmark from Train Mode's drill picker.
                   </p>
                 )}
               </Panel>
-            )}
+            ))}
 
             <Panel>
               <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">

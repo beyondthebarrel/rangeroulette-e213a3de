@@ -351,38 +351,38 @@ export function ProfileSetupScreen({
           />
         </Panel>
 
-        {shootingLevel && (
-          <Panel>
-            <div className="flex items-center justify-between">
-              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                {LEVEL_LABELS[shootingLevel]} Benchmark
+        {shootingLevel &&
+          BENCHMARKS[shootingLevel].map((benchmark, i) => (
+            <Panel key={benchmark.id}>
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                  {LEVEL_LABELS[shootingLevel]} Benchmark {i + 1}
+                </div>
+                {(() => {
+                  const best = findBestBenchmarkPass(sessions, benchmark);
+                  return best ? (
+                    <span className="text-xs font-semibold text-emerald-400">
+                      ✓ Achieved — {best.rawSeconds.toFixed(2)}s
+                    </span>
+                  ) : (
+                    <span className="text-xs text-zinc-500">Not yet achieved</span>
+                  );
+                })()}
               </div>
-              {(() => {
-                const best = findBestBenchmarkPass(sessions, BENCHMARKS[shootingLevel]);
-                return best ? (
-                  <span className="text-xs font-semibold text-emerald-400">
-                    ✓ Achieved — {best.rawSeconds.toFixed(2)}s
-                  </span>
-                ) : (
-                  <span className="text-xs text-zinc-500">Not yet achieved</span>
-                );
-              })()}
-            </div>
-            <div className="text-sm text-white">{BENCHMARKS[shootingLevel].name}</div>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-              {CATEGORY_ORDER.map((cat: CategoryKey) => (
-                <PlayingCard key={cat} cardId={BENCHMARKS[shootingLevel].drill[cat].cardId} />
-              ))}
-            </div>
-            <div className="text-xs text-zinc-500">
-              Par {BENCHMARKS[shootingLevel].drill.parSeconds}s · max{" "}
-              {BENCHMARKS[shootingLevel].maxZoneMisses} zone /{" "}
-              {BENCHMARKS[shootingLevel].maxCompleteMisses} complete miss
-              {BENCHMARKS[shootingLevel].maxCompleteMisses === 1 ? "" : "es"} — attempt it from Train
-              Mode's drill picker.
-            </div>
-          </Panel>
-        )}
+              <div className="text-sm text-white">{benchmark.name}</div>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                {CATEGORY_ORDER.map((cat: CategoryKey) => (
+                  <PlayingCard key={cat} cardId={benchmark.drill[cat].cardId} />
+                ))}
+              </div>
+              <div className="text-xs text-zinc-500">
+                Par {benchmark.drill.parSeconds}s · max {benchmark.maxZoneMisses} zone /{" "}
+                {benchmark.maxCompleteMisses} complete miss
+                {benchmark.maxCompleteMisses === 1 ? "" : "es"} — attempt it from Train Mode's drill
+                picker.
+              </div>
+            </Panel>
+          ))}
 
         <Panel>
           <div className="flex items-center justify-between">

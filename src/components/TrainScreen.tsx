@@ -32,7 +32,10 @@ import { TitleFrame } from "./TitleFrame";
 import { UtilityButton } from "./UtilityButton";
 import { VideoCapture, type CapturedVideo } from "./VideoCapture";
 
-const BENCHMARK_OPTION_VALUE = "__benchmark__";
+const BENCHMARK_OPTION_PREFIX = "__benchmark__";
+function benchmarkOptionValue(id: string): string {
+  return `${BENCHMARK_OPTION_PREFIX}${id}`;
+}
 
 export function TrainScreen({
   onBack,
@@ -71,7 +74,7 @@ export function TrainScreen({
   const [pistols, setPistols] = useState<PistolInput[]>([]);
   const [selectedPistolId, setSelectedPistolId] = useState("");
 
-  const [benchmark, setBenchmark] = useState<BenchmarkDrill | null>(null);
+  const [benchmarks, setBenchmarks] = useState<BenchmarkDrill[]>([]);
   const [benchmarkResult, setBenchmarkResult] = useState<boolean | null>(null);
 
   const [savedDrills, setSavedDrills] = useState<SavedDrill[]>([]);
@@ -122,7 +125,7 @@ export function TrainScreen({
     if (!user) return;
     let cancelled = false;
     getMyShootingLevel(user.id).then((level) => {
-      if (!cancelled) setBenchmark(level ? BENCHMARKS[level] : null);
+      if (!cancelled) setBenchmarks(level ? BENCHMARKS[level] : []);
     });
     return () => {
       cancelled = true;
@@ -152,7 +155,8 @@ export function TrainScreen({
   }, [user, online]);
 
   const selectedSaved = savedDrills.find((d) => d.id === selectedSavedId) ?? null;
-  const isBenchmarkSelected = selectedSavedId === BENCHMARK_OPTION_VALUE && !!benchmark;
+  const selectedBenchmark =
+    benchmarks.find((b) => selectedSavedId === benchmarkOptionValue(b.id)) ?? null;
 
   const randomSnapshot: TrainingDrill = {
     time: { cardId: drill.time.def.id, label: drill.time.def.label, detail: drill.time.def.detail },
@@ -179,8 +183,8 @@ export function TrainScreen({
     parSeconds: drill.time.def.parSeconds,
   };
 
-  const activeDrill: TrainingDrill = isBenchmarkSelected
-    ? benchmark!.drill
+  const activeDrill: TrainingDrill = selectedBenchmark
+    ? selectedBenchmark.drill
     : selectedSaved
       ? selectedSaved.drill
       : randomSnapshot;
@@ -367,12 +371,12 @@ export function TrainScreen({
           ? `Result logged, but ${mediaWarnings.join(" and ")}.`
           : null,
     );
-    if (isBenchmarkSelected && benchmark) {
-      const par = benchmark.drill.parSeconds ?? Infinity;
+    if (selectedBenchmark) {
+      const par = selectedBenchmark.drill.parSeconds ?? Infinity;
       setBenchmarkResult(
         rawSeconds <= par &&
-          zoneMisses <= benchmark.maxZoneMisses &&
-          completeMisses <= benchmark.maxCompleteMisses,
+          zoneMisses <= selectedBenchmark.maxZoneMisses &&
+          completeMisses <= selectedBenchmark.maxCompleteMisses,
       );
     }
     // The drill (random, saved, or benchmark) stays on screen after logging
@@ -423,17 +427,19 @@ export function TrainScreen({
         <Panel>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              {isBenchmarkSelected
-                ? `🎯 Benchmark — ${benchmark!.name}`
+              {selectedBenchmark
+                ? `🎯 Benchmark — ${selectedBenchmark.name}`
                 : selectedSaved
                   ? `Saved Drill — ${selectedSaved.name}`
                   : "The Drill"}
             </div>
             <div className="flex flex-wrap gap-2">
-              {benchmark && (
+              {benchmarks.map((b, i) => (
                 <button
+                  key={b.id}
+                  title={b.name}
                   onClick={() => {
-                    setSelectedSavedId(BENCHMARK_OPTION_VALUE);
+                    setSelectedSavedId(benchmarkOptionValue(b.id));
                     resetScoreFields();
                     resetNoteState();
                     setLastLogged(null);
@@ -441,14 +447,14 @@ export function TrainScreen({
                     setSavedDrillError(null);
                   }}
                   className={`rounded border px-3 py-1 text-xs uppercase tracking-wide ${
-                    isBenchmarkSelected
+                    selectedBenchmark?.id === b.id
                       ? "border-orange-500 bg-orange-950/40 text-orange-400"
                       : "border-orange-700 text-orange-400 hover:bg-orange-950"
                   }`}
                 >
-                  🎯 Benchmark
+                  🎯 {i + 1}
                 </button>
-              )}
+              ))}
               <button
                 onClick={() => {
                   setShowSave((v) => !v);
@@ -498,9 +504,11 @@ export function TrainScreen({
               className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-orange-600 focus:outline-none"
             >
               <option value="">Random draw</option>
-              {benchmark && (
-                <option value={BENCHMARK_OPTION_VALUE}>🎯 Benchmark — {benchmark.name}</option>
-              )}
+              {benchmarks.map((b) => (
+                <option key={b.id} value={benchmarkOptionValue(b.id)}>
+                  🎯 Benchmark — {b.name}
+                </option>
+              ))}
               {savedDrills.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name}
