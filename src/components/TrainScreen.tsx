@@ -68,6 +68,7 @@ export function TrainScreen({
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const photoUploadInputRef = useRef<HTMLInputElement>(null);
 
   const [video, setVideo] = useState<CapturedVideo | null>(null);
 
@@ -220,6 +221,7 @@ export function TrainScreen({
     setPhotoFile(null);
     setPhotoPreviewUrl(null);
     if (photoInputRef.current) photoInputRef.current.value = "";
+    if (photoUploadInputRef.current) photoUploadInputRef.current.value = "";
   }
 
   function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -730,6 +732,14 @@ export function TrainScreen({
               className="hidden"
               id="target-photo-input"
             />
+            <input
+              ref={photoUploadInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoSelect}
+              className="hidden"
+              id="target-photo-upload-input"
+            />
             {photoPreviewUrl ? (
               <div className="flex items-center gap-3">
                 <img
@@ -737,28 +747,28 @@ export function TrainScreen({
                   alt="Target photo preview"
                   className="h-20 w-20 rounded border border-zinc-700 object-cover"
                 />
-                <div className="flex flex-col gap-1">
-                  <label
-                    htmlFor="target-photo-input"
-                    className="cursor-pointer rounded border border-zinc-600 px-3 py-1 text-center text-xs uppercase tracking-wide text-zinc-300 hover:bg-zinc-800"
-                  >
-                    Retake / Change
-                  </label>
-                  <button
-                    onClick={clearPhoto}
-                    className="rounded border border-zinc-700 px-3 py-1 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
-                  >
-                    Remove
-                  </button>
-                </div>
+                <button
+                  onClick={clearPhoto}
+                  className="rounded border border-zinc-700 px-3 py-1 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
+                >
+                  Remove
+                </button>
               </div>
             ) : (
-              <label
-                htmlFor="target-photo-input"
-                className="w-full cursor-pointer rounded border border-dashed border-zinc-600 px-3 py-3 text-center text-sm text-zinc-400 hover:border-orange-700 hover:text-orange-400"
-              >
-                Take / Add Photo
-              </label>
+              <div className="flex gap-2">
+                <label
+                  htmlFor="target-photo-input"
+                  className="flex-1 cursor-pointer rounded border border-dashed border-zinc-600 px-3 py-3 text-center text-sm text-zinc-400 hover:border-orange-700 hover:text-orange-400"
+                >
+                  📷 Take Photo
+                </label>
+                <label
+                  htmlFor="target-photo-upload-input"
+                  className="flex-1 cursor-pointer rounded border border-dashed border-zinc-600 px-3 py-3 text-center text-sm text-zinc-400 hover:border-orange-700 hover:text-orange-400"
+                >
+                  Upload Photo
+                </label>
+              </div>
             )}
           </div>
 
