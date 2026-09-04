@@ -443,7 +443,10 @@ export function TrainScreen({
                   ? `Saved Drill — ${selectedSaved.name}`
                   : "The Drill"}
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {benchmarks.length > 0 && (
+                <span className="text-[10px] uppercase tracking-wide text-zinc-500">Benchmarks:</span>
+              )}
               {benchmarks.map((b, i) => (
                 <button
                   key={b.id}
@@ -500,39 +503,42 @@ export function TrainScreen({
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={selectedSavedId}
-              onChange={(e) => {
-                setSelectedSavedId(e.target.value);
-                resetScoreFields();
-                resetNoteState();
-                setLastLogged(null);
-                setBenchmarkResult(null);
-                setSavedDrillError(null);
-              }}
-              className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-orange-600 focus:outline-none"
-            >
-              <option value="">Random draw</option>
-              {benchmarks.map((b) => (
-                <option key={b.id} value={benchmarkOptionValue(b.id)}>
-                  🎯 Benchmark — {b.name}
-                </option>
-              ))}
-              {savedDrills.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
-            {selectedSaved && (
-              <button
-                onClick={handleDeleteSaved}
-                className="rounded border border-zinc-700 px-3 py-2 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
+          <div className="flex flex-col gap-1.5">
+            <div className="text-xs text-zinc-500">Drill source</div>
+            <div className="flex flex-wrap items-center gap-2">
+              <select
+                value={selectedSavedId}
+                onChange={(e) => {
+                  setSelectedSavedId(e.target.value);
+                  resetScoreFields();
+                  resetNoteState();
+                  setLastLogged(null);
+                  setBenchmarkResult(null);
+                  setSavedDrillError(null);
+                }}
+                className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-orange-600 focus:outline-none"
               >
-                Delete
-              </button>
-            )}
+                <option value="">Random draw</option>
+                {benchmarks.map((b) => (
+                  <option key={b.id} value={benchmarkOptionValue(b.id)}>
+                    🎯 Benchmark — {b.name}
+                  </option>
+                ))}
+                {savedDrills.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+              {selectedSaved && (
+                <button
+                  onClick={handleDeleteSaved}
+                  className="rounded border border-zinc-700 px-3 py-2 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
           </div>
 
           {showManageSaved && (
