@@ -317,7 +317,7 @@ export function ProfileSetupScreen({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <div className="text-xs text-zinc-500">Name</div>
+            <div className="text-xs font-bold uppercase tracking-wide text-orange-400">Name</div>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -327,7 +327,7 @@ export function ProfileSetupScreen({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <div className="text-xs text-zinc-500">Age (optional)</div>
+            <div className="text-xs font-bold uppercase tracking-wide text-orange-400">Age (optional)</div>
             <input
               type="number"
               min="0"
@@ -340,7 +340,7 @@ export function ProfileSetupScreen({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <div className="text-xs text-zinc-500">Shooting level</div>
+            <div className="text-xs font-bold uppercase tracking-wide text-orange-400">Shooting level</div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {SHOOTING_LEVELS.map((level) => (
                 <button
@@ -359,7 +359,7 @@ export function ProfileSetupScreen({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <div className="text-xs text-zinc-500">Primary pistol</div>
+            <div className="text-xs font-bold uppercase tracking-wide text-orange-400">Primary pistol</div>
             <input
               value={primaryPistol}
               onChange={(e) => setPrimaryPistol(e.target.value)}
@@ -441,7 +441,7 @@ export function ProfileSetupScreen({
                   <div className="grid grid-cols-2 gap-2">
                     {PISTOL_FIELDS.map((f) => (
                       <div key={f.key} className="flex flex-col gap-1">
-                        <div className="text-[10px] uppercase tracking-wide text-zinc-500">
+                        <div className="text-[10px] font-bold uppercase tracking-wide text-orange-400/80">
                           {f.placeholder}
                         </div>
                         <input
@@ -454,7 +454,7 @@ export function ProfileSetupScreen({
                     ))}
                   </div>
                   <div className="flex flex-col gap-1">
-                    <div className="text-[10px] uppercase tracking-wide text-zinc-500">
+                    <div className="text-[10px] font-bold uppercase tracking-wide text-orange-400/80">
                       Other accessories
                     </div>
                     <input

@@ -4,6 +4,12 @@ const COLOR_CLASSES: Record<string, string> = {
   orange: "bg-orange-700 hover:bg-orange-600 shadow-[0_0_10px_rgba(234,88,12,0.4)]",
 };
 
+const LABEL_COLOR_CLASSES: Record<string, string> = {
+  amber: "text-amber-400",
+  red: "text-red-400",
+  orange: "text-orange-400",
+};
+
 export function Stepper({
   label,
   value,
@@ -17,7 +23,7 @@ export function Stepper({
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="text-sm text-zinc-400">{label}</span>
+      <span className={`text-sm font-bold uppercase tracking-wide ${LABEL_COLOR_CLASSES[color]}`}>{label}</span>
       <div className="flex items-center gap-2.5">
         <button
           onClick={() => onChange(Math.max(0, value - 1))}

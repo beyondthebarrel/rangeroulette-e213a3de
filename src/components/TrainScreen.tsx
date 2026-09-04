@@ -451,7 +451,7 @@ export function TrainScreen({
                 Next Drill
               </button>
               {benchmarks.length > 0 && (
-                <span className="text-[10px] uppercase tracking-wide text-zinc-500">Benchmarks:</span>
+                <span className="text-[10px] font-bold uppercase tracking-wide text-orange-400">Benchmarks:</span>
               )}
               {benchmarks.map((b, i) => (
                 <button
@@ -504,7 +504,7 @@ export function TrainScreen({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <div className="text-xs text-zinc-500">Drill source</div>
+            <div className="text-xs font-bold uppercase tracking-wide text-orange-400">Drill source</div>
             <div className="flex flex-wrap items-center gap-2">
               <select
                 value={selectedSavedId}
