@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8.5 11" width="8.5in" height="11in">
+  <rect x="0" y="0" width="8.5" height="11" fill="#ffffff"/>
+
+  <text x="4.25" y="0.55" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.34" font-weight="700" fill="#111111">ZEROING GRID</text>
+  <text x="4.25" y="0.82" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.15" fill="#555555">1/2" grid, 1" reference ticks — measure group offset from center, then adjust sights</text>
+
+  <g stroke="#cccccc" stroke-width="0.01">
+    <line x1="0.25" y1="1.0" x2="0.25" y2="10.0"/>
+    <line x1="0.75" y1="1.0" x2="0.75" y2="10.0"/>
+    <line x1="1.25" y1="1.0" x2="1.25" y2="10.0"/>
+    <line x1="1.75" y1="1.0" x2="1.75" y2="10.0"/>
+    <line x1="2.25" y1="1.0" x2="2.25" y2="10.0"/>
+    <line x1="2.75" y1="1.0" x2="2.75" y2="10.0"/>
+    <line x1="3.25" y1="1.0" x2="3.25" y2="10.0"/>
+    <line x1="3.75" y1="1.0" x2="3.75" y2="10.0"/>
+    <line x1="4.75" y1="1.0" x2="4.75" y2="10.0"/>
+    <line x1="5.25" y1="1.0" x2="5.25" y2="10.0"/>
+    <line x1="5.75" y1="1.0" x2="5.75" y2="10.0"/>
+    <line x1="6.25" y1="1.0" x2="6.25" y2="10.0"/>
+    <line x1="6.75" y1="1.0" x2="6.75" y2="10.0"/>
+    <line x1="7.25" y1="1.0" x2="7.25" y2="10.0"/>
+    <line x1="7.75" y1="1.0" x2="7.75" y2="10.0"/>
+    <line x1="8.25" y1="1.0" x2="8.25" y2="10.0"/>
+
+    <line x1="0.25" y1="1.0" x2="8.25" y2="1.0"/>
+    <line x1="0.25" y1="1.5" x2="8.25" y2="1.5"/>
+    <line x1="0.25" y1="2.0" x2="8.25" y2="2.0"/>
+    <line x1="0.25" y1="2.5" x2="8.25" y2="2.5"/>
+    <line x1="0.25" y1="3.0" x2="8.25" y2="3.0"/>
+    <line x1="0.25" y1="3.5" x2="8.25" y2="3.5"/>
+    <line x1="0.25" y1="4.0" x2="8.25" y2="4.0"/>
+    <line x1="0.25" y1="4.5" x2="8.25" y2="4.5"/>
+    <line x1="0.25" y1="5.0" x2="8.25" y2="5.0"/>
+    <line x1="0.25" y1="6.0" x2="8.25" y2="6.0"/>
+    <line x1="0.25" y1="6.5" x2="8.25" y2="6.5"/>
+    <line x1="0.25" y1="7.0" x2="8.25" y2="7.0"/>
+    <line x1="0.25" y1="7.5" x2="8.25" y2="7.5"/>
+    <line x1="0.25" y1="8.0" x2="8.25" y2="8.0"/>
+    <line x1="0.25" y1="8.5" x2="8.25" y2="8.5"/>
+    <line x1="0.25" y1="9.0" x2="8.25" y2="9.0"/>
+    <line x1="0.25" y1="9.5" x2="8.25" y2="9.5"/>
+    <line x1="0.25" y1="10.0" x2="8.25" y2="10.0"/>
+  </g>
+
+  <rect x="0.25" y="1.0" width="8.0" height="9.0" fill="none" stroke="#999999" stroke-width="0.02"/>
+
+  <line x1="4.25" y1="1.0" x2="4.25" y2="10.0" stroke="#111111" stroke-width="0.025"/>
+  <line x1="0.25" y1="5.5" x2="8.25" y2="5.5" stroke="#111111" stroke-width="0.025"/>
+
+  <circle cx="4.25" cy="5.5" r="0.14" fill="none" stroke="#111111" stroke-width="0.025"/>
+  <circle cx="4.25" cy="5.5" r="0.04" fill="#111111"/>
+
+  <!-- Horizontal axis ticks (inches from center) -->
+  <g font-family="Arial, Helvetica, sans-serif" font-size="0.13" fill="#111111" text-anchor="middle">
+    <line x1="3.25" y1="5.4" x2="3.25" y2="5.6" stroke="#111111" stroke-width="0.02"/>
+    <text x="3.25" y="5.85">-3</text>
+    <line x1="2.25" y1="5.4" x2="2.25" y2="5.6" stroke="#111111" stroke-width="0.02"/>
+    <text x="2.25" y="5.85">-2</text>
+    <line x1="1.25" y1="5.4" x2="1.25" y2="5.6" stroke="#111111" stroke-width="0.02"/>
+    <text x="1.25" y="5.85">-1</text>
+    <line x1="5.25" y1="5.4" x2="5.25" y2="5.6" stroke="#111111" stroke-width="0.02"/>
+    <text x="5.25" y="5.85">1</text>
+    <line x1="6.25" y1="5.4" x2="6.25" y2="5.6" stroke="#111111" stroke-width="0.02"/>
+    <text x="6.25" y="5.85">2</text>
+    <line x1="7.25" y1="5.4" x2="7.25" y2="5.6" stroke="#111111" stroke-width="0.02"/>
+    <text x="7.25" y="5.85">3</text>
+  </g>
+
+  <!-- Vertical axis ticks (inches from center) -->
+  <g font-family="Arial, Helvetica, sans-serif" font-size="0.13" fill="#111111">
+    <line x1="4.15" y1="4.5" x2="4.35" y2="4.5" stroke="#111111" stroke-width="0.02"/>
+    <text x="4.42" y="4.56">+1</text>
+    <line x1="4.15" y1="3.5" x2="4.35" y2="3.5" stroke="#111111" stroke-width="0.02"/>
+    <text x="4.42" y="3.56">+2</text>
+    <line x1="4.15" y1="2.5" x2="4.35" y2="2.5" stroke="#111111" stroke-width="0.02"/>
+    <text x="4.42" y="2.56">+3</text>
+    <line x1="4.15" y1="6.5" x2="4.35" y2="6.5" stroke="#111111" stroke-width="0.02"/>
+    <text x="4.42" y="6.56">-1</text>
+    <line x1="4.15" y1="7.5" x2="4.35" y2="7.5" stroke="#111111" stroke-width="0.02"/>
+    <text x="4.42" y="7.56">-2</text>
+    <line x1="4.15" y1="8.5" x2="4.35" y2="8.5" stroke="#111111" stroke-width="0.02"/>
+    <text x="4.42" y="8.56">-3</text>
+  </g>
+
+  <text x="4.25" y="10.2" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.13" fill="#777777">Each square = 1/2 inch. Aim at the center dot; count squares to your group's center.</text>
+
+  <line x1="0.5" y1="10.42" x2="1.5" y2="10.42" stroke="#111111" stroke-width="0.02"/>
+  <line x1="0.5" y1="10.36" x2="0.5" y2="10.48" stroke="#111111" stroke-width="0.02"/>
+  <line x1="1.5" y1="10.36" x2="1.5" y2="10.48" stroke="#111111" stroke-width="0.02"/>
+  <text x="1.0" y="10.62" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.12" fill="#555555">1 IN — verify scale before use</text>
+
+  <text x="4.25" y="10.8" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.12" fill="#777777">Range Roulette · Beyond The Barrel Concepts</text>
+  <text x="4.25" y="10.96" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.11" fill="#999999">Print at 100% / Actual Size — do not "fit to page"</text>
+</svg>

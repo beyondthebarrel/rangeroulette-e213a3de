@@ -26,9 +26,24 @@ const TARGETS: PrintableTarget[] = [
     description: "Body A-zone plus head box on one sheet — 2 to the body, 1 to the head.",
   },
   {
+    id: "uspsa-quarter-scale",
+    name: "1/4-Scale USPSA Target",
+    description: "True 1/4-scale A/C/D silhouette — print and shoot at 1/4 distance to simulate full size.",
+  },
+  {
     id: "precision-bullseye",
     name: "Precision Bullseye",
     description: "Classic ringed bullseye for zeroing and group practice.",
+  },
+  {
+    id: "dot-torture",
+    name: "Dot Torture",
+    description: "10 numbered dots with a built-in 10-string drill card — draw, weak/strong hand, reloads.",
+  },
+  {
+    id: "zeroing-grid",
+    name: "Zeroing Grid",
+    description: "1/2\" grid with 1\" reference ticks for measuring group offset and adjusting sights.",
   },
 ];
 
