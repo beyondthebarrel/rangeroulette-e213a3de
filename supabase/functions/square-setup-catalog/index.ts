@@ -250,10 +250,16 @@ Deno.serve(async (req) => {
   const plan = data.objects?.find((o) => o.type === "SUBSCRIPTION_PLAN");
   const variationId = plan?.subscription_plan_data?.subscription_plan_variations?.[0]?.id;
 
+  const secretName = isSixMonth
+    ? "SQUARE_SIX_MONTH_PLAN_VARIATION_ID"
+    : isHalfOff
+      ? "SQUARE_HALF_OFF_PLAN_VARIATION_ID"
+      : "SQUARE_PLAN_VARIATION_ID";
+
   return new Response(
     JSON.stringify({
       message: variationId
-        ? "Catalog created. Set SQUARE_PLAN_VARIATION_ID to the id below."
+        ? `Catalog created. Set ${secretName} to the id below.`
         : "Request succeeded but no plan variation came back — check `objects` below.",
       plan_variation_id: variationId ?? null,
       objects: data.objects,
