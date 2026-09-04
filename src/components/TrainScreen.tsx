@@ -444,6 +444,12 @@ export function TrainScreen({
                   : "The Drill"}
             </div>
             <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleNewDrill}
+                className="rounded bg-orange-700 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow-[0_0_12px_rgba(234,88,12,0.5)] hover:bg-orange-600"
+              >
+                Next Drill
+              </button>
               {benchmarks.length > 0 && (
                 <span className="text-[10px] uppercase tracking-wide text-zinc-500">Benchmarks:</span>
               )}
@@ -494,12 +500,6 @@ export function TrainScreen({
                   Manage Saved
                 </button>
               )}
-              <button
-                onClick={handleNewDrill}
-                className="rounded border border-orange-700 px-3 py-1 text-xs uppercase tracking-wide text-orange-400 hover:bg-orange-950"
-              >
-                Next Drill
-              </button>
             </div>
           </div>
 
