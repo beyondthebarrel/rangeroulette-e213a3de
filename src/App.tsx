@@ -27,6 +27,7 @@ import { GameProvider, useGame } from "./game/GameContext";
 import { hasSeenRulesIntro, markRulesIntroSeen } from "./onboarding/rulesIntro";
 import { getOnboardedStatus } from "./profile";
 import { getMySubscriptionStatus } from "./subscription";
+import type { TrainingDrill } from "./training/types";
 import { useOfflineSync } from "./training/useOfflineSync";
 
 type View =
@@ -73,6 +74,10 @@ function App() {
     hasSeenRulesIntro() ? "modeSelect" : "rulesIntro",
   );
   const [pendingMode, setPendingMode] = useState<PendingMode | null>(null);
+  // A drill picked from History to run again — handed to Train/Dry Fire Mode
+  // once on their next mount, then cleared so it doesn't resurrect on a later
+  // visit that didn't come from History.
+  const [repeatDrill, setRepeatDrill] = useState<TrainingDrill | null>(null);
   const { session, loading } = useAuth();
   // Mounted for the whole signed-in session (not just while Train Mode is
   // open) so a session logged offline still syncs even if the user has since
@@ -136,6 +141,7 @@ function App() {
 
   function selectMode(mode: PendingMode) {
     setPendingMode(mode);
+    setRepeatDrill(null);
     setView("safetyCheck");
   }
 
@@ -190,19 +196,37 @@ function App() {
             onBack={() => setView("modeSelect")}
             onOpenHistory={() => setView("trainHistory")}
             onOpenAnalytics={() => setView("trainAnalytics")}
+            initialDrill={repeatDrill ?? undefined}
+            onInitialDrillConsumed={() => setRepeatDrill(null)}
           />
         )}
-        {view === "trainHistory" && <TrainHistoryScreen onBack={() => setView("train")} />}
+        {view === "trainHistory" && (
+          <TrainHistoryScreen
+            onBack={() => setView("train")}
+            onRepeatDrill={(drill) => {
+              setRepeatDrill(drill);
+              setView("train");
+            }}
+          />
+        )}
         {view === "trainAnalytics" && <AnalyticsScreen onBack={() => setView("train")} />}
         {view === "dryFire" && (
           <DryFireScreen
             onBack={() => setView("modeSelect")}
             onOpenHistory={() => setView("dryFireHistory")}
             onOpenAnalytics={() => setView("dryFireAnalytics")}
+            initialDrill={repeatDrill ?? undefined}
+            onInitialDrillConsumed={() => setRepeatDrill(null)}
           />
         )}
         {view === "dryFireHistory" && (
-          <DryFireHistoryScreen onBack={() => setView("dryFire")} />
+          <DryFireHistoryScreen
+            onBack={() => setView("dryFire")}
+            onRepeatDrill={(drill) => {
+              setRepeatDrill(drill);
+              setView("dryFire");
+            }}
+          />
         )}
         {view === "dryFireAnalytics" && (
           <DryFireAnalyticsScreen onBack={() => setView("dryFire")} />

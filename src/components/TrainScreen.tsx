@@ -41,13 +41,27 @@ export function TrainScreen({
   onBack,
   onOpenHistory,
   onOpenAnalytics,
+  initialDrill,
+  onInitialDrillConsumed,
 }: {
   onBack: () => void;
   onOpenHistory: () => void;
   onOpenAnalytics: () => void;
+  initialDrill?: TrainingDrill;
+  onInitialDrillConsumed?: () => void;
 }) {
   const { user } = useAuth();
   const { drill, drawNew } = useTrainingDrill();
+  // A drill repeated from History — a fixed, named-less configuration like a
+  // saved drill or benchmark, but never persisted. Captured once from
+  // initialDrill on mount; onInitialDrillConsumed tells the parent to drop
+  // its copy so leaving and returning to Train Mode later doesn't resurrect it.
+  const [repeatedDrill, setRepeatedDrill] = useState<TrainingDrill | null>(initialDrill ?? null);
+  useEffect(() => {
+    if (initialDrill) onInitialDrillConsumed?.();
+    // Only ever meant to run once, against the drill this screen mounted with.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const online = useOnlineStatus();
   const [pendingCount, setPendingCount] = useState(0);
   const [trainee, setTrainee] = useState<string | null>(null);
@@ -181,12 +195,15 @@ export function TrainScreen({
     ? selectedBenchmark.drill
     : selectedSaved
       ? selectedSaved.drill
-      : randomSnapshot;
+      : repeatedDrill
+        ? repeatedDrill
+        : randomSnapshot;
   const parSeconds = activeDrill.parSeconds;
   const canLog = !!trainee && rawSeconds != null && !logging && !!user;
-  // Hand-picking only applies to a live random draw — a saved drill or
-  // benchmark is a fixed, named configuration, not something to tweak here.
-  const canHandPick = !selectedSaved && !selectedBenchmark;
+  // Hand-picking only applies to a live random draw — a saved drill,
+  // benchmark, or repeated past rep is a fixed configuration, not something
+  // to tweak here.
+  const canHandPick = !selectedSaved && !selectedBenchmark && !repeatedDrill;
 
   function cycleCard(cat: CategoryKey, direction: 1 | -1) {
     const options = CATEGORY_DECKS[cat];
@@ -233,6 +250,7 @@ export function TrainScreen({
 
   function handleNewDrill() {
     setSelectedSavedId("");
+    setRepeatedDrill(null);
     setOverrides({});
     drawNew();
     resetScoreFields();
@@ -443,7 +461,9 @@ export function TrainScreen({
                 ? `🎯 Benchmark — ${selectedBenchmark.name}`
                 : selectedSaved
                   ? `Saved Drill — ${selectedSaved.name}`
-                  : "The Drill"}
+                  : repeatedDrill
+                    ? "Repeating Past Rep"
+                    : "The Drill"}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -461,6 +481,7 @@ export function TrainScreen({
                   title={b.name}
                   onClick={() => {
                     setSelectedSavedId(benchmarkOptionValue(b.id));
+                    setRepeatedDrill(null);
                     resetScoreFields();
                     resetNoteState();
                     setLastLogged(null);
@@ -512,6 +533,7 @@ export function TrainScreen({
                 value={selectedSavedId}
                 onChange={(e) => {
                   setSelectedSavedId(e.target.value);
+                  setRepeatedDrill(null);
                   resetScoreFields();
                   resetNoteState();
                   setLastLogged(null);

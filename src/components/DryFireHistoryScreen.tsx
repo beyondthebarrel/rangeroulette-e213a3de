@@ -3,7 +3,7 @@ import { useAuth } from "../auth/AuthContext";
 import { listMyPistols, pistolLabel, type PistolInput } from "../profile";
 import { drillSummary } from "../training/drillLabel";
 import { clearTrainingHistory, deleteTrainingSession, getVisibleTrainingSessions } from "../training/storage";
-import type { TrainingSession } from "../training/types";
+import type { TrainingDrill, TrainingSession } from "../training/types";
 import { getTrainingVideoUrl } from "../training/videos";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
@@ -32,7 +32,13 @@ function computeStats(sessions: TrainingSession[]): Stats | null {
   return { bestSession, averageSeconds, sessionCount: sessions.length };
 }
 
-export function DryFireHistoryScreen({ onBack }: { onBack: () => void }) {
+export function DryFireHistoryScreen({
+  onBack,
+  onRepeatDrill,
+}: {
+  onBack: () => void;
+  onRepeatDrill: (drill: TrainingDrill) => void;
+}) {
   const { user } = useAuth();
   const [sessions, setSessions] = useState<TrainingSession[] | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -261,12 +267,16 @@ export function DryFireHistoryScreen({ onBack }: { onBack: () => void }) {
                   </div>
                   <div className="flex items-start gap-3">
                     <div className="flex-1">
-                      <div className="text-xs text-zinc-400">
+                      <button
+                        onClick={() => onRepeatDrill(s.drill)}
+                        title="Run this drill again"
+                        className="text-left text-xs text-zinc-400 hover:text-sky-300 hover:underline"
+                      >
                         {s.savedDrillName && (
                           <span className="text-sky-400">{s.savedDrillName} · </span>
                         )}
                         {drillSummary(s.drill)}
-                      </div>
+                      </button>
                       {s.pistolId && pistolById.get(s.pistolId) && (
                         <div className="text-xs text-zinc-500">
                           🔫 {pistolLabel(pistolById.get(s.pistolId)!)}

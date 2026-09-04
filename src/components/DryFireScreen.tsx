@@ -47,13 +47,27 @@ export function DryFireScreen({
   onBack,
   onOpenHistory,
   onOpenAnalytics,
+  initialDrill,
+  onInitialDrillConsumed,
 }: {
   onBack: () => void;
   onOpenHistory: () => void;
   onOpenAnalytics: () => void;
+  initialDrill?: TrainingDrill;
+  onInitialDrillConsumed?: () => void;
 }) {
   const { user } = useAuth();
   const { drill, drawNew } = useTrainingDrill(DRY_FIRE_DECKS);
+  // A drill repeated from History — a fixed configuration like a saved
+  // drill, but never persisted. Captured once from initialDrill on mount;
+  // onInitialDrillConsumed tells the parent to drop its copy so leaving and
+  // returning to Dry Fire Mode later doesn't resurrect it.
+  const [repeatedDrill, setRepeatedDrill] = useState<TrainingDrill | null>(initialDrill ?? null);
+  useEffect(() => {
+    if (initialDrill) onInitialDrillConsumed?.();
+    // Only ever meant to run once, against the drill this screen mounted with.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const online = useOnlineStatus();
   const [pendingCount, setPendingCount] = useState(0);
   const [trainee, setTrainee] = useState<string | null>(null);
@@ -154,12 +168,16 @@ export function DryFireScreen({
     parSeconds: (overrides.time ?? drill.time.def).parSeconds,
   };
 
-  const activeDrill: TrainingDrill = selectedSaved ? selectedSaved.drill : randomSnapshot;
+  const activeDrill: TrainingDrill = selectedSaved
+    ? selectedSaved.drill
+    : repeatedDrill
+      ? repeatedDrill
+      : randomSnapshot;
   const parSeconds = activeDrill.parSeconds;
   const canLog = !!trainee && rawSeconds != null && !logging && !!user;
-  // Hand-picking only applies to a live random draw — a saved drill is a
-  // fixed, named configuration, not something to tweak here.
-  const canHandPick = !selectedSaved;
+  // Hand-picking only applies to a live random draw — a saved drill or
+  // repeated past rep is a fixed configuration, not something to tweak here.
+  const canHandPick = !selectedSaved && !repeatedDrill;
 
   function cycleCard(cat: CategoryKey, direction: 1 | -1) {
     const options = DRY_FIRE_DECKS[cat];
@@ -189,6 +207,7 @@ export function DryFireScreen({
 
   function handleNewDrill() {
     setSelectedSavedId("");
+    setRepeatedDrill(null);
     setOverrides({});
     drawNew();
     resetScoreFields();
@@ -371,7 +390,11 @@ export function DryFireScreen({
         <Panel variant="sky">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
-              {selectedSaved ? `Saved Drill — ${selectedSaved.name}` : "The Drill"}
+              {selectedSaved
+                ? `Saved Drill — ${selectedSaved.name}`
+                : repeatedDrill
+                  ? "Repeating Past Rep"
+                  : "The Drill"}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -416,6 +439,7 @@ export function DryFireScreen({
                 value={selectedSavedId}
                 onChange={(e) => {
                   setSelectedSavedId(e.target.value);
+                  setRepeatedDrill(null);
                   resetScoreFields();
                   resetNoteState();
                   setLastLogged(null);
