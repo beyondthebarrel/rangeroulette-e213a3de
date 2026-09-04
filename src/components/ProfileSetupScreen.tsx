@@ -54,10 +54,12 @@ export function ProfileSetupScreen({
   mode = "onboarding",
   onComplete,
   onBack,
+  onSubscriptionCanceled,
 }: {
   mode?: "onboarding" | "edit";
   onComplete: () => void;
   onBack?: () => void;
+  onSubscriptionCanceled?: () => void;
 }) {
   const { user } = useAuth();
 
@@ -260,7 +262,7 @@ export function ProfileSetupScreen({
           </p>
         </TitleFrame>
 
-        {membership && <MembershipPanel details={membership} />}
+        {membership && <MembershipPanel details={membership} onCanceled={onSubscriptionCanceled} />}
 
         <Panel>
           <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Basics</div>

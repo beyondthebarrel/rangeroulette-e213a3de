@@ -18,13 +18,15 @@ export interface SubscriptionDetails {
   currentPeriodEnd: string | null;
   /** No square_subscription_id means a "free" (lifetime) promo grant — there's nothing to ever renew or bill. */
   hasSquareSubscription: boolean;
+  /** Still within this timestamp means a cancel request qualifies for a full refund. */
+  trialEndsAt: string | null;
 }
 
 /** Fuller membership info for display (e.g. on the profile page) — see getMySubscriptionStatus for the plain gate check. */
 export async function getMySubscriptionDetails(userId: string): Promise<SubscriptionDetails | null> {
   const { data, error } = await supabase
     .from("subscriptions")
-    .select("status, current_period_end, square_subscription_id")
+    .select("status, current_period_end, square_subscription_id, trial_ends_at")
     .eq("user_id", userId)
     .maybeSingle();
   if (error || !data) return null;
@@ -32,7 +34,40 @@ export async function getMySubscriptionDetails(userId: string): Promise<Subscrip
     status: (data.status as SubscriptionStatus) ?? null,
     currentPeriodEnd: data.current_period_end,
     hasSquareSubscription: !!data.square_subscription_id,
+    trialEndsAt: data.trial_ends_at,
   };
+}
+
+export interface CancelResult {
+  ok?: boolean;
+  refunded?: boolean;
+  error?: string;
+}
+
+/** Asks the square-cancel-subscription Edge Function to cancel billing and, if still within the refund window, refund the last payment. */
+export async function cancelMySubscription(): Promise<CancelResult> {
+  const { data, error } = await supabase.functions.invoke<{
+    ok?: boolean;
+    refunded?: boolean;
+    error?: string;
+  }>("square-cancel-subscription");
+
+  if (data?.ok) return data;
+
+  // Same non-2xx-body quirk as startCheckout — supabase-js doesn't surface
+  // the response body as `data` on failure, so read it off the raw Response.
+  let message = data?.error;
+  const context = (error as { context?: Response } | null)?.context;
+  if (!message && context) {
+    try {
+      const body = await context.clone().json();
+      message = body?.error;
+    } catch {
+      // Response wasn't JSON — fall through to the generic message below.
+    }
+  }
+  console.error("Failed to cancel subscription", message ?? error);
+  return { error: message ?? "Couldn't cancel — check your connection and try again." };
 }
 
 export interface CheckoutResult {

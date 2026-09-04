@@ -164,6 +164,7 @@ function App() {
             mode="edit"
             onComplete={() => setView("modeSelect")}
             onBack={() => setView("modeSelect")}
+            onSubscriptionCanceled={() => setSubscribed(false)}
           />
         )}
         {view === "safetyCheck" && pendingMode && (

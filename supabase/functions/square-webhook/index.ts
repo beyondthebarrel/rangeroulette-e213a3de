@@ -54,21 +54,44 @@ function mapStatus(squareStatus: string | undefined): string {
   }
 }
 
+/** Resolves invoice -> order -> tender -> payment_id/amount, per Square's docs for refunding a paid invoice. */
+async function resolvePaymentFromInvoice(
+  invoiceId: string,
+): Promise<{ paymentId: string; amountMoney: { amount: number; currency: string } } | null> {
+  const { data: invoiceData } = await squareFetch<{ invoice?: { order_id?: string } }>(
+    `/v2/invoices/${invoiceId}`,
+  );
+  const orderId = invoiceData.invoice?.order_id;
+  if (!orderId) {
+    console.error("resolvePaymentFromInvoice: invoice has no order_id", { invoiceId });
+    return null;
+  }
+
+  const { data: orderData } = await squareFetch<{
+    order?: { tenders?: { id: string; payment_id?: string; amount_money?: { amount: number; currency: string } }[] };
+  }>(`/v2/orders/${orderId}`);
+  const tender = orderData.order?.tenders?.[0];
+  const paymentId = tender?.payment_id ?? tender?.id;
+  if (!paymentId || !tender?.amount_money) {
+    console.error("resolvePaymentFromInvoice: no tender/payment found on order", { orderId });
+    return null;
+  }
+  return { paymentId, amountMoney: tender.amount_money };
+}
+
 /**
  * A 'free_year' promo redemption checks out through the normal $39.99 plan
  * (no separate $0 phase — that's the exact checkout-page display bug worked
  * around earlier) and gets auto-refunded here the first time its invoice is
  * paid. Renewals after that are left alone, converting them to a normal
- * paying subscriber. Refund correctness relies on tracing
- * invoice -> order -> tender -> payment_id, per Square's own docs for
- * refunding a paid invoice.
+ * paying subscriber.
  */
 async function refundFirstPaymentIfFreeYear(
   admin: ReturnType<typeof createClient>,
   userId: string,
-  invoiceId: string | undefined,
+  payment: { paymentId: string; amountMoney: { amount: number; currency: string } } | null,
 ): Promise<void> {
-  if (!invoiceId) return;
+  if (!payment) return;
 
   const { data: redemption } = await admin
     .from("promo_redemptions")
@@ -79,36 +102,17 @@ async function refundFirstPaymentIfFreeYear(
     .maybeSingle();
   if (!redemption) return;
 
-  const { data: invoiceData } = await squareFetch<{ invoice?: { order_id?: string } }>(
-    `/v2/invoices/${invoiceId}`,
-  );
-  const orderId = invoiceData.invoice?.order_id;
-  if (!orderId) {
-    console.error("free_year refund: invoice has no order_id", { invoiceId, userId });
-    return;
-  }
-
-  const { data: orderData } = await squareFetch<{
-    order?: { tenders?: { id: string; payment_id?: string; amount_money?: { amount: number; currency: string } }[] };
-  }>(`/v2/orders/${orderId}`);
-  const tender = orderData.order?.tenders?.[0];
-  const paymentId = tender?.payment_id ?? tender?.id;
-  if (!paymentId || !tender?.amount_money) {
-    console.error("free_year refund: no tender/payment found on order", { orderId, userId });
-    return;
-  }
-
   const { ok, data: refundData } = await squareFetch<{ errors?: unknown[] }>("/v2/refunds", {
     method: "POST",
     body: JSON.stringify({
       idempotency_key: crypto.randomUUID(),
-      payment_id: paymentId,
-      amount_money: tender.amount_money,
+      payment_id: payment.paymentId,
+      amount_money: payment.amountMoney,
       reason: `Free year promo code (${redemption.code})`,
     }),
   });
   if (!ok) {
-    console.error("free_year refund: Square rejected the refund", { paymentId, details: refundData });
+    console.error("free_year refund: Square rejected the refund", { paymentId: payment.paymentId, details: refundData });
     return;
   }
 
@@ -151,7 +155,22 @@ Deno.serve(async (req) => {
         .select("user_id")
         .eq("square_subscription_id", subscriptionId)
         .maybeSingle();
-      if (match) await refundFirstPaymentIfFreeYear(admin, match.user_id, invoice?.id);
+      if (match) {
+        const payment = invoice?.id ? await resolvePaymentFromInvoice(invoice.id) : null;
+        // Recorded for every payment (not just free_year) so a later
+        // self-service cancel-and-refund request has a payment_id ready
+        // to hand straight to Square, without re-deriving it then.
+        if (payment) {
+          await admin
+            .from("subscriptions")
+            .update({
+              last_payment_id: payment.paymentId,
+              last_payment_amount_cents: payment.amountMoney.amount,
+            })
+            .eq("user_id", match.user_id);
+        }
+        await refundFirstPaymentIfFreeYear(admin, match.user_id, payment);
+      }
     }
     return new Response("ok", { status: 200 });
   }

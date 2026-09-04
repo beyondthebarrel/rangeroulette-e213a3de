@@ -181,6 +181,9 @@ export interface Database {
           status: string;
           trial_ends_at: string | null;
           current_period_end: string | null;
+          last_payment_id: string | null;
+          last_payment_amount_cents: number | null;
+          refunded_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -192,6 +195,9 @@ export interface Database {
           status?: string;
           trial_ends_at?: string | null;
           current_period_end?: string | null;
+          last_payment_id?: string | null;
+          last_payment_amount_cents?: number | null;
+          refunded_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -203,6 +209,9 @@ export interface Database {
           status?: string;
           trial_ends_at?: string | null;
           current_period_end?: string | null;
+          last_payment_id?: string | null;
+          last_payment_amount_cents?: number | null;
+          refunded_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
