@@ -140,7 +140,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
         {pistols.length > 0 && (
           <Panel>
             <div className="flex flex-col gap-1.5">
-              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                 Viewing
               </div>
               <select
@@ -174,7 +174,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
         ) : (
           <>
             <Panel>
-              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Overview</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">Overview</div>
               <div className="grid grid-cols-3 gap-4">
                 <Tile value={String(analytics.totalReps)} label="Total dry reps" />
                 <Tile
@@ -196,7 +196,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
             </Panel>
 
             <Panel>
-              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                 Overall Best Drills
               </div>
               <RankedBarChart
@@ -232,7 +232,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
 
             {analytics.mostImproved.length > 0 && (
               <Panel>
-                <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                   Most Progress
                 </div>
                 <DumbbellChart
@@ -271,7 +271,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
             )}
 
             <Panel>
-              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                 Most Repeated Drills
               </div>
               <RankedBarChart
@@ -305,7 +305,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
 
             {!selectedPistol && analytics.byPistol.length > 0 && (
               <Panel>
-                <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                   By Pistol
                 </div>
                 <RankedBarChart

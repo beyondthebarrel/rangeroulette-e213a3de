@@ -135,7 +135,7 @@ export function DryFireHistoryScreen({ onBack }: { onBack: () => void }) {
 
         {stats && (
           <Panel>
-            <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
               Personal Bests
             </div>
             <div className="grid grid-cols-3 gap-3 text-center">
@@ -169,7 +169,7 @@ export function DryFireHistoryScreen({ onBack }: { onBack: () => void }) {
         {sessions != null && sessions.length > 0 && (
           <Panel>
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                 Session History
               </div>
               {confirmingClear ? (

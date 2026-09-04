@@ -22,7 +22,12 @@ export function SafetyChecklistScreen({
   onAcknowledge: () => void;
   onBack: () => void;
 }) {
-  const rules = mode === "dryFire" ? [DRY_FIRE_RULE, ...SAFETY_RULES] : SAFETY_RULES;
+  // Dry fire usually happens at home, not at a range, so the "range rules
+  // and policies" line doesn't apply — swapped out for the chamber-check rule.
+  const rules =
+    mode === "dryFire"
+      ? [DRY_FIRE_RULE, ...SAFETY_RULES.filter((rule) => rule !== "I will comply with all range rules and policies.")]
+      : SAFETY_RULES;
   const [checked, setChecked] = useState<boolean[]>(() => rules.map(() => false));
   const allChecked = checked.every(Boolean);
 

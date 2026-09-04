@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
-import { BENCHMARKS, type BenchmarkDrill } from "../data/benchmarks";
 import { CATEGORY_DECKS, CATEGORY_LABELS, CATEGORY_ORDER, type CategoryCardDef, type CategoryKey } from "../data/cards";
 import { useOnlineStatus } from "../offline/useOnlineStatus";
-import { getMyDisplayName, getMyShootingLevel, listMyPistols, pistolLabel, type PistolInput } from "../profile";
+import { getMyDisplayName, listMyPistols, pistolLabel, type PistolInput } from "../profile";
 import { enqueueSession, getPendingSessions, PENDING_ID_PREFIX } from "../training/offlineQueue";
 import {
   deleteAllSavedDrills,
@@ -23,11 +22,6 @@ import { PlayingCard } from "./PlayingCard";
 import { TitleFrame } from "./TitleFrame";
 import { UtilityButton } from "./UtilityButton";
 import { VideoCapture, type CapturedVideo } from "./VideoCapture";
-
-const BENCHMARK_OPTION_PREFIX = "__benchmark__";
-function benchmarkOptionValue(id: string): string {
-  return `${BENCHMARK_OPTION_PREFIX}${id}`;
-}
 
 export function DryFireScreen({
   onBack,
@@ -59,8 +53,6 @@ export function DryFireScreen({
 
   const [pistols, setPistols] = useState<PistolInput[]>([]);
   const [selectedPistolId, setSelectedPistolId] = useState("");
-
-  const [benchmarks, setBenchmarks] = useState<BenchmarkDrill[]>([]);
 
   // Hand-picked substitutions for the current random draw, one per category
   // at most — cleared whenever "Next Drill" deals a fresh hand.
@@ -111,17 +103,6 @@ export function DryFireScreen({
   }, [user]);
 
   useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    getMyShootingLevel(user.id).then((level) => {
-      if (!cancelled) setBenchmarks(level ? BENCHMARKS[level] : []);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
-  useEffect(() => {
     return () => {
       if (video) URL.revokeObjectURL(video.previewUrl);
     };
@@ -138,8 +119,6 @@ export function DryFireScreen({
   }, [user, online]);
 
   const selectedSaved = savedDrills.find((d) => d.id === selectedSavedId) ?? null;
-  const selectedBenchmark =
-    benchmarks.find((b) => selectedSavedId === benchmarkOptionValue(b.id)) ?? null;
 
   function drillCardFor(cat: CategoryKey) {
     const def = overrides[cat] ?? drill[cat].def;
@@ -155,16 +134,12 @@ export function DryFireScreen({
     parSeconds: (overrides.time ?? drill.time.def).parSeconds,
   };
 
-  const activeDrill: TrainingDrill = selectedBenchmark
-    ? selectedBenchmark.drill
-    : selectedSaved
-      ? selectedSaved.drill
-      : randomSnapshot;
+  const activeDrill: TrainingDrill = selectedSaved ? selectedSaved.drill : randomSnapshot;
   const parSeconds = activeDrill.parSeconds;
   const canLog = !!trainee && rawSeconds != null && !logging && !!user;
-  // Hand-picking only applies to a live random draw — a saved drill or
-  // benchmark is a fixed, named configuration, not something to tweak here.
-  const canHandPick = !selectedSaved && !selectedBenchmark;
+  // Hand-picking only applies to a live random draw — a saved drill is a
+  // fixed, named configuration, not something to tweak here.
+  const canHandPick = !selectedSaved;
 
   function cycleCard(cat: CategoryKey, direction: 1 | -1) {
     const options = CATEGORY_DECKS[cat];
@@ -375,12 +350,8 @@ export function DryFireScreen({
 
         <Panel>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-              {selectedBenchmark
-                ? `🎯 Rehearsing — ${selectedBenchmark.name}`
-                : selectedSaved
-                  ? `Saved Drill — ${selectedSaved.name}`
-                  : "The Drill"}
+            <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
+              {selectedSaved ? `Saved Drill — ${selectedSaved.name}` : "The Drill"}
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -389,29 +360,6 @@ export function DryFireScreen({
               >
                 Next Drill
               </button>
-              {benchmarks.length > 0 && (
-                <span className="text-[10px] font-bold uppercase tracking-wide text-sky-400">Benchmarks:</span>
-              )}
-              {benchmarks.map((b, i) => (
-                <button
-                  key={b.id}
-                  title={b.name}
-                  onClick={() => {
-                    setSelectedSavedId(benchmarkOptionValue(b.id));
-                    resetScoreFields();
-                    resetNoteState();
-                    setLastLogged(null);
-                    setSavedDrillError(null);
-                  }}
-                  className={`rounded border px-3 py-1 text-xs uppercase tracking-wide ${
-                    selectedBenchmark?.id === b.id
-                      ? "border-sky-500 bg-sky-950/40 text-sky-400"
-                      : "border-sky-700 text-sky-400 hover:bg-sky-950"
-                  }`}
-                >
-                  🎯 {i + 1}
-                </button>
-              ))}
               <button
                 onClick={() => {
                   setShowSave((v) => !v);
@@ -441,12 +389,6 @@ export function DryFireScreen({
             </div>
           </div>
 
-          {selectedBenchmark && (
-            <p className="text-[11px] leading-snug text-sky-400">
-              Rehearsal only — dry reps don't count toward this benchmark's Achieved status.
-            </p>
-          )}
-
           <div className="flex flex-col gap-1.5">
             <div className="text-xs font-bold uppercase tracking-wide text-sky-400">Drill source</div>
             <div className="flex flex-wrap items-center gap-2">
@@ -462,11 +404,6 @@ export function DryFireScreen({
                 className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-sky-600 focus:outline-none"
               >
                 <option value="">Random draw</option>
-                {benchmarks.map((b) => (
-                  <option key={b.id} value={benchmarkOptionValue(b.id)}>
-                    🎯 Benchmark — {b.name}
-                  </option>
-                ))}
                 {savedDrills.map((d) => (
                   <option key={d.id} value={d.id}>
                     {d.name}
@@ -487,7 +424,7 @@ export function DryFireScreen({
           {showManageSaved && (
             <div className="flex flex-col gap-2 rounded-lg border border-zinc-700 bg-zinc-900/60 p-3">
               <div className="flex items-center justify-between gap-2">
-                <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                   Saved Drills
                 </div>
                 {confirmingClearSaved ? (
@@ -551,7 +488,7 @@ export function DryFireScreen({
                         onClick={() => setConfirmingDeleteSavedId(d.id)}
                         aria-label={`Delete ${d.name}`}
                         title="Delete"
-                        className="text-zinc-500 hover:text-orange-400"
+                        className="text-zinc-500 hover:text-sky-400"
                       >
                         ✕
                       </button>
@@ -619,7 +556,7 @@ export function DryFireScreen({
         <Panel>
           {pistols.length > 0 && (
             <div className="flex flex-col gap-1.5">
-              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                 Pistol
               </div>
               <select
@@ -660,7 +597,7 @@ export function DryFireScreen({
           </p>
 
           <div className="flex flex-col gap-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+            <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
               Draw Review Video
               {!online && <span className="ml-1 normal-case text-zinc-500">(needs a connection to attach)</span>}
             </div>
@@ -683,7 +620,7 @@ export function DryFireScreen({
 
           {lastLoggedSessionId != null && (
             <div className="flex flex-col gap-1.5 border-t border-zinc-800 pt-3">
-              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
                 Notes on this rep
               </div>
               <textarea
