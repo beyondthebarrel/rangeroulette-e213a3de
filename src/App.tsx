@@ -17,6 +17,7 @@ import { RulesIntroScreen } from "./components/RulesIntroScreen";
 import { SafetyChecklistScreen } from "./components/SafetyChecklistScreen";
 import { ScoreScreen } from "./components/ScoreScreen";
 import { SubscribeScreen } from "./components/SubscribeScreen";
+import { TargetsScreen } from "./components/TargetsScreen";
 import { TrainHistoryScreen } from "./components/TrainHistoryScreen";
 import { TrainScreen } from "./components/TrainScreen";
 import { GameProvider, useGame } from "./game/GameContext";
@@ -35,7 +36,8 @@ type View =
   | "trainAnalytics"
   | "leaderboard"
   | "editProfile"
-  | "rangeLocator";
+  | "rangeLocator"
+  | "targets";
 type PendingMode = "game" | "train";
 
 function GameScreen({ onBackToModes }: { onBackToModes: () => void }) {
@@ -150,11 +152,13 @@ function App() {
             onOpenAnalytics={() => setView("trainAnalytics")}
             onOpenProfile={() => setView("editProfile")}
             onOpenRangeLocator={() => setView("rangeLocator")}
+            onOpenTargets={() => setView("targets")}
           />
         )}
         {view === "rangeLocator" && (
           <RangeLocatorScreen onBack={() => setView("modeSelect")} />
         )}
+        {view === "targets" && <TargetsScreen onBack={() => setView("modeSelect")} />}
         {view === "editProfile" && (
           <ProfileSetupScreen
             mode="edit"

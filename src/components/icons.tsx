@@ -89,3 +89,33 @@ export function MapPinIcon({ className }: { className?: string }) {
     </svg>
   );
 }
+
+export function TargetIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5.5" />
+      <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+export function PrinterIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="6" y="3" width="12" height="6" />
+      <rect x="4" y="9" width="16" height="8" rx="1.5" />
+      <rect x="7" y="14" width="10" height="7" />
+    </svg>
+  );
+}
+
+export function DownloadIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M12 4v11" />
+      <path d="M7.5 11.5 12 16l4.5-4.5" />
+      <path d="M4.5 18.5v1.5a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1v-1.5" />
+    </svg>
+  );
+}

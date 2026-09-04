@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8.5 11" width="8.5in" height="11in">
+  <rect x="0" y="0" width="8.5" height="11" fill="#ffffff"/>
+
+  <text x="4.25" y="0.55" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.34" font-weight="700" fill="#111111">PRECISION BULLSEYE</text>
+  <text x="4.25" y="0.82" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.15" fill="#555555">For zeroing &amp; group practice — reduced scale</text>
+
+  <circle cx="4.25" cy="5.75" r="3.0" fill="none" stroke="#111111" stroke-width="0.02"/>
+  <circle cx="4.25" cy="5.75" r="2.5" fill="none" stroke="#111111" stroke-width="0.02"/>
+  <circle cx="4.25" cy="5.75" r="2.0" fill="#111111" stroke="#111111" stroke-width="0.02"/>
+  <circle cx="4.25" cy="5.75" r="1.5" fill="none" stroke="#ffffff" stroke-width="0.02"/>
+  <circle cx="4.25" cy="5.75" r="1.0" fill="none" stroke="#ffffff" stroke-width="0.02"/>
+  <circle cx="4.25" cy="5.75" r="0.5" fill="none" stroke="#ffffff" stroke-width="0.02"/>
+  <circle cx="4.25" cy="5.75" r="0.16" fill="none" stroke="#ffffff" stroke-width="0.018"/>
+
+  <text x="4.25" y="2.9" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.2" fill="#111111">5</text>
+  <text x="4.25" y="3.4" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.2" fill="#111111">6</text>
+  <text x="4.25" y="3.95" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.2" fill="#ffffff">7</text>
+  <text x="4.25" y="4.45" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.2" fill="#ffffff">8</text>
+  <text x="4.25" y="4.95" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.2" fill="#ffffff">9</text>
+  <text x="4.25" y="5.45" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.18" fill="#ffffff">10</text>
+  <text x="4.25" y="5.75" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.13" fill="#ffffff">X</text>
+
+  <line x1="0.5" y1="10.42" x2="1.5" y2="10.42" stroke="#111111" stroke-width="0.02"/>
+  <line x1="0.5" y1="10.36" x2="0.5" y2="10.48" stroke="#111111" stroke-width="0.02"/>
+  <line x1="1.5" y1="10.36" x2="1.5" y2="10.48" stroke="#111111" stroke-width="0.02"/>
+  <text x="1.0" y="10.62" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.12" fill="#555555">1 IN — verify scale before use</text>
+
+  <text x="4.25" y="10.8" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.12" fill="#777777">Range Roulette · Beyond The Barrel Concepts</text>
+  <text x="4.25" y="10.96" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="0.11" fill="#999999">Print at 100% / Actual Size — do not "fit to page"</text>
+</svg>

@@ -1,5 +1,14 @@
 import { HeroBackdrop } from "./HeroBackdrop";
-import { BookIcon, CardsIcon, ChartIcon, MapPinIcon, StopwatchIcon, TrophyIcon, UserIcon } from "./icons";
+import {
+  BookIcon,
+  CardsIcon,
+  ChartIcon,
+  MapPinIcon,
+  StopwatchIcon,
+  TargetIcon,
+  TrophyIcon,
+  UserIcon,
+} from "./icons";
 import { RetryImage } from "./RetryImage";
 import { TitleFrame } from "./TitleFrame";
 import { UtilityButton } from "./UtilityButton";
@@ -41,6 +50,7 @@ export function ModeSelectScreen({
   onOpenAnalytics,
   onOpenProfile,
   onOpenRangeLocator,
+  onOpenTargets,
 }: {
   onSelectGame: () => void;
   onSelectTrain: () => void;
@@ -49,6 +59,7 @@ export function ModeSelectScreen({
   onOpenAnalytics: () => void;
   onOpenProfile: () => void;
   onOpenRangeLocator: () => void;
+  onOpenTargets: () => void;
 }) {
   return (
     <HeroBackdrop>
@@ -95,6 +106,11 @@ export function ModeSelectScreen({
             icon={<MapPinIcon className="h-4 w-4" />}
             label="Find Ranges"
             onClick={onOpenRangeLocator}
+          />
+          <UtilityButton
+            icon={<TargetIcon className="h-4 w-4" />}
+            label="Print Targets"
+            onClick={onOpenTargets}
           />
         </div>
 
