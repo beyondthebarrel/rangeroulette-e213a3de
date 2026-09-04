@@ -65,9 +65,9 @@ export function ModeSelectScreen({
     <HeroBackdrop>
       <TitleFrame>
         <img
-          src="/badge-wheel.jpg"
-          alt="Range Roulette — every draw is a new problem"
-          className="w-full max-w-[130px] rounded-md sm:max-w-[260px]"
+          src="/rr-logo.webp"
+          alt="Range Roulette"
+          className="w-full max-w-[220px] sm:max-w-[340px]"
         />
 
         <div className="flex w-full flex-col gap-2">
