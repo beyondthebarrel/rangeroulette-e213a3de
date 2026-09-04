@@ -25,7 +25,7 @@ export function MembershipPanel({
   /** Called after a successful cancel so the parent can drop the app's subscribed gate. */
   onCanceled?: () => void;
 }) {
-  const { status, currentPeriodEnd, hasSquareSubscription } = details;
+  const { status, currentPeriodEnd, hasSquareSubscription, freeAccessUntil } = details;
 
   const [confirming, setConfirming] = useState(false);
   const [canceling, setCanceling] = useState(false);
@@ -66,7 +66,11 @@ export function MembershipPanel({
         </span>
       </div>
 
-      {!hasSquareSubscription ? (
+      {!hasSquareSubscription && freeAccessUntil ? (
+        <p className="text-xs text-zinc-500">
+          Free access until {formatDate(freeAccessUntil)} — you'll need to subscribe after that.
+        </p>
+      ) : !hasSquareSubscription ? (
         <p className="text-xs text-zinc-500">Lifetime access — no billing, ever.</p>
       ) : status === "past_due" ? (
         <p className="text-xs text-amber-400">

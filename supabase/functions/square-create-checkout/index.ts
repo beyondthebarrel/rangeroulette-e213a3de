@@ -98,6 +98,25 @@ Deno.serve(async (req) => {
       });
     }
 
+    // A 'free_year' code (e.g. SNAPCAP26) grants a full year of access with
+    // no Square charge at all — there's nothing to refund because nothing
+    // was ever billed. free_access_until is what the app's gate checks to
+    // drop back to the paywall once the year is up.
+    if (discountType === "free_year") {
+      await admin.from("subscriptions").upsert(
+        {
+          user_id: user.id,
+          email: user.email,
+          status: "active",
+          free_access_until: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        },
+        { onConflict: "user_id" },
+      );
+      return new Response(JSON.stringify({ granted: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { data: existing } = await admin
       .from("subscriptions")
       .select("square_customer_id")

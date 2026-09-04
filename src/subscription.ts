@@ -2,36 +2,45 @@ import { supabase } from "./integrations/supabase/client";
 
 export type SubscriptionStatus = "pending" | "active" | "past_due" | "canceled" | null;
 
-/** Only "active" grants access — everything else (including no row at all) shows the paywall. */
+/** A free_year grant whose year has passed reads as expired, not active — nothing in the DB flips it automatically since nothing was ever billed to trigger a webhook. */
+function isFreeYearExpired(freeAccessUntil: string | null): boolean {
+  return !!freeAccessUntil && new Date(freeAccessUntil) <= new Date();
+}
+
+/** Only "active" grants access — everything else (including no row at all, or an expired free year) shows the paywall. */
 export async function getMySubscriptionStatus(userId: string): Promise<SubscriptionStatus> {
   const { data, error } = await supabase
     .from("subscriptions")
-    .select("status")
+    .select("status, free_access_until")
     .eq("user_id", userId)
     .maybeSingle();
   if (error || !data) return null;
+  if (isFreeYearExpired(data.free_access_until)) return "canceled";
   return (data.status as SubscriptionStatus) ?? null;
 }
 
 export interface SubscriptionDetails {
   status: SubscriptionStatus;
   currentPeriodEnd: string | null;
-  /** No square_subscription_id means a "free" (lifetime) promo grant — there's nothing to ever renew or bill. */
+  /** No square_subscription_id means a "free" promo grant — there's nothing to ever bill via Square. */
   hasSquareSubscription: boolean;
+  /** Set only for a 'free_year' grant — access reverts to the paywall after this date. Null means lifetime (no expiration) or a normal paid plan. */
+  freeAccessUntil: string | null;
 }
 
 /** Fuller membership info for display (e.g. on the profile page) — see getMySubscriptionStatus for the plain gate check. */
 export async function getMySubscriptionDetails(userId: string): Promise<SubscriptionDetails | null> {
   const { data, error } = await supabase
     .from("subscriptions")
-    .select("status, current_period_end, square_subscription_id")
+    .select("status, current_period_end, square_subscription_id, free_access_until")
     .eq("user_id", userId)
     .maybeSingle();
   if (error || !data) return null;
   return {
-    status: (data.status as SubscriptionStatus) ?? null,
+    status: isFreeYearExpired(data.free_access_until) ? "canceled" : ((data.status as SubscriptionStatus) ?? null),
     currentPeriodEnd: data.current_period_end,
     hasSquareSubscription: !!data.square_subscription_id,
+    freeAccessUntil: data.free_access_until,
   };
 }
 

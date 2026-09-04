@@ -184,6 +184,7 @@ export interface Database {
           last_payment_id: string | null;
           last_payment_amount_cents: number | null;
           refunded_at: string | null;
+          free_access_until: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -198,6 +199,7 @@ export interface Database {
           last_payment_id?: string | null;
           last_payment_amount_cents?: number | null;
           refunded_at?: string | null;
+          free_access_until?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -212,6 +214,7 @@ export interface Database {
           last_payment_id?: string | null;
           last_payment_amount_cents?: number | null;
           refunded_at?: string | null;
+          free_access_until?: string | null;
           created_at?: string;
           updated_at?: string;
         };
