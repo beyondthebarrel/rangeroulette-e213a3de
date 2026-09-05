@@ -10,6 +10,8 @@ import {
   pistolLabel,
   type PistolInput,
 } from "../profile";
+import { type BadgeDef, newlyEarnedBadges } from "../training/badges";
+import { findPreviousBest } from "../training/drillLabel";
 import { enqueueSession, getPendingSessions, PENDING_ID_PREFIX } from "../training/offlineQueue";
 import { uploadTrainingPhoto } from "../training/photos";
 import {
@@ -19,7 +21,7 @@ import {
   saveDrill,
   type SavedDrill,
 } from "../training/savedDrills";
-import { recordTrainingSession, updateSessionNotes } from "../training/storage";
+import { getTrainingSessions, recordTrainingSession, updateSessionNotes } from "../training/storage";
 import type { TrainingDrill } from "../training/types";
 import { useTrainingDrill } from "../training/useTrainingDrill";
 import { uploadTrainingVideo } from "../training/videos";
@@ -91,6 +93,8 @@ export function TrainScreen({
 
   const [benchmarks, setBenchmarks] = useState<BenchmarkDrill[]>([]);
   const [benchmarkResult, setBenchmarkResult] = useState<boolean | null>(null);
+  const [newPR, setNewPR] = useState(false);
+  const [newBadges, setNewBadges] = useState<BadgeDef[]>([]);
 
   // Hand-picked substitutions for the current random draw, one per category
   // at most — cleared whenever "Next Drill" deals a fresh hand.
@@ -215,6 +219,8 @@ export function TrainScreen({
     resetNoteState();
     setLastLogged(null);
     setBenchmarkResult(null);
+    setNewPR(false);
+    setNewBadges([]);
     setSavedDrillError(null);
   }
 
@@ -259,6 +265,8 @@ export function TrainScreen({
     resetNoteState();
     setLastLogged(null);
     setBenchmarkResult(null);
+    setNewPR(false);
+    setNewBadges([]);
     setLogError(null);
     setLogWarning(null);
     setSavedDrillError(null);
@@ -331,7 +339,14 @@ export function TrainScreen({
     setLogWarning(null);
     setLastLogged(null);
     setBenchmarkResult(null);
+    setNewPR(false);
+    setNewBadges([]);
     resetNoteState();
+
+    // Kicked off now so it overlaps with the media uploads below instead of
+    // adding its own separate round trip — needed to tell whether this rep
+    // is a new PR / just crossed a badge milestone.
+    const sessionsBeforePromise = getTrainingSessions();
 
     const mediaWarnings: string[] = [];
 
@@ -358,6 +373,13 @@ export function TrainScreen({
     } else if (video) {
       mediaWarnings.push("the video needs a connection to attach, so it was skipped");
     }
+
+    const sessionsBefore = await sessionsBeforePromise;
+    const previousBest = findPreviousBest(
+      sessionsBefore,
+      { drill: activeDrill, savedDrillName: selectedSaved?.name },
+      false,
+    );
 
     const sessionPayload = {
       trainee,
@@ -401,6 +423,8 @@ export function TrainScreen({
           ? `Result logged, but ${mediaWarnings.join(" and ")}.`
           : null,
     );
+    if (previousBest != null && finalSeconds < previousBest) setNewPR(true);
+    setNewBadges(newlyEarnedBadges(sessionsBefore, [...sessionsBefore, { finalSeconds, dryFire: false }]));
     if (selectedBenchmark) {
       const par = selectedBenchmark.drill.parSeconds ?? Infinity;
       setBenchmarkResult(
@@ -486,6 +510,8 @@ export function TrainScreen({
                     resetNoteState();
                     setLastLogged(null);
                     setBenchmarkResult(null);
+    setNewPR(false);
+    setNewBadges([]);
                     setSavedDrillError(null);
                   }}
                   className={`rounded border px-3 py-1 text-xs uppercase tracking-wide ${
@@ -538,6 +564,8 @@ export function TrainScreen({
                   resetNoteState();
                   setLastLogged(null);
                   setBenchmarkResult(null);
+    setNewPR(false);
+    setNewBadges([]);
                   setSavedDrillError(null);
                 }}
                 className="flex-1 rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-orange-600 focus:outline-none"
@@ -814,6 +842,16 @@ export function TrainScreen({
               Logged: {lastLogged.toFixed(2)}s
             </div>
           )}
+
+          {newPR && (
+            <div className="text-sm font-bold text-emerald-400">🎉 New personal best!</div>
+          )}
+
+          {newBadges.map((b) => (
+            <div key={b.id} className="text-sm font-bold text-emerald-400">
+              {b.icon} New badge: {b.label}!
+            </div>
+          ))}
 
           {benchmarkResult != null && (
             <div

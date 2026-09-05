@@ -16,6 +16,7 @@ import {
   type ShootingLevel,
 } from "../profile";
 import { getMySubscriptionDetails, type SubscriptionDetails } from "../subscription";
+import { BADGES, earnedBadgeIds } from "../training/badges";
 import { getTrainingSessions } from "../training/storage";
 import type { TrainingSession } from "../training/types";
 import { HeroBackdrop } from "./HeroBackdrop";
@@ -85,6 +86,7 @@ export function ProfileSetupScreen({
   const [pistols, setPistols] = useState<PistolFormRow[]>([]);
   const [pistolPhotoUrls, setPistolPhotoUrls] = useState<Record<string, string>>({});
   const [sessions, setSessions] = useState<TrainingSession[]>([]);
+  const [earnedBadges, setEarnedBadges] = useState<Set<string>>(new Set());
   const [membership, setMembership] = useState<SubscriptionDetails | null>(null);
 
   const [saving, setSaving] = useState(false);
@@ -105,6 +107,9 @@ export function ProfileSetupScreen({
       // Dry fire has no live impact to verify against, so it can't count
       // toward a benchmark's "Achieved" status here.
       setSessions(loggedSessions.filter((s) => !s.dryFire));
+      // Badges use every session (dry + live) — reps are reps for the volume
+      // milestones, and earnedBadgeIds itself scopes speed badges to live fire.
+      setEarnedBadges(earnedBadgeIds(loggedSessions));
       setMembership(subscriptionDetails);
       if (profile) {
         setName(profile.displayName);
@@ -368,6 +373,31 @@ export function ProfileSetupScreen({
               placeholder="e.g. Glock 19"
               className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-orange-600 focus:outline-none"
             />
+          </div>
+        </Panel>
+
+        <Panel>
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Badges</div>
+            <div className="text-xs text-zinc-500">
+              {earnedBadges.size} / {BADGES.length} earned
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {BADGES.map((b) => {
+              const earned = earnedBadges.has(b.id);
+              return (
+                <div
+                  key={b.id}
+                  className={`flex items-center gap-2 rounded-lg border p-2 ${
+                    earned ? "border-orange-700 bg-orange-950/30" : "border-zinc-800 bg-zinc-900/40 opacity-50"
+                  }`}
+                >
+                  <span className="text-xl">{earned ? b.icon : "🔒"}</span>
+                  <span className={`text-xs ${earned ? "text-white" : "text-zinc-500"}`}>{b.label}</span>
+                </div>
+              );
+            })}
           </div>
         </Panel>
 

@@ -23,6 +23,8 @@ const DRY_FIRE_DECKS: Record<CategoryKey, CategoryCardDef[]> = CATEGORY_ORDER.re
 );
 import { useOnlineStatus } from "../offline/useOnlineStatus";
 import { getMyDisplayName, listMyPistols, pistolLabel, type PistolInput } from "../profile";
+import { type BadgeDef, newlyEarnedBadges } from "../training/badges";
+import { findPreviousBest } from "../training/drillLabel";
 import { enqueueSession, getPendingSessions, PENDING_ID_PREFIX } from "../training/offlineQueue";
 import {
   deleteAllSavedDrills,
@@ -31,7 +33,7 @@ import {
   saveDrill,
   type SavedDrill,
 } from "../training/savedDrills";
-import { recordTrainingSession, updateSessionNotes } from "../training/storage";
+import { getTrainingSessions, recordTrainingSession, updateSessionNotes } from "../training/storage";
 import type { TrainingDrill } from "../training/types";
 import { useTrainingDrill } from "../training/useTrainingDrill";
 import { uploadTrainingVideo } from "../training/videos";
@@ -76,6 +78,8 @@ export function DryFireScreen({
   const [logging, setLogging] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
   const [logWarning, setLogWarning] = useState<string | null>(null);
+  const [newPR, setNewPR] = useState(false);
+  const [newBadges, setNewBadges] = useState<BadgeDef[]>([]);
 
   const [lastLoggedSessionId, setLastLoggedSessionId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
@@ -188,6 +192,8 @@ export function DryFireScreen({
     resetScoreFields();
     resetNoteState();
     setLastLogged(null);
+    setNewPR(false);
+    setNewBadges([]);
     setSavedDrillError(null);
   }
 
@@ -214,6 +220,8 @@ export function DryFireScreen({
     setVideo(null);
     resetNoteState();
     setLastLogged(null);
+    setNewPR(false);
+    setNewBadges([]);
     setLogError(null);
     setLogWarning(null);
     setSavedDrillError(null);
@@ -281,7 +289,14 @@ export function DryFireScreen({
     setLogError(null);
     setLogWarning(null);
     setLastLogged(null);
+    setNewPR(false);
+    setNewBadges([]);
     resetNoteState();
+
+    // Kicked off now so it overlaps with the video upload below instead of
+    // adding its own separate round trip — needed to tell whether this rep
+    // is a new PR / just crossed a badge milestone.
+    const sessionsBeforePromise = getTrainingSessions();
 
     const mediaWarnings: string[] = [];
 
@@ -296,6 +311,13 @@ export function DryFireScreen({
     } else if (video) {
       mediaWarnings.push("the video needs a connection to attach, so it was skipped");
     }
+
+    const sessionsBefore = await sessionsBeforePromise;
+    const previousBest = findPreviousBest(
+      sessionsBefore,
+      { drill: activeDrill, savedDrillName: selectedSaved?.name },
+      true,
+    );
 
     const sessionPayload = {
       trainee,
@@ -338,6 +360,10 @@ export function DryFireScreen({
         : mediaWarnings.length > 0
           ? `Result logged, but ${mediaWarnings.join(" and ")}.`
           : null,
+    );
+    if (previousBest != null && finalSeconds < previousBest) setNewPR(true);
+    setNewBadges(
+      newlyEarnedBadges(sessionsBefore, [...sessionsBefore, { finalSeconds, dryFire: true }]),
     );
     // The drill (random, saved, or benchmark) stays on screen after logging
     // so the same drill can be repeated for another rep — advancing to a
@@ -443,6 +469,8 @@ export function DryFireScreen({
                   resetScoreFields();
                   resetNoteState();
                   setLastLogged(null);
+                  setNewPR(false);
+                  setNewBadges([]);
                   setSavedDrillError(null);
                 }}
                 className="flex-1 rounded border border-sky-900/60 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-sky-600 focus:outline-none"
@@ -661,6 +689,16 @@ export function DryFireScreen({
               Logged: {lastLogged.toFixed(2)}s
             </div>
           )}
+
+          {newPR && (
+            <div className="text-sm font-bold text-emerald-400">🎉 New personal best!</div>
+          )}
+
+          {newBadges.map((b) => (
+            <div key={b.id} className="text-sm font-bold text-emerald-400">
+              {b.icon} New badge: {b.label}!
+            </div>
+          ))}
 
           {lastLoggedSessionId != null && (
             <div className="flex flex-col gap-1.5 border-t border-sky-900/50 pt-3">
