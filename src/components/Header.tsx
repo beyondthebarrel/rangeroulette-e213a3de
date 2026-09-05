@@ -98,7 +98,9 @@ export function Header() {
         <div className="flex flex-wrap gap-3 text-sm text-zinc-300">
           {state.players.map((p) => (
             <span key={p.id}>
-              {p.name} <span className="text-orange-400">{p.points}</span>
+              {p.name}
+              {/* Hidden during the round-result reveal so the point tally doesn't spoil who just won before the tap-through does. */}
+              {state.phase !== "roundResult" && <> <span className="text-orange-400">{p.points}</span></>}
             </span>
           ))}
         </div>
