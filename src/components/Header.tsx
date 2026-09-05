@@ -99,8 +99,13 @@ export function Header() {
           {state.players.map((p) => (
             <span key={p.id}>
               {p.name}
-              {/* Hidden during the round-result reveal so the point tally doesn't spoil who just won before the tap-through does. */}
-              {state.phase !== "roundResult" && <> <span className="text-orange-400">{p.points}</span></>}
+              {/* Hidden during the round-result reveal (3+ players only, where that reveal is a tap-through countdown) so the point tally doesn't spoil who just won before the tap-through does. */}
+              {!(state.phase === "roundResult" && state.players.length >= 3) && (
+                <>
+                  {" "}
+                  <span className="text-orange-400">{p.points}</span>
+                </>
+              )}
             </span>
           ))}
         </div>

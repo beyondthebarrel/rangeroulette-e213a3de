@@ -12,8 +12,11 @@ function ordinal(n: number): string {
 export function RoundResultScreen() {
   const { state, dispatch } = useGame();
   const result = state.lastRoundResult;
+  // The tap-to-reveal countdown only earns its keep with a group — in 1v1 it's
+  // obvious who won the instant both times are in, so just show the result.
+  const suspenseMode = state.players.length >= 3;
   const [challengeRevealed, setChallengeRevealed] = useState(false);
-  const [revealedCount, setRevealedCount] = useState(0);
+  const [revealedCount, setRevealedCount] = useState(() => (suspenseMode ? 0 : state.players.length));
 
   if (!result) return null;
 
@@ -26,9 +29,9 @@ export function RoundResultScreen() {
     });
 
   // Reveal worst-to-best so the winner lands last, same tap-to-reveal beat as
-  // the Challenge card below.
-  const countdown = [...ranked].reverse();
-  const allRevealed = revealedCount >= countdown.length;
+  // the Challenge card below. Not used in 1v1 — displayOrder stays fastest-first.
+  const displayOrder = suspenseMode ? [...ranked].reverse() : ranked;
+  const allRevealed = revealedCount >= displayOrder.length;
 
   const winner = state.players.find((p) => p.id === result.winnerId);
 
@@ -38,8 +41,8 @@ export function RoundResultScreen() {
         <h2 className="text-xl font-bold text-white">Round {state.round} Results</h2>
 
         <div className="flex flex-col gap-2">
-          {countdown.map(({ p, t }, i) => {
-            const rank = countdown.length - i;
+          {displayOrder.map(({ p, t }, i) => {
+            const rank = displayOrder.length - i;
             const isRevealed = i < revealedCount;
             const isNext = i === revealedCount;
             const isWinnerRow = isRevealed && p.id === result.winnerId;
@@ -62,7 +65,7 @@ export function RoundResultScreen() {
                 {isRevealed ? (
                   <>
                     <span className="text-white">
-                      {isWinnerRow ? "🏆 " : ""}
+                      {suspenseMode && isWinnerRow ? "🏆 " : ""}
                       {p.name}
                     </span>
                     <span className="font-mono text-white">
@@ -81,9 +84,9 @@ export function RoundResultScreen() {
           })}
         </div>
 
-        {!allRevealed && countdown.length > 1 && (
+        {suspenseMode && !allRevealed && displayOrder.length > 1 && (
           <button
-            onClick={() => setRevealedCount(countdown.length)}
+            onClick={() => setRevealedCount(displayOrder.length)}
             className="self-center text-xs text-zinc-500 underline hover:text-zinc-300"
           >
             Reveal all
