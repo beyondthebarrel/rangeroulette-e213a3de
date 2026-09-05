@@ -119,6 +119,14 @@ export function LockIcon({ className }: { className?: string }) {
   );
 }
 
+export function WrenchIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 1 5.4-5.4l-2.65 2.65-2-2 2.65-2.65Z" />
+    </svg>
+  );
+}
+
 export function DownloadIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5">

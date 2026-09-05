@@ -9,6 +9,7 @@ import {
   TargetIcon,
   TrophyIcon,
   UserIcon,
+  WrenchIcon,
 } from "./icons";
 import { IOSInstallBanner } from "./IOSInstallBanner";
 import { RetryImage } from "./RetryImage";
@@ -58,6 +59,7 @@ export function ModeSelectScreen({
   onOpenProfile,
   onOpenRangeLocator,
   onOpenTargets,
+  onOpenMaintenanceLog,
 }: {
   onSelectGame: () => void;
   onSelectTrain: () => void;
@@ -68,6 +70,7 @@ export function ModeSelectScreen({
   onOpenProfile: () => void;
   onOpenRangeLocator: () => void;
   onOpenTargets: () => void;
+  onOpenMaintenanceLog: () => void;
 }) {
   return (
     <HeroBackdrop>
@@ -127,6 +130,15 @@ export function ModeSelectScreen({
             icon={<TargetIcon className="h-4 w-4" />}
             label="Print Targets"
             onClick={onOpenTargets}
+          />
+        </div>
+
+        <div className="flex w-full justify-center">
+          <UtilityButton
+            icon={<WrenchIcon className="h-4 w-4" />}
+            label="Maintenance Log"
+            onClick={onOpenMaintenanceLog}
+            className="w-1/2"
           />
         </div>
 

@@ -223,6 +223,36 @@ export interface Database {
         };
         Relationships: [];
       };
+      maintenance_logs: {
+        Row: {
+          id: string;
+          user_id: string;
+          pistol_id: string | null;
+          entry_type: string;
+          description: string;
+          logged_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          pistol_id?: string | null;
+          entry_type: string;
+          description: string;
+          logged_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          pistol_id?: string | null;
+          entry_type?: string;
+          description?: string;
+          logged_at?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

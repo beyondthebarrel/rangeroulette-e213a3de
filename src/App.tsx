@@ -8,6 +8,7 @@ import { DryFireHistoryScreen } from "./components/DryFireHistoryScreen";
 import { DryFireScreen } from "./components/DryFireScreen";
 import { Header } from "./components/Header";
 import { LeaderboardScreen } from "./components/LeaderboardScreen";
+import { MaintenanceLogScreen } from "./components/MaintenanceLogScreen";
 import { MatchOverScreen } from "./components/MatchOverScreen";
 import { ModeSelectScreen } from "./components/ModeSelectScreen";
 import { PlayChallengesScreen } from "./components/PlayChallengesScreen";
@@ -44,7 +45,8 @@ type View =
   | "leaderboard"
   | "editProfile"
   | "rangeLocator"
-  | "targets";
+  | "targets"
+  | "maintenanceLog";
 type PendingMode = "game" | "train" | "dryFire";
 
 function GameScreen({ onBackToModes }: { onBackToModes: () => void }) {
@@ -166,12 +168,16 @@ function App() {
             onOpenProfile={() => setView("editProfile")}
             onOpenRangeLocator={() => setView("rangeLocator")}
             onOpenTargets={() => setView("targets")}
+            onOpenMaintenanceLog={() => setView("maintenanceLog")}
           />
         )}
         {view === "rangeLocator" && (
           <RangeLocatorScreen onBack={() => setView("modeSelect")} />
         )}
         {view === "targets" && <TargetsScreen onBack={() => setView("modeSelect")} />}
+        {view === "maintenanceLog" && (
+          <MaintenanceLogScreen onBack={() => setView("modeSelect")} />
+        )}
         {view === "editProfile" && (
           <ProfileSetupScreen
             mode="edit"
