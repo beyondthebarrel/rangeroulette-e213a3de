@@ -35,4 +35,6 @@ export interface TrainingSession {
   notes?: string;
   /** No live ammunition — zone/complete misses are meaningless and excluded from accuracy analytics. */
   dryFire?: boolean;
+  /** Dry fire only — whether this rep beat the drill's par time. rawSeconds/finalSeconds hold the par time itself as a nominal value, not a real measurement. */
+  passed?: boolean;
 }

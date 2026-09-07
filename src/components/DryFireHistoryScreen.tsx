@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { listMyPistols, pistolLabel, type PistolInput } from "../profile";
 import { drillSummary } from "../training/drillLabel";
+import { didPass } from "../training/dryFireStats";
 import { clearTrainingHistory, deleteTrainingSession, getVisibleTrainingSessions } from "../training/storage";
 import type { TrainingDrill, TrainingSession } from "../training/types";
 import { getTrainingVideoUrl } from "../training/videos";
@@ -19,17 +20,19 @@ function formatDate(iso: string): string {
 }
 
 interface Stats {
-  bestSession: TrainingSession;
-  averageSeconds: number;
+  passes: number;
+  passRate: number;
   sessionCount: number;
 }
 
 function computeStats(sessions: TrainingSession[]): Stats | null {
   if (sessions.length === 0) return null;
-  const bestSession = sessions.reduce((a, b) => (a.finalSeconds <= b.finalSeconds ? a : b));
-  const averageSeconds =
-    Math.round((sessions.reduce((sum, s) => sum + s.finalSeconds, 0) / sessions.length) * 100) / 100;
-  return { bestSession, averageSeconds, sessionCount: sessions.length };
+  const passes = sessions.filter(didPass).length;
+  return {
+    passes,
+    passRate: Math.round((passes / sessions.length) * 1000) / 10,
+    sessionCount: sessions.length,
+  };
 }
 
 export function DryFireHistoryScreen({
@@ -142,32 +145,21 @@ export function DryFireHistoryScreen({
         {stats && (
           <Panel variant="sky">
             <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
-              Personal Bests
+              Performance
             </div>
             <div className="grid grid-cols-3 gap-3 text-center">
               <div>
-                <div className="font-mono text-2xl font-bold text-sky-400">
-                  {stats.bestSession.finalSeconds.toFixed(2)}s
-                </div>
-                <div className="text-xs text-zinc-500">Best time</div>
+                <div className="font-mono text-2xl font-bold text-sky-400">{stats.passRate}%</div>
+                <div className="text-xs text-zinc-500">Beat par</div>
               </div>
               <div>
-                <div className="font-mono text-2xl font-bold text-white">
-                  {stats.averageSeconds.toFixed(2)}s
-                </div>
-                <div className="text-xs text-zinc-500">Average</div>
+                <div className="font-mono text-2xl font-bold text-white">{stats.passes}</div>
+                <div className="text-xs text-zinc-500">Passed</div>
               </div>
               <div>
                 <div className="font-mono text-2xl font-bold text-white">{stats.sessionCount}</div>
                 <div className="text-xs text-zinc-500">Reps</div>
               </div>
-            </div>
-            <div className="text-xs text-zinc-500">
-              Best run:{" "}
-              {stats.bestSession.savedDrillName && (
-                <span className="text-sky-400">{stats.bestSession.savedDrillName} · </span>
-              )}
-              {drillSummary(stats.bestSession.drill)}
             </div>
           </Panel>
         )}
@@ -222,8 +214,12 @@ export function DryFireHistoryScreen({
                   className="rounded-lg border border-sky-900/50 bg-zinc-900/60 p-3"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-mono text-lg text-white">
-                      {s.finalSeconds.toFixed(2)}s
+                    <span
+                      className={`text-sm font-bold uppercase tracking-wide ${
+                        didPass(s) ? "text-emerald-400" : "text-red-400"
+                      }`}
+                    >
+                      {didPass(s) ? "✅ Beat Par" : "❌ Missed Par"}
                     </span>
                     <div className="flex items-center gap-2">
                       {s.pendingSync && (

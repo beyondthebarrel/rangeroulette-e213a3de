@@ -134,6 +134,7 @@ export interface Database {
           archived_at: string | null;
           notes: string | null;
           dry_fire: boolean;
+          passed: boolean | null;
         };
         Insert: {
           id?: string;
@@ -153,6 +154,7 @@ export interface Database {
           archived_at?: string | null;
           notes?: string | null;
           dry_fire?: boolean;
+          passed?: boolean | null;
         };
         Update: {
           id?: string;
@@ -172,6 +174,7 @@ export interface Database {
           archived_at?: string | null;
           notes?: string | null;
           dry_fire?: boolean;
+          passed?: boolean | null;
         };
         Relationships: [];
       };

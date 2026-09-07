@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { clearAnalytics, getAnalyticsClearedAt, listMyPistols, pistolLabel, type PistolInput } from "../profile";
-import { computeAccountAnalytics } from "../training/analytics";
+import { computeDryFireAnalytics } from "../training/dryFireStats";
 import { getTrainingSessions } from "../training/storage";
 import type { TrainingSession } from "../training/types";
-import { DumbbellChart } from "./charts/DumbbellChart";
 import { LineChart } from "./charts/LineChart";
 import { RankedBarChart } from "./charts/RankedBarChart";
 import { HeroBackdrop } from "./HeroBackdrop";
@@ -83,7 +82,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
   }, [allSessions, selectedPistolId]);
 
   const analytics = useMemo(
-    () => (filteredSessions ? computeAccountAnalytics(filteredSessions, pistols) : null),
+    () => (filteredSessions ? computeDryFireAnalytics(filteredSessions, pistols) : null),
     [filteredSessions, pistols],
   );
 
@@ -97,7 +96,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
           <p className="text-center text-sm text-zinc-400">
             {selectedPistol
               ? `Every dry rep logged with the ${pistolLabel(selectedPistol)}.`
-              : "Every dry rep logged on this account — time only, no accuracy stats."}
+              : "Every dry rep logged on this account — pass/fail against par, no accuracy stats."}
           </p>
         </TitleFrame>
 
@@ -177,10 +176,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
               <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">Overview</div>
               <div className="grid grid-cols-3 gap-4">
                 <Tile value={String(analytics.totalReps)} label="Total dry reps" />
-                <Tile
-                  value={`${analytics.overallBestSession!.finalSeconds.toFixed(2)}s`}
-                  label="Personal best (any drill)"
-                />
+                <Tile value={`${analytics.passRate}%`} label="Beat par" />
                 <Tile value={String(analytics.uniqueDrillCount)} label="Unique drills" />
               </div>
               <div className="text-xs text-zinc-500">
@@ -197,18 +193,18 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
 
             <Panel variant="sky">
               <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
-                Overall Best Drills
+                Toughest Drills
               </div>
               <RankedBarChart
-                data={analytics.bestDrills.map((d) => ({
+                data={analytics.toughestDrills.map((d) => ({
                   key: d.key,
                   label: d.label,
-                  value: d.bestSession.finalSeconds,
-                  displayValue: `${d.bestSession.finalSeconds.toFixed(2)}s`,
+                  value: d.passRate,
+                  displayValue: `${d.passRate}%`,
                 }))}
               />
               <ul className="flex flex-col gap-2 border-t border-zinc-800 pt-3">
-                {analytics.bestDrills.map((d, i) => (
+                {analytics.toughestDrills.map((d, i) => (
                   <li
                     key={d.key}
                     className="flex items-center justify-between gap-2 rounded-lg border border-sky-900/50 bg-zinc-900/60 p-3"
@@ -219,56 +215,14 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
                         {d.label}
                       </div>
                       <div className="text-xs text-zinc-500">
-                        {d.bestSession.trainee} · {formatDate(d.bestSession.loggedAt)}
+                        {d.reps} reps · last {formatDate(d.lastSession.loggedAt)}
                       </div>
                     </div>
-                    <span className="font-mono text-lg text-sky-400">
-                      {d.bestSession.finalSeconds.toFixed(2)}s
-                    </span>
+                    <span className="font-mono text-lg text-sky-400">{d.passRate}%</span>
                   </li>
                 ))}
               </ul>
             </Panel>
-
-            {analytics.mostImproved.length > 0 && (
-              <Panel variant="sky">
-                <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
-                  Most Progress
-                </div>
-                <DumbbellChart
-                  data={analytics.mostImproved.map((d) => ({
-                    key: d.key,
-                    label: d.label,
-                    before: d.firstSession.finalSeconds,
-                    after: d.bestSession.finalSeconds,
-                    beforeDisplay: `${d.firstSession.finalSeconds.toFixed(2)}s`,
-                    afterDisplay: `${d.bestSession.finalSeconds.toFixed(2)}s`,
-                  }))}
-                />
-                <ul className="flex flex-col gap-2 border-t border-zinc-800 pt-3">
-                  {analytics.mostImproved.map((d, i) => (
-                    <li
-                      key={d.key}
-                      className="flex items-center justify-between gap-2 rounded-lg border border-sky-900/50 bg-zinc-900/60 p-3"
-                    >
-                      <div>
-                        <div className="text-sm text-white">
-                          <span className="mr-2 text-zinc-500">{i + 1}.</span>
-                          {d.label}
-                        </div>
-                        <div className="text-xs text-zinc-500">
-                          {d.firstSession.finalSeconds.toFixed(2)}s → {d.bestSession.finalSeconds.toFixed(2)}s
-                        </div>
-                      </div>
-                      <span className="font-mono text-lg text-green-400">
-                        −{d.improvementSeconds.toFixed(2)}s
-                        <span className="ml-1 text-xs text-zinc-500">({d.improvementPercent.toFixed(0)}%)</span>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </Panel>
-            )}
 
             <Panel variant="sky">
               <div className="text-xs font-semibold uppercase tracking-wider text-sky-400">
@@ -293,7 +247,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
                       {d.label}
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-zinc-500">best {d.bestSession.finalSeconds.toFixed(2)}s</span>
+                      <span className="text-xs text-zinc-500">{d.passRate}% beat par</span>
                       <span className="font-mono text-lg text-white">
                         {d.reps}× <span className="text-xs text-zinc-500">reps</span>
                       </span>
@@ -328,10 +282,10 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
                           {p.label}
                         </div>
                         <div className="text-xs text-zinc-500">
-                          {p.reps} rep{p.reps > 1 ? "s" : ""} · best {p.bestSeconds.toFixed(2)}s
+                          {p.reps} rep{p.reps > 1 ? "s" : ""}
                         </div>
                       </div>
-                      <span className="font-mono text-lg text-sky-400">{p.averageSeconds.toFixed(2)}s avg</span>
+                      <span className="font-mono text-lg text-sky-400">{p.passRate}% beat par</span>
                     </li>
                   ))}
                 </ul>

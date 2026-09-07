@@ -24,7 +24,6 @@ const DRY_FIRE_DECKS: Record<CategoryKey, CategoryCardDef[]> = CATEGORY_ORDER.re
 import { useOnlineStatus } from "../offline/useOnlineStatus";
 import { getMyDisplayName, listMyPistols, pistolLabel, type PistolInput } from "../profile";
 import { type BadgeDef, newlyEarnedBadges } from "../training/badges";
-import { findPreviousBest } from "../training/drillLabel";
 import { enqueueSession, getPendingSessions, PENDING_ID_PREFIX } from "../training/offlineQueue";
 import {
   deleteAllSavedDrills,
@@ -73,12 +72,11 @@ export function DryFireScreen({
   const online = useOnlineStatus();
   const [pendingCount, setPendingCount] = useState(0);
   const [trainee, setTrainee] = useState<string | null>(null);
-  const [rawSeconds, setRawSeconds] = useState<number | null>(null);
-  const [lastLogged, setLastLogged] = useState<number | null>(null);
+  const [passed, setPassed] = useState<boolean | null>(null);
+  const [lastLogged, setLastLogged] = useState<boolean | null>(null);
   const [logging, setLogging] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
   const [logWarning, setLogWarning] = useState<string | null>(null);
-  const [newPR, setNewPR] = useState(false);
   const [newBadges, setNewBadges] = useState<BadgeDef[]>([]);
 
   const [lastLoggedSessionId, setLastLoggedSessionId] = useState<string | null>(null);
@@ -178,7 +176,7 @@ export function DryFireScreen({
       ? repeatedDrill
       : randomSnapshot;
   const parSeconds = activeDrill.parSeconds;
-  const canLog = !!trainee && rawSeconds != null && !logging && !!user;
+  const canLog = !!trainee && passed != null && !logging && !!user;
   // Hand-picking only applies to a live random draw — a saved drill or
   // repeated past rep is a fixed configuration, not something to tweak here.
   const canHandPick = !selectedSaved && !repeatedDrill;
@@ -192,13 +190,12 @@ export function DryFireScreen({
     resetScoreFields();
     resetNoteState();
     setLastLogged(null);
-    setNewPR(false);
     setNewBadges([]);
     setSavedDrillError(null);
   }
 
   function resetScoreFields() {
-    setRawSeconds(null);
+    setPassed(null);
   }
 
   // The note opportunity is tied to whichever session was just logged — once
@@ -220,7 +217,6 @@ export function DryFireScreen({
     setVideo(null);
     resetNoteState();
     setLastLogged(null);
-    setNewPR(false);
     setNewBadges([]);
     setLogError(null);
     setLogWarning(null);
@@ -282,20 +278,22 @@ export function DryFireScreen({
   }
 
   async function handleLog() {
-    if (!canLog || rawSeconds == null || !user || !trainee) return;
+    if (!canLog || passed == null || !user || !trainee) return;
 
-    const finalSeconds = rawSeconds;
+    // Dry fire logs pass/fail against par, not a typed-in time — rawSeconds/
+    // finalSeconds still get the par time itself as a nominal value so the
+    // shared (NOT NULL) columns stay populated; `passed` is what's real.
+    const finalSeconds = activeDrill.parSeconds ?? 0;
     setLogging(true);
     setLogError(null);
     setLogWarning(null);
     setLastLogged(null);
-    setNewPR(false);
     setNewBadges([]);
     resetNoteState();
 
     // Kicked off now so it overlaps with the video upload below instead of
     // adding its own separate round trip — needed to tell whether this rep
-    // is a new PR / just crossed a badge milestone.
+    // just crossed a badge milestone.
     const sessionsBeforePromise = getTrainingSessions();
 
     const mediaWarnings: string[] = [];
@@ -313,16 +311,11 @@ export function DryFireScreen({
     }
 
     const sessionsBefore = await sessionsBeforePromise;
-    const previousBest = findPreviousBest(
-      sessionsBefore,
-      { drill: activeDrill, savedDrillName: selectedSaved?.name },
-      true,
-    );
 
     const sessionPayload = {
       trainee,
       drill: activeDrill,
-      rawSeconds,
+      rawSeconds: finalSeconds,
       zoneMisses: 0,
       completeMisses: 0,
       finalSeconds,
@@ -330,6 +323,7 @@ export function DryFireScreen({
       videoPath,
       pistolId: selectedPistolId || undefined,
       dryFire: true,
+      passed,
     };
 
     // Only attempt the network write if the browser thinks it's connected —
@@ -353,7 +347,7 @@ export function DryFireScreen({
       }
     }
 
-    setLastLogged(finalSeconds);
+    setLastLogged(passed);
     setLogWarning(
       queuedOffline
         ? "Saved offline — will sync automatically once you're back online."
@@ -361,7 +355,6 @@ export function DryFireScreen({
           ? `Result logged, but ${mediaWarnings.join(" and ")}.`
           : null,
     );
-    if (previousBest != null && finalSeconds < previousBest) setNewPR(true);
     setNewBadges(
       newlyEarnedBadges(sessionsBefore, [...sessionsBefore, { finalSeconds, dryFire: true }]),
     );
@@ -469,7 +462,6 @@ export function DryFireScreen({
                   resetScoreFields();
                   resetNoteState();
                   setLastLogged(null);
-                  setNewPR(false);
                   setNewBadges([]);
                   setSavedDrillError(null);
                 }}
@@ -646,26 +638,36 @@ export function DryFireScreen({
             </div>
           )}
 
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={rawSeconds ?? ""}
-              onChange={(e) => {
-                const n = parseFloat(e.target.value);
-                setRawSeconds(Number.isNaN(n) ? null : n);
-              }}
-              placeholder="0.00"
-              className="w-28 rounded-md border-2 border-sky-700 bg-zinc-900 px-2 py-1.5 text-xl font-bold text-sky-400 focus:border-sky-500 focus:outline-none"
-            />
-            <span className="text-sm text-sky-300/50">
-              seconds{parSeconds != null ? ` — par ${parSeconds}s` : ""}
-            </span>
+          <div className="flex flex-col gap-1.5">
+            <div className="text-xs font-bold uppercase tracking-wide text-sky-400">
+              Did you beat par{parSeconds != null ? ` (${parSeconds}s)` : ""}?
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPassed(true)}
+                className={`flex-1 rounded-md border-2 px-4 py-3 font-bold uppercase tracking-wide ${
+                  passed === true
+                    ? "border-emerald-500 bg-emerald-950/40 text-emerald-400"
+                    : "border-sky-900/60 text-zinc-400 hover:border-emerald-700 hover:text-emerald-400"
+                }`}
+              >
+                ✅ Yes
+              </button>
+              <button
+                onClick={() => setPassed(false)}
+                className={`flex-1 rounded-md border-2 px-4 py-3 font-bold uppercase tracking-wide ${
+                  passed === false
+                    ? "border-red-500 bg-red-950/40 text-red-400"
+                    : "border-sky-900/60 text-zinc-400 hover:border-red-700 hover:text-red-400"
+                }`}
+              >
+                ❌ No
+              </button>
+            </div>
           </div>
 
           <p className="text-center text-xs text-sky-300/50">
-            No live impact to score — this rep logs time only.
+            No live impact to score — this rep only logs whether you beat the par time.
           </p>
 
           <div className="flex flex-col gap-2">
@@ -685,13 +687,9 @@ export function DryFireScreen({
           )}
 
           {lastLogged != null && (
-            <div className="text-sm text-sky-400">
-              Logged: {lastLogged.toFixed(2)}s
+            <div className={`text-sm font-bold ${lastLogged ? "text-emerald-400" : "text-red-400"}`}>
+              {lastLogged ? "✅ Logged — beat par!" : "❌ Logged — missed par"}
             </div>
-          )}
-
-          {newPR && (
-            <div className="text-sm font-bold text-emerald-400">🎉 New personal best!</div>
           )}
 
           {newBadges.map((b) => (
