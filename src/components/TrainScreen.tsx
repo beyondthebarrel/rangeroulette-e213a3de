@@ -203,7 +203,7 @@ export function TrainScreen({
         ? repeatedDrill
         : randomSnapshot;
   const parSeconds = activeDrill.parSeconds;
-  const canLog = !!trainee && rawSeconds != null && !logging && !!user;
+  const canLog = !!trainee && rawSeconds != null && !!selectedPistolId && !logging && !!user;
   // Hand-picking only applies to a live random draw — a saved drill,
   // benchmark, or repeated past rep is a fixed configuration, not something
   // to tweak here.
@@ -726,25 +726,31 @@ export function TrainScreen({
         </Panel>
 
         <Panel>
-          {pistols.length > 0 && (
-            <div className="flex flex-col gap-1.5">
-              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                Pistol
-              </div>
+          <div className="flex flex-col gap-1.5">
+            <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+              Pistol <span className="text-orange-400">(required to log)</span>
+            </div>
+            {pistols.length > 0 ? (
               <select
                 value={selectedPistolId}
                 onChange={(e) => setSelectedPistolId(e.target.value)}
                 className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-orange-600 focus:outline-none"
               >
-                <option value="">Not tagged</option>
+                <option value="" disabled>
+                  Select a pistol…
+                </option>
                 {pistols.map((p) => (
                   <option key={p.id} value={p.id}>
                     {pistolLabel(p)}
                   </option>
                 ))}
               </select>
-            </div>
-          )}
+            ) : (
+              <p className="text-sm text-amber-400">
+                Add a pistol in your profile before logging — Modes → View &amp; Edit Profile.
+              </p>
+            )}
+          </div>
 
           <div className="flex items-center gap-2">
             <input
