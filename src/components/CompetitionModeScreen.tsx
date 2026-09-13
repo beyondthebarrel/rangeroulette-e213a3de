@@ -164,6 +164,11 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
                 </option>
               ))}
             </select>
+            <p className="text-[11px] leading-snug text-zinc-500">
+              HHF values come from USPSA's Classifier Committee HHF report (2025-03-23) — a dated
+              snapshot, not a live feed. USPSA recalibrates HHFs at least semi-annually, and this
+              doesn't yet cover the 25-series classifiers.
+            </p>
             {division && stageHhf == null && (
               <p className="text-xs text-zinc-500">
                 No HHF on file yet for {DIVISION_LABELS[division]} on this classifier.
@@ -365,33 +370,12 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
             Competition Mode
           </h1>
           <p className="text-center text-sm text-zinc-400">
-            USPSA's current active classifier roster. Pick your division, then tap a classifier to
-            open its stage PDF and score your run with a calculator built for that classifier.
+            USPSA's current active classifier roster. Tap a classifier to open its stage PDF and
+            score your run — you'll pick your division on that screen.
           </p>
         </TitleFrame>
 
         <Panel>
-          <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
-            Division
-          </div>
-          <select
-            value={division}
-            onChange={(e) => setDivision(e.target.value as Division | "")}
-            className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-orange-600 focus:outline-none"
-          >
-            <option value="">Select a division…</option>
-            {DIVISION_ORDER.map((d) => (
-              <option key={d} value={d}>
-                {DIVISION_LABELS[d]}
-              </option>
-            ))}
-          </select>
-          <p className="text-[11px] leading-snug text-zinc-500">
-            Classifying hit factors below come from USPSA's Classifier Committee HHF report
-            (2025-03-23) — a dated snapshot, not a live feed. USPSA recalibrates HHFs at least
-            semi-annually, and this doesn't yet cover the 25-series classifiers.
-          </p>
-
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -405,57 +389,31 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
 
         <Panel>
           <ul className="flex flex-col gap-2">
-            {filtered.map((c) => {
-              const hhf = division ? CLASSIFIER_HHF[c.number]?.[division] : undefined;
-              return (
-                <li
-                  key={c.number}
-                  className="flex flex-col gap-2 rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3"
+            {filtered.map((c) => (
+              <li
+                key={c.number}
+                className="flex flex-col gap-2 rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3"
+              >
+                <button
+                  onClick={() => viewStage(c.number)}
+                  className="flex items-center justify-between gap-3 text-left"
                 >
-                  <button
-                    onClick={() => viewStage(c.number)}
-                    className="flex items-center justify-between gap-3 text-left"
-                  >
-                    <div>
-                      <div className="text-sm text-white">
-                        <span className="mr-2 font-mono text-orange-400">{c.number}</span>
-                        {c.name}
-                      </div>
-                      <div className="text-xs text-zinc-500">
-                        {c.scoring} · {c.rounds != null ? `${c.rounds} rounds` : "round count varies"}
-                      </div>
-                      <div className="mt-1 text-xs text-zinc-400">{c.description}</div>
+                  <div>
+                    <div className="text-sm text-white">
+                      <span className="mr-2 font-mono text-orange-400">{c.number}</span>
+                      {c.name}
                     </div>
-                    <span className="shrink-0 self-start rounded border border-orange-700 px-3 py-1.5 text-xs uppercase tracking-wide text-orange-400 hover:bg-orange-950">
-                      Score Run →
-                    </span>
-                  </button>
-
-                  {division &&
-                    (hhf != null ? (
-                      <div className="flex flex-wrap gap-1.5 border-t border-zinc-800 pt-2">
-                        {CLASS_BREAKPOINTS.map((b) => (
-                          <span
-                            key={b.label}
-                            className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs"
-                          >
-                            <span className="font-bold text-white">{b.label}</span>{" "}
-                            <span className="font-mono text-orange-400">{(hhf * b.pct).toFixed(4)}</span>
-                          </span>
-                        ))}
-                        <span className="rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs">
-                          <span className="font-bold text-white">D</span>{" "}
-                          <span className="font-mono text-orange-400">below {(hhf * 0.4).toFixed(4)}</span>
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="border-t border-zinc-800 pt-2 text-xs text-zinc-500">
-                        No HHF on file yet for {DIVISION_LABELS[division]} on this classifier.
-                      </div>
-                    ))}
-                </li>
-              );
-            })}
+                    <div className="text-xs text-zinc-500">
+                      {c.scoring} · {c.rounds != null ? `${c.rounds} rounds` : "round count varies"}
+                    </div>
+                    <div className="mt-1 text-xs text-zinc-400">{c.description}</div>
+                  </div>
+                  <span className="shrink-0 self-start rounded border border-orange-700 px-3 py-1.5 text-xs uppercase tracking-wide text-orange-400 hover:bg-orange-950">
+                    Score Run →
+                  </span>
+                </button>
+              </li>
+            ))}
             {filtered.length === 0 && (
               <li className="py-4 text-center text-sm text-zinc-500">No classifiers match that search.</li>
             )}
