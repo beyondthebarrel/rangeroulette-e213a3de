@@ -36,22 +36,20 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
   const [misses, setMisses] = useState(0);
   const [penalties, setPenalties] = useState(0);
   const [timeSeconds, setTimeSeconds] = useState<number | null>(null);
-  const [hhf, setHhf] = useState<number | null>(null);
 
   const cValue = powerFactor === "major" ? 4 : 3;
   const dValue = powerFactor === "major" ? 2 : 1;
   const totalPoints = aHits * 5 + cHits * cValue + dHits * dValue + misses * -10 + penalties * -10;
   const hitFactor = timeSeconds != null && timeSeconds > 0 ? totalPoints / timeSeconds : null;
-  const percentOfHhf = hitFactor != null && hhf != null && hhf > 0 ? (hitFactor / hhf) * 100 : null;
 
   function resetCalculator() {
+    setPowerFactor("minor");
     setAHits(0);
     setCHits(0);
     setDHits(0);
     setMisses(0);
     setPenalties(0);
     setTimeSeconds(null);
-    setHhf(null);
   }
   const [viewingNumber, setViewingNumber] = useState<string | null>(null);
   const [pdfOpened, setPdfOpened] = useState(false);
@@ -75,6 +73,12 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
   function backToList() {
     closePdf();
     setViewingNumber(null);
+    resetCalculator();
+  }
+
+  function viewStage(number: string) {
+    resetCalculator();
+    setViewingNumber(number);
   }
 
   const filtered = useMemo(() => {
@@ -89,6 +93,10 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
 
   if (viewing) {
     const pdfUrl = classifierPdfUrl(viewing.number);
+    const stageHhf = division ? CLASSIFIER_HHF[viewing.number]?.[division] : undefined;
+    const percentOfHhf =
+      hitFactor != null && stageHhf != null && stageHhf > 0 ? (hitFactor / stageHhf) * 100 : null;
+
     return (
       <HeroBackdrop>
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
@@ -121,6 +129,158 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
             )}
           </Panel>
 
+          <Panel>
+            <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
+              Division
+            </div>
+            <select
+              value={division}
+              onChange={(e) => setDivision(e.target.value as Division | "")}
+              className="w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-orange-600 focus:outline-none"
+            >
+              <option value="">Select a division…</option>
+              {DIVISION_ORDER.map((d) => (
+                <option key={d} value={d}>
+                  {DIVISION_LABELS[d]}
+                </option>
+              ))}
+            </select>
+            {division && stageHhf == null && (
+              <p className="text-xs text-zinc-500">
+                No HHF on file yet for {DIVISION_LABELS[division]} on this classifier.
+              </p>
+            )}
+          </Panel>
+
+          <Panel>
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
+                Hit Factor Calculator
+              </div>
+              <button
+                onClick={resetCalculator}
+                className="rounded border border-zinc-700 px-2 py-1 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
+              >
+                Reset
+              </button>
+            </div>
+
+            <div className="flex gap-2">
+              {(["minor", "major"] as PowerFactor[]).map((pf) => (
+                <button
+                  key={pf}
+                  onClick={() => setPowerFactor(pf)}
+                  className={`flex-1 rounded border-2 px-3 py-1.5 text-xs font-bold uppercase tracking-wide ${
+                    powerFactor === pf
+                      ? "border-orange-500 bg-orange-950/40 text-orange-400"
+                      : "border-zinc-700 text-zinc-400 hover:border-zinc-500"
+                  }`}
+                >
+                  {pf} power factor
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Stepper label="A (5 pts)" value={aHits} onChange={setAHits} color="emerald" />
+              <Stepper label={`C (${cValue} pts)`} value={cHits} onChange={setCHits} color="amber" />
+              <Stepper
+                label={`D (${dValue} pt${dValue === 1 ? "" : "s"})`}
+                value={dHits}
+                onChange={setDHits}
+                color="orange"
+              />
+              <Stepper label="Misses (−10)" value={misses} onChange={setMisses} color="red" />
+              <Stepper
+                label="Penalties (−10 each)"
+                value={penalties}
+                onChange={setPenalties}
+                color="violet"
+              />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={timeSeconds ?? ""}
+                onChange={(e) => {
+                  const n = parseFloat(e.target.value);
+                  setTimeSeconds(Number.isNaN(n) ? null : n);
+                }}
+                placeholder="0.00"
+                className="w-28 rounded-md border-2 border-orange-700 bg-zinc-900 px-2 py-1.5 text-xl font-bold text-orange-400 focus:border-orange-500 focus:outline-none"
+              />
+              <span className="text-sm text-zinc-500">seconds (raw time)</span>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3">
+              <div>
+                <div className="text-xs uppercase tracking-wide text-zinc-500">Total points</div>
+                <div className="font-mono text-xl font-bold text-white">{totalPoints}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs uppercase tracking-wide text-zinc-500">Hit factor</div>
+                <div className="font-mono text-2xl font-bold text-orange-400">
+                  {hitFactor != null ? hitFactor.toFixed(4) : "—"}
+                </div>
+              </div>
+            </div>
+
+            {!division && (
+              <p className="text-center text-xs text-zinc-500">
+                Pick your division above to see your class for this run.
+              </p>
+            )}
+
+            {stageHhf != null && (
+              <>
+                <div className="flex items-center justify-between rounded border border-zinc-800 bg-zinc-900/60 px-3 py-1.5 text-xs text-zinc-400">
+                  <span>This classifier's HHF ({division && DIVISION_LABELS[division]})</span>
+                  <span className="font-mono text-orange-400">{stageHhf.toFixed(4)}</span>
+                </div>
+                <ul className="flex flex-col gap-1.5">
+                  {CLASS_BREAKPOINTS.map((b) => (
+                    <li
+                      key={b.label}
+                      className="flex items-center justify-between rounded border border-zinc-800 bg-zinc-900/60 px-3 py-1.5"
+                    >
+                      <span className="text-sm font-bold text-white">
+                        {b.label}{" "}
+                        <span className="text-xs font-normal text-zinc-500">
+                          ({(b.pct * 100).toFixed(0)}%+)
+                        </span>
+                      </span>
+                      <span className="font-mono text-sm text-orange-400">
+                        {(stageHhf * b.pct).toFixed(4)}
+                      </span>
+                    </li>
+                  ))}
+                  <li className="flex items-center justify-between rounded border border-zinc-800 bg-zinc-900/60 px-3 py-1.5">
+                    <span className="text-sm font-bold text-white">
+                      D <span className="text-xs font-normal text-zinc-500">(below 40%)</span>
+                    </span>
+                    <span className="font-mono text-sm text-orange-400">
+                      below {(stageHhf * 0.4).toFixed(4)}
+                    </span>
+                  </li>
+                </ul>
+
+                {percentOfHhf != null && (
+                  <div className="rounded-lg border border-orange-600 bg-orange-950/30 p-3 text-center">
+                    <span className="text-sm text-white">
+                      This run: {percentOfHhf.toFixed(2)}% of HHF —{" "}
+                    </span>
+                    <span className="text-lg font-bold text-orange-400">
+                      {classForPercent(percentOfHhf)} class
+                    </span>
+                  </div>
+                )}
+              </>
+            )}
+          </Panel>
+
           <button
             onClick={backToList}
             className="w-full rounded-md border-2 border-orange-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-orange-400 hover:bg-orange-950"
@@ -141,141 +301,10 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
             Competition Mode
           </h1>
           <p className="text-center text-sm text-zinc-400">
-            USPSA's current active classifier roster. Each one links to the official stage PDF on
-            uspsa.org — the diagram and full written procedure live there, not here.
+            USPSA's current active classifier roster. Pick your division, then tap a classifier to
+            open its stage PDF and score your run with a calculator built for that classifier.
           </p>
         </TitleFrame>
-
-        <Panel>
-          <div className="flex items-center justify-between gap-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
-              Hit Factor Calculator
-            </div>
-            <button
-              onClick={resetCalculator}
-              className="rounded border border-zinc-700 px-2 py-1 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
-            >
-              Reset
-            </button>
-          </div>
-
-          <div className="flex gap-2">
-            {(["minor", "major"] as PowerFactor[]).map((pf) => (
-              <button
-                key={pf}
-                onClick={() => setPowerFactor(pf)}
-                className={`flex-1 rounded border-2 px-3 py-1.5 text-xs font-bold uppercase tracking-wide ${
-                  powerFactor === pf
-                    ? "border-orange-500 bg-orange-950/40 text-orange-400"
-                    : "border-zinc-700 text-zinc-400 hover:border-zinc-500"
-                }`}
-              >
-                {pf} power factor
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Stepper label="A (5 pts)" value={aHits} onChange={setAHits} color="emerald" />
-            <Stepper label={`C (${cValue} pts)`} value={cHits} onChange={setCHits} color="amber" />
-            <Stepper label={`D (${dValue} pt${dValue === 1 ? "" : "s"})`} value={dHits} onChange={setDHits} color="orange" />
-            <Stepper label="Misses (−10)" value={misses} onChange={setMisses} color="red" />
-            <Stepper
-              label="Penalties (−10 each)"
-              value={penalties}
-              onChange={setPenalties}
-              color="violet"
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={timeSeconds ?? ""}
-              onChange={(e) => {
-                const n = parseFloat(e.target.value);
-                setTimeSeconds(Number.isNaN(n) ? null : n);
-              }}
-              placeholder="0.00"
-              className="w-28 rounded-md border-2 border-orange-700 bg-zinc-900 px-2 py-1.5 text-xl font-bold text-orange-400 focus:border-orange-500 focus:outline-none"
-            />
-            <span className="text-sm text-zinc-500">seconds (raw time)</span>
-          </div>
-
-          <div className="flex items-center justify-between rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3">
-            <div>
-              <div className="text-xs uppercase tracking-wide text-zinc-500">Total points</div>
-              <div className="font-mono text-xl font-bold text-white">{totalPoints}</div>
-            </div>
-            <div className="text-right">
-              <div className="text-xs uppercase tracking-wide text-zinc-500">Hit factor</div>
-              <div className="font-mono text-2xl font-bold text-orange-400">
-                {hitFactor != null ? hitFactor.toFixed(4) : "—"}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1.5 border-t border-zinc-800 pt-3">
-            <div className="text-xs font-bold uppercase tracking-wide text-orange-400">
-              Classifier's High Hit Factor
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                step="0.0001"
-                min="0"
-                value={hhf ?? ""}
-                onChange={(e) => {
-                  const n = parseFloat(e.target.value);
-                  setHhf(Number.isNaN(n) ? null : n);
-                }}
-                placeholder="e.g. 9.8234"
-                className="w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm font-bold text-white focus:border-orange-600 focus:outline-none"
-              />
-              <span className="text-xs text-zinc-500">
-                Or just pick a division below and look up the classifier in the list — this field
-                is only needed if you want to check a specific run right now.
-              </span>
-            </div>
-          </div>
-
-          {hhf != null && hhf > 0 && (
-            <>
-              <ul className="flex flex-col gap-1.5">
-                {CLASS_BREAKPOINTS.map((b) => (
-                  <li
-                    key={b.label}
-                    className="flex items-center justify-between rounded border border-zinc-800 bg-zinc-900/60 px-3 py-1.5"
-                  >
-                    <span className="text-sm font-bold text-white">
-                      {b.label} <span className="text-xs font-normal text-zinc-500">({(b.pct * 100).toFixed(0)}%+)</span>
-                    </span>
-                    <span className="font-mono text-sm text-orange-400">{(hhf * b.pct).toFixed(4)}</span>
-                  </li>
-                ))}
-                <li className="flex items-center justify-between rounded border border-zinc-800 bg-zinc-900/60 px-3 py-1.5">
-                  <span className="text-sm font-bold text-white">
-                    D <span className="text-xs font-normal text-zinc-500">(below 40%)</span>
-                  </span>
-                  <span className="font-mono text-sm text-orange-400">below {(hhf * 0.4).toFixed(4)}</span>
-                </li>
-              </ul>
-
-              {percentOfHhf != null && (
-                <div className="rounded-lg border border-orange-600 bg-orange-950/30 p-3 text-center">
-                  <span className="text-sm text-white">
-                    This run: {percentOfHhf.toFixed(2)}% of HHF —{" "}
-                  </span>
-                  <span className="text-lg font-bold text-orange-400">
-                    {classForPercent(percentOfHhf)} class
-                  </span>
-                </div>
-              )}
-            </>
-          )}
-        </Panel>
 
         <Panel>
           <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
@@ -319,7 +348,10 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
                   key={c.number}
                   className="flex flex-col gap-2 rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3"
                 >
-                  <div className="flex items-center justify-between gap-3">
+                  <button
+                    onClick={() => viewStage(c.number)}
+                    className="flex items-center justify-between gap-3 text-left"
+                  >
                     <div>
                       <div className="text-sm text-white">
                         <span className="mr-2 font-mono text-orange-400">{c.number}</span>
@@ -329,13 +361,10 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
                         {c.scoring} · {c.rounds != null ? `${c.rounds} rounds` : "round count varies"}
                       </div>
                     </div>
-                    <button
-                      onClick={() => setViewingNumber(c.number)}
-                      className="shrink-0 rounded border border-orange-700 px-3 py-1.5 text-xs uppercase tracking-wide text-orange-400 hover:bg-orange-950"
-                    >
-                      View PDF
-                    </button>
-                  </div>
+                    <span className="shrink-0 rounded border border-orange-700 px-3 py-1.5 text-xs uppercase tracking-wide text-orange-400 hover:bg-orange-950">
+                      Score Run →
+                    </span>
+                  </button>
 
                   {division &&
                     (hhf != null ? (
