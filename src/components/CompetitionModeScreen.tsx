@@ -19,6 +19,7 @@ const CLASS_BREAKPOINTS: { label: string; pct: number }[] = [
 export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
   const [query, setQuery] = useState("");
   const [division, setDivision] = useState<Division | "">("");
+  const [viewingNumber, setViewingNumber] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -27,6 +28,47 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
       (c) => c.number.toLowerCase().includes(q) || c.name.toLowerCase().includes(q),
     );
   }, [query]);
+
+  const viewing = viewingNumber ? CLASSIFIER_STAGES.find((c) => c.number === viewingNumber) : null;
+
+  if (viewing) {
+    const pdfUrl = classifierPdfUrl(viewing.number);
+    return (
+      <HeroBackdrop>
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+          <TitleFrame>
+            <h1 className="text-xl font-bold uppercase tracking-wide text-orange-500">
+              <span className="mr-2 font-mono">{viewing.number}</span>
+              {viewing.name}
+            </h1>
+          </TitleFrame>
+
+          <Panel>
+            <p className="text-center text-sm text-zinc-400">
+              USPSA's site doesn't allow its stage PDFs to be shown inline elsewhere, so this opens
+              in a new tab. Come back here (or just switch back to this tab) when you're done — this
+              screen and its Back button stay right where you left them.
+            </p>
+            <a
+              href={pdfUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="w-full rounded-md bg-orange-700 px-4 py-3 text-center font-semibold uppercase tracking-wide text-white hover:bg-orange-600"
+            >
+              🖨️ Open / Print / Save PDF
+            </a>
+          </Panel>
+
+          <button
+            onClick={() => setViewingNumber(null)}
+            className="w-full rounded-md border-2 border-orange-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-orange-400 hover:bg-orange-950"
+          >
+            ← Back to List
+          </button>
+        </div>
+      </HeroBackdrop>
+    );
+  }
 
   return (
     <HeroBackdrop>
@@ -93,14 +135,12 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
                         {c.scoring} · {c.rounds != null ? `${c.rounds} rounds` : "round count varies"}
                       </div>
                     </div>
-                    <a
-                      href={classifierPdfUrl(c.number)}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      onClick={() => setViewingNumber(c.number)}
                       className="shrink-0 rounded border border-orange-700 px-3 py-1.5 text-xs uppercase tracking-wide text-orange-400 hover:bg-orange-950"
                     >
                       View PDF
-                    </a>
+                    </button>
                   </div>
 
                   {division &&
