@@ -2,12 +2,16 @@ const COLOR_CLASSES: Record<string, string> = {
   amber: "bg-amber-600 hover:bg-amber-500 shadow-[0_0_10px_rgba(217,119,6,0.4)]",
   red: "bg-red-700 hover:bg-red-600 shadow-[0_0_10px_rgba(185,28,28,0.4)]",
   orange: "bg-orange-700 hover:bg-orange-600 shadow-[0_0_10px_rgba(234,88,12,0.4)]",
+  emerald: "bg-emerald-700 hover:bg-emerald-600 shadow-[0_0_10px_rgba(4,120,87,0.4)]",
+  violet: "bg-violet-700 hover:bg-violet-600 shadow-[0_0_10px_rgba(109,40,217,0.4)]",
 };
 
 const LABEL_COLOR_CLASSES: Record<string, string> = {
   amber: "text-amber-400",
   red: "text-red-400",
   orange: "text-orange-400",
+  emerald: "text-emerald-400",
+  violet: "text-violet-400",
 };
 
 export function Stepper({
@@ -19,7 +23,7 @@ export function Stepper({
   label: string;
   value: number;
   onChange: (v: number) => void;
-  color?: "amber" | "red" | "orange";
+  color?: "amber" | "red" | "orange" | "emerald" | "violet";
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
