@@ -3,7 +3,10 @@ import { classifierPdfUrl, CLASSIFIER_STAGES } from "../data/classifiers";
 import { CLASSIFIER_HHF, DIVISION_LABELS, DIVISION_ORDER, type Division } from "../data/classifierHhf";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
+import { Stepper } from "./Stepper";
 import { TitleFrame } from "./TitleFrame";
+
+type PowerFactor = "major" | "minor";
 
 // Fixed USPSA classification breakpoints — the percentage of a classifier's
 // High Hit Factor (HHF) needed for each class. These never change; only the
@@ -16,9 +19,39 @@ const CLASS_BREAKPOINTS: { label: string; pct: number }[] = [
   { label: "C", pct: 0.4 },
 ];
 
+function classForPercent(percent: number): string {
+  const hit = CLASS_BREAKPOINTS.find((b) => percent >= b.pct * 100);
+  return hit ? hit.label : "D";
+}
+
 export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
   const [query, setQuery] = useState("");
   const [division, setDivision] = useState<Division | "">("");
+
+  const [powerFactor, setPowerFactor] = useState<PowerFactor>("minor");
+  const [aHits, setAHits] = useState(0);
+  const [cHits, setCHits] = useState(0);
+  const [dHits, setDHits] = useState(0);
+  const [misses, setMisses] = useState(0);
+  const [penalties, setPenalties] = useState(0);
+  const [timeSeconds, setTimeSeconds] = useState<number | null>(null);
+  const [hhf, setHhf] = useState<number | null>(null);
+
+  const cValue = powerFactor === "major" ? 4 : 3;
+  const dValue = powerFactor === "major" ? 2 : 1;
+  const totalPoints = aHits * 5 + cHits * cValue + dHits * dValue + misses * -10 + penalties * -10;
+  const hitFactor = timeSeconds != null && timeSeconds > 0 ? totalPoints / timeSeconds : null;
+  const percentOfHhf = hitFactor != null && hhf != null && hhf > 0 ? (hitFactor / hhf) * 100 : null;
+
+  function resetCalculator() {
+    setAHits(0);
+    setCHits(0);
+    setDHits(0);
+    setMisses(0);
+    setPenalties(0);
+    setTimeSeconds(null);
+    setHhf(null);
+  }
   const [viewingNumber, setViewingNumber] = useState<string | null>(null);
   const [pdfOpened, setPdfOpened] = useState(false);
   // Deliberately not using noopener here — keeping the window reference is
@@ -109,6 +142,137 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
             uspsa.org — the diagram and full written procedure live there, not here.
           </p>
         </TitleFrame>
+
+        <Panel>
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
+              Hit Factor Calculator
+            </div>
+            <button
+              onClick={resetCalculator}
+              className="rounded border border-zinc-700 px-2 py-1 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
+            >
+              Reset
+            </button>
+          </div>
+
+          <div className="flex gap-2">
+            {(["minor", "major"] as PowerFactor[]).map((pf) => (
+              <button
+                key={pf}
+                onClick={() => setPowerFactor(pf)}
+                className={`flex-1 rounded border-2 px-3 py-1.5 text-xs font-bold uppercase tracking-wide ${
+                  powerFactor === pf
+                    ? "border-orange-500 bg-orange-950/40 text-orange-400"
+                    : "border-zinc-700 text-zinc-400 hover:border-zinc-500"
+                }`}
+              >
+                {pf} power factor
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Stepper label="A (5 pts)" value={aHits} onChange={setAHits} color="emerald" />
+            <Stepper label={`C (${cValue} pts)`} value={cHits} onChange={setCHits} color="amber" />
+            <Stepper label={`D (${dValue} pt${dValue === 1 ? "" : "s"})`} value={dHits} onChange={setDHits} color="orange" />
+            <Stepper label="Misses (−10)" value={misses} onChange={setMisses} color="red" />
+            <Stepper
+              label="Penalties (−10 each)"
+              value={penalties}
+              onChange={setPenalties}
+              color="violet"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={timeSeconds ?? ""}
+              onChange={(e) => {
+                const n = parseFloat(e.target.value);
+                setTimeSeconds(Number.isNaN(n) ? null : n);
+              }}
+              placeholder="0.00"
+              className="w-28 rounded-md border-2 border-orange-700 bg-zinc-900 px-2 py-1.5 text-xl font-bold text-orange-400 focus:border-orange-500 focus:outline-none"
+            />
+            <span className="text-sm text-zinc-500">seconds (raw time)</span>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3">
+            <div>
+              <div className="text-xs uppercase tracking-wide text-zinc-500">Total points</div>
+              <div className="font-mono text-xl font-bold text-white">{totalPoints}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs uppercase tracking-wide text-zinc-500">Hit factor</div>
+              <div className="font-mono text-2xl font-bold text-orange-400">
+                {hitFactor != null ? hitFactor.toFixed(4) : "—"}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-1.5 border-t border-zinc-800 pt-3">
+            <div className="text-xs font-bold uppercase tracking-wide text-orange-400">
+              Classifier's High Hit Factor
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                step="0.0001"
+                min="0"
+                value={hhf ?? ""}
+                onChange={(e) => {
+                  const n = parseFloat(e.target.value);
+                  setHhf(Number.isNaN(n) ? null : n);
+                }}
+                placeholder="e.g. 9.8234"
+                className="w-32 rounded border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm font-bold text-white focus:border-orange-600 focus:outline-none"
+              />
+              <span className="text-xs text-zinc-500">
+                Or just pick a division below and look up the classifier in the list — this field
+                is only needed if you want to check a specific run right now.
+              </span>
+            </div>
+          </div>
+
+          {hhf != null && hhf > 0 && (
+            <>
+              <ul className="flex flex-col gap-1.5">
+                {CLASS_BREAKPOINTS.map((b) => (
+                  <li
+                    key={b.label}
+                    className="flex items-center justify-between rounded border border-zinc-800 bg-zinc-900/60 px-3 py-1.5"
+                  >
+                    <span className="text-sm font-bold text-white">
+                      {b.label} <span className="text-xs font-normal text-zinc-500">({(b.pct * 100).toFixed(0)}%+)</span>
+                    </span>
+                    <span className="font-mono text-sm text-orange-400">{(hhf * b.pct).toFixed(4)}</span>
+                  </li>
+                ))}
+                <li className="flex items-center justify-between rounded border border-zinc-800 bg-zinc-900/60 px-3 py-1.5">
+                  <span className="text-sm font-bold text-white">
+                    D <span className="text-xs font-normal text-zinc-500">(below 40%)</span>
+                  </span>
+                  <span className="font-mono text-sm text-orange-400">below {(hhf * 0.4).toFixed(4)}</span>
+                </li>
+              </ul>
+
+              {percentOfHhf != null && (
+                <div className="rounded-lg border border-orange-600 bg-orange-950/30 p-3 text-center">
+                  <span className="text-sm text-white">
+                    This run: {percentOfHhf.toFixed(2)}% of HHF —{" "}
+                  </span>
+                  <span className="text-lg font-bold text-orange-400">
+                    {classForPercent(percentOfHhf)} class
+                  </span>
+                </div>
+              )}
+            </>
+          )}
+        </Panel>
 
         <Panel>
           <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
