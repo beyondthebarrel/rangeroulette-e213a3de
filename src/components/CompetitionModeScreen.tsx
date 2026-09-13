@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { classifierPdfUrl, CLASSIFIER_STAGES } from "../data/classifiers";
+import { classifierDiagramUrl, classifierPdfUrl, CLASSIFIER_STAGES } from "../data/classifiers";
 import { CLASSIFIER_HHF, DIVISION_LABELS, DIVISION_ORDER, type Division } from "../data/classifierHhf";
 import { BackLink } from "./BackLink";
 import { HeroBackdrop } from "./HeroBackdrop";
@@ -108,8 +108,24 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
               <span className="mr-2 font-mono">{viewing.number}</span>
               {viewing.name}
             </h1>
+            <div className="text-xs uppercase tracking-wide text-zinc-500">
+              {viewing.scoring} ·{" "}
+              {viewing.rounds != null ? `${viewing.rounds} rounds total` : "round count varies"}
+            </div>
             <p className="text-center text-sm text-zinc-400">{viewing.description}</p>
           </TitleFrame>
+
+          <Panel>
+            <img
+              src={classifierDiagramUrl(viewing.number)}
+              alt={`${viewing.number} ${viewing.name} stage setup diagram`}
+              className="w-full rounded-lg border border-zinc-700 bg-white"
+            />
+            <p className="text-center text-[11px] leading-snug text-zinc-500">
+              Setup diagram from USPSA's official stage PDF — open the full PDF below for exact
+              dimensions and the written procedure.
+            </p>
+          </Panel>
 
           <Panel>
             <p className="text-center text-sm text-zinc-400">

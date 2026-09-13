@@ -2,8 +2,12 @@
 // round count as published at uspsa.org/classifiers/. Snapshot taken 2026-09-12;
 // USPSA periodically retires/adds classifiers, so this list will drift from the
 // live site over time. Each entry links out to USPSA's own official stage PDF
-// (https://uspsa.org/viewer/<number>.pdf) rather than reproducing the stage
-// diagram/procedure here.
+// (https://uspsa.org/viewer/<number>.pdf) for the full written procedure.
+//
+// public/classifier-diagrams/<number>.jpg holds a cropped setup-diagram image
+// pulled directly from that same official PDF (unlike the `description` text
+// below, which is an original paraphrase) — included at the user's explicit
+// request, knowingly reproducing USPSA's diagram artwork in the app.
 export type ClassifierScoring = "Comstock" | "Virginia";
 
 export interface ClassifierStage {
@@ -18,6 +22,11 @@ export interface ClassifierStage {
 
 export function classifierPdfUrl(number: string): string {
   return `https://uspsa.org/viewer/${number}.pdf`;
+}
+
+/** Cropped setup-diagram image for a classifier, extracted from its official stage PDF. */
+export function classifierDiagramUrl(number: string): string {
+  return `/classifier-diagrams/${number}.jpg`;
 }
 
 export const CLASSIFIER_STAGES: ClassifierStage[] = [
