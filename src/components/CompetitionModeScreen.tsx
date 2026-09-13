@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { classifierPdfUrl, CLASSIFIER_STAGES } from "../data/classifiers";
 import { CLASSIFIER_HHF, DIVISION_LABELS, DIVISION_ORDER, type Division } from "../data/classifierHhf";
 import { HeroBackdrop } from "./HeroBackdrop";
@@ -20,6 +20,28 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
   const [query, setQuery] = useState("");
   const [division, setDivision] = useState<Division | "">("");
   const [viewingNumber, setViewingNumber] = useState<string | null>(null);
+  const [pdfOpened, setPdfOpened] = useState(false);
+  // Deliberately not using noopener here — keeping the window reference is
+  // what lets "Close PDF Tab" close it programmatically from this side.
+  // uspsa.org is a fixed, trusted destination, so the usual reverse-tabnabbing
+  // risk that noopener guards against doesn't really apply.
+  const pdfWindowRef = useRef<Window | null>(null);
+
+  function openPdf(url: string) {
+    pdfWindowRef.current = window.open(url, "_blank");
+    setPdfOpened(true);
+  }
+
+  function closePdf() {
+    pdfWindowRef.current?.close();
+    pdfWindowRef.current = null;
+    setPdfOpened(false);
+  }
+
+  function backToList() {
+    closePdf();
+    setViewingNumber(null);
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -46,21 +68,26 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
           <Panel>
             <p className="text-center text-sm text-zinc-400">
               USPSA's site doesn't allow its stage PDFs to be shown inline elsewhere, so this opens
-              in a new tab. Come back here (or just switch back to this tab) when you're done — this
-              screen and its Back button stay right where you left them.
+              in a new tab. Use "Close PDF Tab" below when you're done to jump straight back here.
             </p>
-            <a
-              href={pdfUrl}
-              target="_blank"
-              rel="noreferrer"
+            <button
+              onClick={() => openPdf(pdfUrl)}
               className="w-full rounded-md bg-orange-700 px-4 py-3 text-center font-semibold uppercase tracking-wide text-white hover:bg-orange-600"
             >
               🖨️ Open / Print / Save PDF
-            </a>
+            </button>
+            {pdfOpened && (
+              <button
+                onClick={closePdf}
+                className="w-full rounded-md border-2 border-orange-700 px-4 py-2.5 text-center font-semibold uppercase tracking-wide text-orange-400 hover:bg-orange-950"
+              >
+                ✕ Close PDF Tab
+              </button>
+            )}
           </Panel>
 
           <button
-            onClick={() => setViewingNumber(null)}
+            onClick={backToList}
             className="w-full rounded-md border-2 border-orange-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-orange-400 hover:bg-orange-950"
           >
             ← Back to List
