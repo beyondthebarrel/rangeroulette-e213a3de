@@ -36,6 +36,7 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
   const [misses, setMisses] = useState(0);
   const [penalties, setPenalties] = useState(0);
   const [timeSeconds, setTimeSeconds] = useState<number | null>(null);
+  const [showClassPopup, setShowClassPopup] = useState(false);
 
   const cValue = powerFactor === "major" ? 4 : 3;
   const dValue = powerFactor === "major" ? 2 : 1;
@@ -50,6 +51,7 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
     setMisses(0);
     setPenalties(0);
     setTimeSeconds(null);
+    setShowClassPopup(false);
   }
   const [viewingNumber, setViewingNumber] = useState<string | null>(null);
   const [pdfOpened, setPdfOpened] = useState(false);
@@ -106,6 +108,7 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
               <span className="mr-2 font-mono">{viewing.number}</span>
               {viewing.name}
             </h1>
+            <p className="text-center text-sm text-zinc-400">{viewing.description}</p>
           </TitleFrame>
 
           <Panel>
@@ -208,6 +211,13 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
                 onChange={(e) => {
                   const n = parseFloat(e.target.value);
                   setTimeSeconds(Number.isNaN(n) ? null : n);
+                  setShowClassPopup(false);
+                }}
+                onBlur={() => {
+                  if (percentOfHhf != null) setShowClassPopup(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
                 }}
                 placeholder="0.00"
                 className="w-28 rounded-md border-2 border-orange-700 bg-zinc-900 px-2 py-1.5 text-xl font-bold text-orange-400 focus:border-orange-500 focus:outline-none"
@@ -267,15 +277,13 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
                   </li>
                 </ul>
 
-                {percentOfHhf != null && (
-                  <div className="rounded-lg border border-orange-600 bg-orange-950/30 p-3 text-center">
-                    <span className="text-sm text-white">
-                      This run: {percentOfHhf.toFixed(2)}% of HHF —{" "}
-                    </span>
-                    <span className="text-lg font-bold text-orange-400">
-                      {classForPercent(percentOfHhf)} class
-                    </span>
-                  </div>
+                {percentOfHhf != null && !showClassPopup && (
+                  <button
+                    onClick={() => setShowClassPopup(true)}
+                    className="w-full rounded-lg border border-orange-600 bg-orange-950/30 p-3 text-center text-sm text-orange-300 hover:bg-orange-950/50"
+                  >
+                    View classification for this run →
+                  </button>
                 )}
               </>
             )}
@@ -288,6 +296,46 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
             ← Back to List
           </button>
         </div>
+
+        {showClassPopup && percentOfHhf != null && stageHhf != null && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+            onClick={() => setShowClassPopup(false)}
+          >
+            <div
+              className="w-full max-w-sm rounded-xl border-2 border-orange-600 bg-zinc-950 p-6 text-center shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
+                {viewing.number} {viewing.name}
+              </div>
+              <div className="mt-3 text-7xl font-black text-orange-500">
+                {classForPercent(percentOfHhf)}
+              </div>
+              <div className="text-sm font-semibold uppercase tracking-wide text-zinc-400">Class</div>
+
+              <div className="mt-4 flex justify-center gap-6">
+                <div>
+                  <div className="font-mono text-xl font-bold text-white">{hitFactor?.toFixed(4)}</div>
+                  <div className="text-xs uppercase tracking-wide text-zinc-500">Hit factor</div>
+                </div>
+                <div>
+                  <div className="font-mono text-xl font-bold text-white">{percentOfHhf.toFixed(2)}%</div>
+                  <div className="text-xs uppercase tracking-wide text-zinc-500">
+                    of {division && DIVISION_LABELS[division]} HHF
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowClassPopup(false)}
+                className="mt-6 w-full rounded-md bg-orange-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-white hover:bg-orange-600"
+              >
+                Got It
+              </button>
+            </div>
+          </div>
+        )}
       </HeroBackdrop>
     );
   }
@@ -360,8 +408,9 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
                       <div className="text-xs text-zinc-500">
                         {c.scoring} · {c.rounds != null ? `${c.rounds} rounds` : "round count varies"}
                       </div>
+                      <div className="mt-1 text-xs text-zinc-400">{c.description}</div>
                     </div>
-                    <span className="shrink-0 rounded border border-orange-700 px-3 py-1.5 text-xs uppercase tracking-wide text-orange-400 hover:bg-orange-950">
+                    <span className="shrink-0 self-start rounded border border-orange-700 px-3 py-1.5 text-xs uppercase tracking-wide text-orange-400 hover:bg-orange-950">
                       Score Run →
                     </span>
                   </button>
