@@ -28,16 +28,18 @@ function ModeButton({
   title: string;
   description: string;
   onClick: () => void;
-  variant?: "orange" | "sky";
+  variant?: "orange" | "sky" | "purple";
 }) {
+  const borderClass =
+    variant === "sky" ? "border-sky-700" : variant === "purple" ? "border-violet-700" : "border-orange-700";
+  const textClass =
+    variant === "sky" ? "text-sky-500" : variant === "purple" ? "text-violet-500" : "text-orange-500";
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-2.5 rounded-xl border-2 bg-zinc-900/60 p-2 text-left hover:bg-zinc-900 sm:gap-3 sm:p-4 ${
-        variant === "sky" ? "border-sky-700" : "border-orange-700"
-      }`}
+      className={`flex w-full items-center gap-2.5 rounded-xl border-2 bg-zinc-900/60 p-2 text-left hover:bg-zinc-900 sm:gap-3 sm:p-4 ${borderClass}`}
     >
-      <span className={`shrink-0 ${variant === "sky" ? "text-sky-500" : "text-orange-500"}`}>{icon}</span>
+      <span className={`shrink-0 ${textClass}`}>{icon}</span>
       <span>
         <span className="block text-sm font-bold uppercase tracking-wide text-white sm:text-lg">
           {title}
@@ -105,6 +107,13 @@ export function ModeSelectScreen({
             onClick={onSelectDryFire}
             variant="sky"
           />
+          <ModeButton
+            icon={<ClipboardListIcon className="h-7 w-7 sm:h-10 sm:w-10" />}
+            title="Competition Mode"
+            description="USPSA's current classifier roster, with links to official stage PDFs"
+            onClick={onOpenCompetitionMode}
+            variant="purple"
+          />
         </div>
 
         <div className="grid w-full grid-cols-2 gap-2">
@@ -136,16 +145,12 @@ export function ModeSelectScreen({
           />
         </div>
 
-        <div className="grid w-full grid-cols-2 gap-2">
-          <UtilityButton
-            icon={<ClipboardListIcon className="h-4 w-4" />}
-            label="Competition Mode"
-            onClick={onOpenCompetitionMode}
-          />
+        <div className="flex w-full justify-center">
           <UtilityButton
             icon={<WrenchIcon className="h-4 w-4" />}
             label="Maintenance Log"
             onClick={onOpenMaintenanceLog}
+            className="w-1/2"
           />
         </div>
 
