@@ -127,6 +127,18 @@ export function WrenchIcon({ className }: { className?: string }) {
   );
 }
 
+export function ClipboardListIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="5" y="4" width="14" height="17" rx="1.5" />
+      <rect x="9" y="2.5" width="6" height="3" rx="1" />
+      <line x1="8" y1="10" x2="16" y2="10" />
+      <line x1="8" y1="13.5" x2="16" y2="13.5" />
+      <line x1="8" y1="17" x2="13" y2="17" />
+    </svg>
+  );
+}
+
 export function DownloadIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.5">

@@ -3,6 +3,7 @@ import {
   BookIcon,
   CardsIcon,
   ChartIcon,
+  ClipboardListIcon,
   LockIcon,
   MapPinIcon,
   StopwatchIcon,
@@ -60,6 +61,7 @@ export function ModeSelectScreen({
   onOpenRangeLocator,
   onOpenTargets,
   onOpenMaintenanceLog,
+  onOpenCompetitionMode,
 }: {
   onSelectGame: () => void;
   onSelectTrain: () => void;
@@ -71,6 +73,7 @@ export function ModeSelectScreen({
   onOpenRangeLocator: () => void;
   onOpenTargets: () => void;
   onOpenMaintenanceLog: () => void;
+  onOpenCompetitionMode: () => void;
 }) {
   return (
     <HeroBackdrop>
@@ -133,12 +136,16 @@ export function ModeSelectScreen({
           />
         </div>
 
-        <div className="flex w-full justify-center">
+        <div className="grid w-full grid-cols-2 gap-2">
+          <UtilityButton
+            icon={<ClipboardListIcon className="h-4 w-4" />}
+            label="Competition Mode"
+            onClick={onOpenCompetitionMode}
+          />
           <UtilityButton
             icon={<WrenchIcon className="h-4 w-4" />}
             label="Maintenance Log"
             onClick={onOpenMaintenanceLog}
-            className="w-1/2"
           />
         </div>
 

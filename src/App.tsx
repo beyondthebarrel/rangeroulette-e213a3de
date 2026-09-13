@@ -3,6 +3,7 @@ import { useAuth } from "./auth/AuthContext";
 import { AnalyticsScreen } from "./components/AnalyticsScreen";
 import { AuthScreen } from "./components/AuthScreen";
 import { BillDrillScreen } from "./components/BillDrillScreen";
+import { CompetitionModeScreen } from "./components/CompetitionModeScreen";
 import { DryFireAnalyticsScreen } from "./components/DryFireAnalyticsScreen";
 import { DryFireHistoryScreen } from "./components/DryFireHistoryScreen";
 import { DryFireScreen } from "./components/DryFireScreen";
@@ -46,7 +47,8 @@ type View =
   | "editProfile"
   | "rangeLocator"
   | "targets"
-  | "maintenanceLog";
+  | "maintenanceLog"
+  | "competitionMode";
 type PendingMode = "game" | "train" | "dryFire";
 
 function GameScreen({ onBackToModes }: { onBackToModes: () => void }) {
@@ -169,6 +171,7 @@ function App() {
             onOpenRangeLocator={() => setView("rangeLocator")}
             onOpenTargets={() => setView("targets")}
             onOpenMaintenanceLog={() => setView("maintenanceLog")}
+            onOpenCompetitionMode={() => setView("competitionMode")}
           />
         )}
         {view === "rangeLocator" && (
@@ -177,6 +180,9 @@ function App() {
         {view === "targets" && <TargetsScreen onBack={() => setView("modeSelect")} />}
         {view === "maintenanceLog" && (
           <MaintenanceLogScreen onBack={() => setView("modeSelect")} />
+        )}
+        {view === "competitionMode" && (
+          <CompetitionModeScreen onBack={() => setView("modeSelect")} />
         )}
         {view === "editProfile" && (
           <ProfileSetupScreen
