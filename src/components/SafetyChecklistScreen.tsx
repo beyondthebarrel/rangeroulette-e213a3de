@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { BackLink } from "./BackLink";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { TitleFrame } from "./TitleFrame";
 
@@ -38,6 +39,7 @@ export function SafetyChecklistScreen({
   return (
     <HeroBackdrop>
       <TitleFrame>
+        <BackLink onClick={onBack} label="Modes" />
         <h1
           className={`text-2xl font-bold uppercase tracking-wide sm:text-3xl ${
             mode === "dryFire" ? "text-sky-400" : "text-orange-500"

@@ -6,6 +6,7 @@ import { getTrainingSessions } from "../training/storage";
 import type { TrainingSession } from "../training/types";
 import { LineChart } from "./charts/LineChart";
 import { RankedBarChart } from "./charts/RankedBarChart";
+import { BackLink } from "./BackLink";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
 import { TitleFrame } from "./TitleFrame";
@@ -90,6 +91,7 @@ export function DryFireAnalyticsScreen({ onBack }: { onBack: () => void }) {
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <TitleFrame variant="sky">
+          <BackLink onClick={onBack} />
           <h1 className="text-2xl font-bold uppercase tracking-wide text-sky-400">
             🔒 Dry Fire Analytics
           </h1>

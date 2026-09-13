@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { classifierPdfUrl, CLASSIFIER_STAGES } from "../data/classifiers";
 import { CLASSIFIER_HHF, DIVISION_LABELS, DIVISION_ORDER, type Division } from "../data/classifierHhf";
+import { BackLink } from "./BackLink";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
 import { Stepper } from "./Stepper";
@@ -92,6 +93,7 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
       <HeroBackdrop>
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
           <TitleFrame>
+            <BackLink onClick={backToList} label="List" />
             <h1 className="text-xl font-bold uppercase tracking-wide text-orange-500">
               <span className="mr-2 font-mono">{viewing.number}</span>
               {viewing.name}
@@ -134,6 +136,7 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <TitleFrame>
+          <BackLink onClick={onBack} />
           <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">
             Competition Mode
           </h1>

@@ -4,6 +4,7 @@ import { useGame } from "../game/GameContext";
 import { getHiddenShooterNames, hideShooterName, hideShooterNames } from "../leaderboard/hiddenShooters";
 import { getKnownShooterNames } from "../leaderboard/storage";
 import { getMyDisplayName } from "../profile";
+import { BackLink } from "./BackLink";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { TitleFrame } from "./TitleFrame";
 
@@ -100,6 +101,7 @@ export function PlayerSetup({
   return (
     <HeroBackdrop>
       <TitleFrame>
+        <BackLink onClick={onBackToModes} label="Modes" />
         <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">
           Game Mode
         </h1>

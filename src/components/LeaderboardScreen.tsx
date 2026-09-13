@@ -4,6 +4,7 @@ import {
   MIN_MATCHES_FOR_WIN_PCT,
   type LeaderboardBoards,
 } from "../leaderboard/storage";
+import { BackLink } from "./BackLink";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { TitleFrame } from "./TitleFrame";
 
@@ -26,6 +27,7 @@ export function LeaderboardScreen({ onBack }: { onBack: () => void }) {
   return (
     <HeroBackdrop>
       <TitleFrame>
+        <BackLink onClick={onBack} />
         <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500 sm:text-3xl">
           Leaderboard
         </h1>

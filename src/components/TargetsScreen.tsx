@@ -1,3 +1,4 @@
+import { BackLink } from "./BackLink";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { DownloadIcon, PrinterIcon } from "./icons";
 import { Panel } from "./Panel";
@@ -56,6 +57,7 @@ export function TargetsScreen({ onBack }: { onBack: () => void }) {
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <TitleFrame>
+          <BackLink onClick={onBack} />
           <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">
             Print Targets
           </h1>

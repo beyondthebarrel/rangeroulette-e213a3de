@@ -19,6 +19,7 @@ import { getMySubscriptionDetails, type SubscriptionDetails } from "../subscript
 import { BADGES, earnedBadgeIds } from "../training/badges";
 import { getTrainingSessions } from "../training/storage";
 import type { TrainingSession } from "../training/types";
+import { BackLink } from "./BackLink";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { MembershipPanel } from "./MembershipPanel";
 import { Panel } from "./Panel";
@@ -266,6 +267,7 @@ export function ProfileSetupScreen({
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <TitleFrame>
+          {onBack && <BackLink onClick={onBack} />}
           <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">
             {mode === "edit" ? "Edit Your Profile" : "Build Your Profile"}
           </h1>

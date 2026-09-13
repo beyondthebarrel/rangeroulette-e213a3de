@@ -21,6 +21,7 @@ import { BenchmarkProgressChart } from "./charts/BenchmarkProgressChart";
 import { DumbbellChart } from "./charts/DumbbellChart";
 import { LineChart } from "./charts/LineChart";
 import { RankedBarChart } from "./charts/RankedBarChart";
+import { BackLink } from "./BackLink";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
 import { PlayingCard } from "./PlayingCard";
@@ -201,6 +202,7 @@ export function AnalyticsScreen({ onBack }: { onBack: () => void }) {
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <TitleFrame>
+          <BackLink onClick={onBack} />
           <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">Analytics</h1>
           <p className="text-center text-sm text-zinc-400">
             {selectedPistol

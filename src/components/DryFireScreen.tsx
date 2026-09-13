@@ -36,6 +36,7 @@ import { getTrainingSessions, recordTrainingSession, updateSessionNotes } from "
 import type { TrainingDrill } from "../training/types";
 import { useTrainingDrill } from "../training/useTrainingDrill";
 import { uploadTrainingVideo } from "../training/videos";
+import { BackLink } from "./BackLink";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { ChartIcon, GridIcon, HistoryIcon } from "./icons";
 import { Panel } from "./Panel";
@@ -382,6 +383,7 @@ export function DryFireScreen({
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <TitleFrame variant="sky">
+          <BackLink onClick={onBack} label="Modes" />
           <h1 className="text-2xl font-bold uppercase tracking-wide text-sky-400">
             🔒 Dry Fire Mode
           </h1>

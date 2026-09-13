@@ -8,6 +8,7 @@ import {
   type MaintenanceLogEntry,
 } from "../maintenance/storage";
 import { listMyPistols, pistolLabel, type PistolInput } from "../profile";
+import { BackLink } from "./BackLink";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
 import { TitleFrame } from "./TitleFrame";
@@ -248,6 +249,7 @@ export function MaintenanceLogScreen({ onBack }: { onBack: () => void }) {
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <TitleFrame>
+          <BackLink onClick={onBack} />
           <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">
             Maintenance Log
           </h1>

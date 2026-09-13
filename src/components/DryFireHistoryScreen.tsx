@@ -6,6 +6,7 @@ import { didPass } from "../training/dryFireStats";
 import { clearTrainingHistory, deleteTrainingSession, getVisibleTrainingSessions } from "../training/storage";
 import type { TrainingDrill, TrainingSession } from "../training/types";
 import { getTrainingVideoUrl } from "../training/videos";
+import { BackLink } from "./BackLink";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
 import { TitleFrame } from "./TitleFrame";
@@ -129,6 +130,7 @@ export function DryFireHistoryScreen({
     <HeroBackdrop>
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
         <TitleFrame variant="sky">
+          <BackLink onClick={onBack} />
           <h1 className="text-2xl font-bold uppercase tracking-wide text-sky-400">
             🔒 Dry Fire History
           </h1>
