@@ -32,6 +32,7 @@ export interface SavedStage {
   name: string;
   savedAt: string;
   props: StageProp[];
+  courseOfFire: string;
 }
 
 /** Bay footprint, in feet — a generous default range-bay size for sketching. */

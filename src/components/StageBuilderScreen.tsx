@@ -23,7 +23,10 @@ import {
 import { BackLink } from "./BackLink";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
+import { Stepper } from "./Stepper";
 import { TitleFrame } from "./TitleFrame";
+
+const SCORABLE_TYPES = new Set<PropType>(["paperTarget", "tuxedoTarget", "steelPopper"]);
 
 function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
@@ -187,6 +190,7 @@ function PropIcon({
   onSelect,
   onMove,
   onDelete,
+  readOnly = false,
 }: {
   prop: StageProp;
   selected: boolean;
@@ -194,6 +198,7 @@ function PropIcon({
   onSelect: (id: string) => void;
   onMove: (id: string, x: number, y: number) => void;
   onDelete: (id: string) => void;
+  readOnly?: boolean;
 }) {
   const offsetRef = useRef<{ dx: number; dy: number } | null>(null);
   const base = BASE_SIZE_FT[prop.type];
@@ -230,11 +235,11 @@ function PropIcon({
     <g>
       <g
         transform={`translate(${cx} ${cy}) rotate(${prop.rotation}) scale(${prop.scaleX} ${prop.scaleY})`}
-        onPointerDown={handleDown}
-        onPointerMove={handleMove}
-        onPointerUp={handleUp}
-        onPointerCancel={handleUp}
-        style={{ cursor: "grab", touchAction: "none" }}
+        onPointerDown={readOnly ? undefined : handleDown}
+        onPointerMove={readOnly ? undefined : handleMove}
+        onPointerUp={readOnly ? undefined : handleUp}
+        onPointerCancel={readOnly ? undefined : handleUp}
+        style={{ cursor: readOnly ? "default" : "grab", touchAction: "none" }}
       >
         {shapeFor(prop.type, w, h)}
         {selected && (
@@ -265,7 +270,7 @@ function PropIcon({
           {prop.label}
         </text>
       )}
-      {selected && (
+      {selected && !readOnly && (
         <g
           transform={`translate(${cx + w / 2 + 8} ${cy - h / 2 - 8})`}
           onPointerDown={(e) => {
@@ -288,18 +293,57 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
   const userId = user?.id ?? null;
   const svgRef = useRef<SVGSVGElement>(null);
 
-  const [props, setProps] = useState<StageProp[]>(() => loadCurrentLayout(userId));
+  const [props, setProps] = useState<StageProp[]>(() => loadCurrentLayout(userId).props);
+  const [courseOfFire, setCourseOfFire] = useState<string>(() => loadCurrentLayout(userId).courseOfFire);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [saved, setSaved] = useState<SavedStage[]>(() => listSavedStages(userId));
   const [saveName, setSaveName] = useState("");
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+  const [mode, setMode] = useState<"build" | "score">("build");
+  const [powerFactor, setPowerFactor] = useState<"major" | "minor">("minor");
+  const [aHits, setAHits] = useState(0);
+  const [cHits, setCHits] = useState(0);
+  const [dHits, setDHits] = useState(0);
+  const [misses, setMisses] = useState(0);
+  const [noShootHits, setNoShootHits] = useState(0);
+  const [scoreTimeSeconds, setScoreTimeSeconds] = useState<number | null>(null);
+
   useEffect(() => {
-    saveCurrentLayout(userId, props);
-  }, [userId, props]);
+    saveCurrentLayout(userId, props, courseOfFire);
+  }, [userId, props, courseOfFire]);
 
   const selected = props.find((p) => p.id === selectedId) ?? null;
+
+  const targetCount = props.filter((p) => SCORABLE_TYPES.has(p.type)).length;
+  const maxPoints = targetCount * 5;
+  const cValue = powerFactor === "major" ? 4 : 3;
+  const dValue = powerFactor === "major" ? 2 : 1;
+  const totalPoints = aHits * 5 + cHits * cValue + dHits * dValue - misses * 10 - noShootHits * 10;
+  const hitFactor = scoreTimeSeconds != null && scoreTimeSeconds > 0 ? totalPoints / scoreTimeSeconds : null;
+
+  function launchStage() {
+    setPowerFactor("minor");
+    setAHits(0);
+    setCHits(0);
+    setDHits(0);
+    setMisses(0);
+    setNoShootHits(0);
+    setScoreTimeSeconds(null);
+    setSelectedId(null);
+    setMode("score");
+  }
+
+  function resetScore() {
+    setPowerFactor("minor");
+    setAHits(0);
+    setCHits(0);
+    setDHits(0);
+    setMisses(0);
+    setNoShootHits(0);
+    setScoreTimeSeconds(null);
+  }
 
   // No-shoot inserts are physically mounted in front of whatever they overlap,
   // so always paint (and hit-test) them above every other prop, regardless of
@@ -381,13 +425,14 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
 
   function handleSave() {
     const name = saveName.trim() || `Untitled Stage ${saved.length + 1}`;
-    const stage = saveNamedStage(userId, name, props);
+    const stage = saveNamedStage(userId, name, props, courseOfFire);
     setSaved((prev) => [stage, ...prev]);
     setSaveName("");
   }
 
   function handleLoad(stage: SavedStage) {
     setProps(stage.props.map((p) => ({ ...p })));
+    setCourseOfFire(stage.courseOfFire ?? "");
     setSelectedId(null);
   }
 
@@ -400,6 +445,144 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
   const viewW = BAY_WIDTH_FT * PX_PER_FT;
   const viewH = BAY_DEPTH_FT * PX_PER_FT;
   const gridStepFt = 10;
+
+  const gridLines = (
+    <>
+      {Array.from({ length: Math.floor(BAY_WIDTH_FT / gridStepFt) + 1 }, (_, i) => i * gridStepFt).map((ft) => (
+        <line key={`v${ft}`} x1={ft * PX_PER_FT} y1={0} x2={ft * PX_PER_FT} y2={viewH} stroke="#d4d4d8" strokeWidth={0.5} />
+      ))}
+      {Array.from({ length: Math.floor(BAY_DEPTH_FT / gridStepFt) + 1 }, (_, i) => i * gridStepFt).map((ft) => (
+        <line key={`h${ft}`} x1={0} y1={ft * PX_PER_FT} x2={viewW} y2={ft * PX_PER_FT} stroke="#d4d4d8" strokeWidth={0.5} />
+      ))}
+      <text x={6} y={13} fontSize={9} fill="#71717a" className="font-mono">
+        {BAY_WIDTH_FT}×{BAY_DEPTH_FT} ft
+      </text>
+    </>
+  );
+
+  if (mode === "score") {
+    return (
+      <HeroBackdrop>
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+          <TitleFrame>
+            <BackLink onClick={() => setMode("build")} label="Edit Stage" />
+            <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">
+              Score This Stage
+            </h1>
+            <p className="text-center text-sm text-zinc-400">
+              {targetCount} target{targetCount === 1 ? "" : "s"}/poppers · {maxPoints} max points
+            </p>
+          </TitleFrame>
+
+          <Panel>
+            <svg viewBox={`0 0 ${viewW} ${viewH}`} className="w-full rounded-sm border-2 border-zinc-900 bg-white">
+              {gridLines}
+              {renderOrder.map((p) => (
+                <PropIcon
+                  key={p.id}
+                  prop={p}
+                  selected={false}
+                  pointToFt={() => null}
+                  onSelect={() => {}}
+                  onMove={() => {}}
+                  onDelete={() => {}}
+                  readOnly
+                />
+              ))}
+            </svg>
+          </Panel>
+
+          {courseOfFire.trim() && (
+            <Panel>
+              <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
+                Course of Fire
+              </div>
+              <p className="whitespace-pre-wrap text-sm text-zinc-300">{courseOfFire}</p>
+            </Panel>
+          )}
+
+          <Panel>
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
+                Hit Factor Calculator
+              </div>
+              <button
+                onClick={resetScore}
+                className="rounded border border-zinc-700 px-2 py-1 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
+              >
+                Reset
+              </button>
+            </div>
+
+            <div className="flex gap-2">
+              {(["minor", "major"] as const).map((pf) => (
+                <button
+                  key={pf}
+                  onClick={() => setPowerFactor(pf)}
+                  className={`flex-1 rounded border-2 px-3 py-1.5 text-xs font-bold uppercase tracking-wide ${
+                    powerFactor === pf
+                      ? "border-orange-500 bg-orange-950/40 text-orange-400"
+                      : "border-zinc-700 text-zinc-400 hover:border-zinc-500"
+                  }`}
+                >
+                  {pf} power factor
+                </button>
+              ))}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Stepper label="A (5 pts)" value={aHits} onChange={setAHits} color="emerald" />
+              <Stepper label={`C (${cValue} pts)`} value={cHits} onChange={setCHits} color="amber" />
+              <Stepper
+                label={`D (${dValue} pt${dValue === 1 ? "" : "s"})`}
+                value={dHits}
+                onChange={setDHits}
+                color="orange"
+              />
+              <Stepper label="Misses (−10)" value={misses} onChange={setMisses} color="red" />
+              <Stepper label="No-Shoots (−10)" value={noShootHits} onChange={setNoShootHits} color="violet" />
+            </div>
+
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={scoreTimeSeconds ?? ""}
+                onChange={(e) => {
+                  const n = parseFloat(e.target.value);
+                  setScoreTimeSeconds(Number.isNaN(n) ? null : n);
+                }}
+                placeholder="0.00"
+                className="w-28 rounded-md border-2 border-orange-700 bg-zinc-900 px-2 py-1.5 text-xl font-bold text-orange-400 focus:border-orange-500 focus:outline-none"
+              />
+              <span className="text-sm text-zinc-500">seconds (raw time)</span>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-orange-900/50 bg-zinc-900/60 p-3">
+              <div>
+                <div className="text-xs uppercase tracking-wide text-zinc-500">Total points</div>
+                <div className="font-mono text-xl font-bold text-white">{totalPoints}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-xs uppercase tracking-wide text-zinc-500">Hit factor</div>
+                <div className="font-mono text-2xl font-bold text-orange-400">
+                  {hitFactor != null ? hitFactor.toFixed(4) : "—"}
+                </div>
+              </div>
+            </div>
+          </Panel>
+
+          <button
+            onClick={() => setMode("build")}
+            className="w-full rounded-md border-2 border-orange-700 px-4 py-2.5 font-semibold uppercase tracking-wide text-orange-400 hover:bg-orange-950"
+          >
+            ← Back to Edit Stage
+          </button>
+        </div>
+      </HeroBackdrop>
+    );
+  }
 
   return (
     <HeroBackdrop>
@@ -445,35 +628,7 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
             style={{ touchAction: "none" }}
             onPointerDown={() => setSelectedId(null)}
           >
-            {Array.from({ length: Math.floor(BAY_WIDTH_FT / gridStepFt) + 1 }, (_, i) => i * gridStepFt).map(
-              (ft) => (
-                <line
-                  key={`v${ft}`}
-                  x1={ft * PX_PER_FT}
-                  y1={0}
-                  x2={ft * PX_PER_FT}
-                  y2={viewH}
-                  stroke="#d4d4d8"
-                  strokeWidth={0.5}
-                />
-              ),
-            )}
-            {Array.from({ length: Math.floor(BAY_DEPTH_FT / gridStepFt) + 1 }, (_, i) => i * gridStepFt).map(
-              (ft) => (
-                <line
-                  key={`h${ft}`}
-                  x1={0}
-                  y1={ft * PX_PER_FT}
-                  x2={viewW}
-                  y2={ft * PX_PER_FT}
-                  stroke="#d4d4d8"
-                  strokeWidth={0.5}
-                />
-              ),
-            )}
-            <text x={6} y={13} fontSize={9} fill="#71717a" className="font-mono">
-              {BAY_WIDTH_FT}×{BAY_DEPTH_FT} ft
-            </text>
+            {gridLines}
             {renderOrder.map((p) => (
               <PropIcon
                 key={p.id}
@@ -490,6 +645,27 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
             ↓ Shooter Start
           </div>
         </Panel>
+
+        <Panel>
+          <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
+            Course of Fire
+          </div>
+          <textarea
+            value={courseOfFire}
+            onChange={(e) => setCourseOfFire(e.target.value)}
+            placeholder="Describe the stage — start position, strings, engagement order, scoring notes…"
+            rows={4}
+            className="w-full resize-y rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-orange-600 focus:outline-none"
+          />
+        </Panel>
+
+        <button
+          onClick={launchStage}
+          disabled={targetCount === 0}
+          className="w-full rounded-md bg-emerald-700 px-4 py-3 text-center font-semibold uppercase tracking-wide text-white hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          🚀 Launch Stage to Score ({targetCount} target{targetCount === 1 ? "" : "s"})
+        </button>
 
         {selected ? (
           <Panel>
