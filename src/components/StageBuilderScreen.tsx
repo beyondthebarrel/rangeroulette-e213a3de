@@ -112,18 +112,29 @@ function shapeFor(type: PropType, w: number, h: number) {
         </>
       );
     }
-    case "wall":
+    case "wall": {
+      const topHalf = w * 0.42;
+      const planks = [-0.3, 0, 0.3].map((f) => {
+        const y = h * f;
+        // Interpolate the plank's endpoints between the trapezoid's bottom (±w/2) and top (±topHalf) edges.
+        const t = (y + h / 2) / h;
+        const half = w / 2 + (topHalf - w / 2) * t;
+        return { y, half };
+      });
       return (
         <>
           <polygon
-            points={`${-w / 2},${h / 2} ${w / 2},${h / 2} ${w * 0.42},${-h / 2} ${-w * 0.42},${-h / 2}`}
-            fill="#b08968"
-            stroke="#5c4130"
-            strokeWidth={1}
+            points={`${-w / 2},${h / 2} ${w / 2},${h / 2} ${topHalf},${-h / 2} ${-topHalf},${-h / 2}`}
+            fill="#a9825a"
+            stroke="#4a3320"
+            strokeWidth={1.5}
           />
-          <line x1={-w * 0.35} y1={0} x2={w * 0.35} y2={0} stroke="#5c4130" strokeWidth={0.5} strokeDasharray="1.5 1.5" />
+          {planks.map((p, i) => (
+            <line key={i} x1={-p.half} y1={p.y} x2={p.half} y2={p.y} stroke="#4a3320" strokeWidth={0.6} />
+          ))}
         </>
       );
+    }
     case "faultLine":
       return (
         <>
