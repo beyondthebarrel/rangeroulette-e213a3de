@@ -51,16 +51,8 @@ function popperSilhouette(w: number, h: number) {
 
 function shapeFor(type: PropType, w: number, h: number) {
   switch (type) {
-    case "paperTarget": {
-      const shoulderY = -h * 0.28;
-      return (
-        <>
-          <path d={targetSilhouette(w, h)} fill="#d9b98a" stroke="#6b4a2f" strokeWidth={1.1} />
-          <line x1={-w / 2} y1={shoulderY} x2={w / 2} y2={h / 2} stroke="#3f2f1f" strokeWidth={1.5} />
-          <line x1={w / 2} y1={shoulderY} x2={-w / 2} y2={h / 2} stroke="#3f2f1f" strokeWidth={1.5} />
-        </>
-      );
-    }
+    case "paperTarget":
+      return <path d={targetSilhouette(w, h)} fill="#d9b98a" stroke="#6b4a2f" strokeWidth={1.1} />;
     case "noShoot":
       return (
         <>
