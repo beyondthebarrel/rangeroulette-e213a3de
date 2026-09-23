@@ -156,15 +156,25 @@ function shapeFor(type: PropType, w: number, h: number) {
           strokeWidth={1.25}
         />
       );
-    case "barrel":
+    case "barrel": {
+      // A slanted 3D cylinder — top and bottom ellipses joined by a shaded
+      // body, viewed at a slight angle rather than a flat top-down disc.
+      const rx = w / 2;
+      const ry = h * 0.17;
+      const topY = -h / 2 + ry;
+      const bottomY = h / 2 - ry;
+      const bodyH = bottomY - topY;
       return (
         <>
-          <circle cx={0} cy={0} r={w / 2} fill="#1e3a8a" />
-          <circle cx={-w * 0.04} cy={-w * 0.04} r={w * 0.46} fill="#2563eb" />
-          <circle cx={-w * 0.02} cy={-w * 0.02} r={w * 0.3} fill="none" stroke="#1e40af" strokeWidth={0.9} />
-          <ellipse cx={-w * 0.16} cy={-w * 0.18} rx={w * 0.15} ry={w * 0.09} fill="#dbeafe" opacity={0.6} />
+          <ellipse cx={0} cy={bottomY} rx={rx} ry={ry} fill="#1e3a8a" />
+          <rect x={-rx} y={topY} width={rx} height={bodyH} fill="#1e40af" />
+          <rect x={0} y={topY} width={rx} height={bodyH} fill="#3b82f6" />
+          <rect x={rx * 0.2} y={topY} width={rx * 0.22} height={bodyH} fill="#93c5fd" opacity={0.55} />
+          <ellipse cx={0} cy={topY} rx={rx} ry={ry} fill="#2563eb" stroke="#1e3a8a" strokeWidth={0.9} />
+          <ellipse cx={0} cy={topY} rx={rx * 0.6} ry={ry * 0.6} fill="none" stroke="#1e40af" strokeWidth={0.7} />
         </>
       );
+    }
     default:
       return null;
   }
@@ -452,18 +462,65 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
 
   const viewW = BAY_WIDTH_FT * PX_PER_FT;
   const viewH = BAY_DEPTH_FT * PX_PER_FT;
-  const gridStepFt = 10;
+  const gridStepYd = 5;
+  const gridStepFt = gridStepYd * 3;
+
+  const gravelDefs = (
+    <defs>
+      <pattern id="rr-gravel" width={20} height={20} patternUnits="userSpaceOnUse">
+        <rect width={20} height={20} fill="#e8e2d4" />
+        <circle cx={3} cy={4} r={1.1} fill="#c9c0a8" opacity={0.7} />
+        <circle cx={9} cy={2} r={0.8} fill="#b3a88d" opacity={0.6} />
+        <circle cx={15} cy={5} r={1.3} fill="#d6cdb5" opacity={0.6} />
+        <circle cx={6} cy={11} r={0.9} fill="#a89c7e" opacity={0.5} />
+        <circle cx={13} cy={13} r={1} fill="#c9c0a8" opacity={0.6} />
+        <circle cx={18} cy={16} r={0.7} fill="#b3a88d" opacity={0.5} />
+        <circle cx={2} cy={17} r={1.2} fill="#d6cdb5" opacity={0.55} />
+        <circle cx={10} cy={18} r={0.8} fill="#a89c7e" opacity={0.5} />
+        <circle cx={17} cy={9} r={0.6} fill="#c9c0a8" opacity={0.5} />
+      </pattern>
+    </defs>
+  );
 
   const gridLines = (
     <>
+      <rect x={0} y={0} width={viewW} height={viewH} fill="url(#rr-gravel)" />
       {Array.from({ length: Math.floor(BAY_WIDTH_FT / gridStepFt) + 1 }, (_, i) => i * gridStepFt).map((ft) => (
-        <line key={`v${ft}`} x1={ft * PX_PER_FT} y1={0} x2={ft * PX_PER_FT} y2={viewH} stroke="#d4d4d8" strokeWidth={0.5} />
+        <g key={`v${ft}`}>
+          <line
+            x1={ft * PX_PER_FT}
+            y1={0}
+            x2={ft * PX_PER_FT}
+            y2={viewH}
+            stroke="#7c7565"
+            strokeWidth={0.5}
+            strokeOpacity={0.55}
+          />
+          <text x={ft * PX_PER_FT + 2} y={9} fontSize={7} fill="#57534e" className="font-mono">
+            {ft / 3}
+          </text>
+        </g>
       ))}
       {Array.from({ length: Math.floor(BAY_DEPTH_FT / gridStepFt) + 1 }, (_, i) => i * gridStepFt).map((ft) => (
-        <line key={`h${ft}`} x1={0} y1={ft * PX_PER_FT} x2={viewW} y2={ft * PX_PER_FT} stroke="#d4d4d8" strokeWidth={0.5} />
+        <g key={`h${ft}`}>
+          <line
+            x1={0}
+            y1={ft * PX_PER_FT}
+            x2={viewW}
+            y2={ft * PX_PER_FT}
+            stroke="#7c7565"
+            strokeWidth={0.5}
+            strokeOpacity={0.55}
+          />
+          {ft > 0 && (
+            <text x={2} y={ft * PX_PER_FT - 2} fontSize={7} fill="#57534e" className="font-mono">
+              {ft / 3}
+            </text>
+          )}
+        </g>
       ))}
-      <text x={6} y={13} fontSize={9} fill="#71717a" className="font-mono">
-        {BAY_WIDTH_FT}×{BAY_DEPTH_FT} ft
+      <text x={viewW - 6} y={viewH - 6} textAnchor="end" fontSize={8} fill="#57534e" className="font-mono">
+        grid: 5 yd
       </text>
     </>
   );
@@ -484,6 +541,7 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
 
           <Panel>
             <svg viewBox={`0 0 ${viewW} ${viewH}`} className="w-full rounded-sm border-2 border-zinc-900 bg-white">
+              {gravelDefs}
               {gridLines}
               {renderOrder.map((p) => (
                 <PropIcon
@@ -645,6 +703,7 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
             style={{ touchAction: "none" }}
             onPointerDown={() => setSelectedId(null)}
           >
+            {gravelDefs}
             {gridLines}
             {renderOrder.map((p) => (
               <PropIcon

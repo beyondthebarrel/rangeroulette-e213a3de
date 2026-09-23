@@ -50,7 +50,7 @@ export const BASE_SIZE_FT: Record<PropType, { w: number; h: number }> = {
   wall: { w: 6, h: 1 },
   faultLine: { w: 8, h: 0.3 },
   shootingBox: { w: 3, h: 3 },
-  barrel: { w: 1.5, h: 1.5 },
+  barrel: { w: 1.4, h: 1.9 },
 };
 
 /** Props whose length and width/thickness are worth adjusting independently. */
