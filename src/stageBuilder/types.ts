@@ -43,7 +43,7 @@ export const PX_PER_FT = 8;
 export const BASE_SIZE_FT: Record<PropType, { w: number; h: number }> = {
   paperTarget: { w: 1.5, h: 2.5 },
   tuxedoTarget: { w: 1.5, h: 2.5 },
-  steelPopper: { w: 1.5, h: 1.5 },
+  steelPopper: { w: 1.3, h: 2.2 },
   noShoot: { w: 1.5, h: 2.5 },
   hardcover: { w: 2, h: 0.4 },
   wall: { w: 6, h: 1 },

@@ -42,11 +42,11 @@ function targetSilhouette(w: number, h: number) {
   return `M${-w / 2},${h / 2} L${-w / 2},${shoulderY} L${-headR},${shoulderY} A${headR},${headR} 0 0 1 ${headR},${shoulderY} L${w / 2},${shoulderY} L${w / 2},${h / 2} Z`;
 }
 
-function popperSilhouette(w: number, h: number) {
-  const shoulderY = -h * 0.15;
-  const shoulderHalf = w * 0.3;
-  const headR = w * 0.3;
-  return `M${-w / 2},${h / 2} L${-shoulderHalf},${shoulderY} L${-headR},${shoulderY} A${headR},${headR} 0 0 1 ${headR},${shoulderY} L${shoulderHalf},${shoulderY} L${w / 2},${h / 2} Z`;
+function popperPlate(w: number, bodyTop: number, bodyBottom: number) {
+  // The standard USPSA "Pepper Popper": a full-width rounded dome on top of a
+  // rectangular steel plate, mounted on a post — not a humanoid silhouette.
+  const domeR = w / 2;
+  return `M${-w / 2},${bodyBottom} L${-w / 2},${bodyTop} A${domeR},${domeR} 0 0 1 ${w / 2},${bodyTop} L${w / 2},${bodyBottom} Z`;
 }
 
 function shapeFor(type: PropType, w: number, h: number) {
@@ -73,8 +73,18 @@ function shapeFor(type: PropType, w: number, h: number) {
           <line x1={w * 0.3} y1={-h * 0.22} x2={-w * 0.3} y2={h * 0.4} stroke="#dc2626" strokeWidth={1.5} />
         </>
       );
-    case "steelPopper":
-      return <path d={popperSilhouette(w, h)} fill="#a1a1aa" stroke="#3f3f46" strokeWidth={1.1} />;
+    case "steelPopper": {
+      const bodyTop = -h * 0.35;
+      const bodyBottom = -h * 0.05;
+      const postBottom = h * 0.4;
+      return (
+        <>
+          <line x1={0} y1={bodyBottom} x2={0} y2={postBottom} stroke="#52525b" strokeWidth={w * 0.18} />
+          <line x1={-w * 0.3} y1={postBottom} x2={w * 0.3} y2={postBottom} stroke="#3f3f46" strokeWidth={1.5} />
+          <path d={popperPlate(w, bodyTop, bodyBottom)} fill="#a1a1aa" stroke="#3f3f46" strokeWidth={1.1} />
+        </>
+      );
+    }
     case "hardcover": {
       const hatches = [];
       const step = w / 5;
