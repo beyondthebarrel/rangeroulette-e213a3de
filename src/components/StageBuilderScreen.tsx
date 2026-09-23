@@ -26,8 +26,6 @@ import { Panel } from "./Panel";
 import { Stepper } from "./Stepper";
 import { TitleFrame } from "./TitleFrame";
 
-const SCORABLE_TYPES = new Set<PropType>(["paperTarget", "tuxedoTarget", "steelPopper"]);
-
 function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
@@ -308,6 +306,7 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
   const [aHits, setAHits] = useState(0);
   const [cHits, setCHits] = useState(0);
   const [dHits, setDHits] = useState(0);
+  const [poppersHit, setPoppersHit] = useState(0);
   const [misses, setMisses] = useState(0);
   const [noShootHits, setNoShootHits] = useState(0);
   const [scoreTimeSeconds, setScoreTimeSeconds] = useState<number | null>(null);
@@ -318,11 +317,16 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
 
   const selected = props.find((p) => p.id === selectedId) ?? null;
 
-  const targetCount = props.filter((p) => SCORABLE_TYPES.has(p.type)).length;
-  const maxPoints = targetCount * 5;
+  // Paper targets are engaged for (up to) two scored hits at 5 pts each = 10
+  // pts max; steel poppers score a flat 5 pts with no A/C/D zones.
+  const paperCount = props.filter((p) => p.type === "paperTarget" || p.type === "tuxedoTarget").length;
+  const popperCount = props.filter((p) => p.type === "steelPopper").length;
+  const targetCount = paperCount + popperCount;
+  const maxPoints = paperCount * 10 + popperCount * 5;
   const cValue = powerFactor === "major" ? 4 : 3;
   const dValue = powerFactor === "major" ? 2 : 1;
-  const totalPoints = aHits * 5 + cHits * cValue + dHits * dValue - misses * 10 - noShootHits * 10;
+  const totalPoints =
+    aHits * 5 + cHits * cValue + dHits * dValue + poppersHit * 5 - misses * 10 - noShootHits * 10;
   const hitFactor = scoreTimeSeconds != null && scoreTimeSeconds > 0 ? totalPoints / scoreTimeSeconds : null;
 
   function launchStage() {
@@ -330,6 +334,7 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
     setAHits(0);
     setCHits(0);
     setDHits(0);
+    setPoppersHit(0);
     setMisses(0);
     setNoShootHits(0);
     setScoreTimeSeconds(null);
@@ -342,6 +347,7 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
     setAHits(0);
     setCHits(0);
     setDHits(0);
+    setPoppersHit(0);
     setMisses(0);
     setNoShootHits(0);
     setScoreTimeSeconds(null);
@@ -518,7 +524,8 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
 
             <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2">
               <span className="text-xs uppercase tracking-wide text-zinc-500">
-                Max points available ({targetCount} target{targetCount === 1 ? "" : "s"}/poppers)
+                Max points available ({paperCount} target{paperCount === 1 ? "" : "s"} × 10, {popperCount}{" "}
+                popper{popperCount === 1 ? "" : "s"} × 5)
               </span>
               <span className="font-mono text-lg font-bold text-white">{maxPoints}</span>
             </div>
@@ -548,6 +555,7 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
                 onChange={setDHits}
                 color="orange"
               />
+              <Stepper label="Poppers Hit (5 pts)" value={poppersHit} onChange={setPoppersHit} color="emerald" />
               <Stepper label="Misses (−10)" value={misses} onChange={setMisses} color="red" />
               <Stepper label="No-Shoots (−10)" value={noShootHits} onChange={setNoShootHits} color="violet" />
             </div>
