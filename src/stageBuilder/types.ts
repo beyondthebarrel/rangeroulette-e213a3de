@@ -4,6 +4,7 @@
 
 export type PropType =
   | "paperTarget"
+  | "tuxedoTarget"
   | "steelPopper"
   | "noShoot"
   | "hardcover"
@@ -41,6 +42,7 @@ export const PX_PER_FT = 8;
 /** Base footprint per prop type at scale 1, in feet — width (x) by depth (y) in local space. */
 export const BASE_SIZE_FT: Record<PropType, { w: number; h: number }> = {
   paperTarget: { w: 1.5, h: 2.5 },
+  tuxedoTarget: { w: 1.5, h: 2.5 },
   steelPopper: { w: 1.5, h: 1.5 },
   noShoot: { w: 1.5, h: 2.5 },
   hardcover: { w: 2, h: 0.4 },
@@ -60,6 +62,7 @@ export interface PropDef {
 
 export const PROP_DEFS: PropDef[] = [
   { type: "paperTarget", name: "Paper Target" },
+  { type: "tuxedoTarget", name: "Tuxedo Target" },
   { type: "steelPopper", name: "Steel Popper" },
   { type: "noShoot", name: "No-Shoot" },
   { type: "hardcover", name: "Hard Cover" },
@@ -80,15 +83,23 @@ export function nextLabel(type: PropType, existing: StageProp[]): string {
     const n = existing.filter((p) => p.type === "shootingBox").length;
     return `Box ${String.fromCharCode(65 + (n % 26))}`;
   }
+  // Paper and tuxedo targets share one T1, T2, T3… sequence, same as a real
+  // stage diagram numbers its targets regardless of which style is used.
+  const counterGroup: Partial<Record<PropType, PropType[]>> = {
+    paperTarget: ["paperTarget", "tuxedoTarget"],
+    tuxedoTarget: ["paperTarget", "tuxedoTarget"],
+  };
   const prefix: Partial<Record<PropType, string>> = {
     paperTarget: "T",
+    tuxedoTarget: "T",
     steelPopper: "P",
     noShoot: "NS",
     hardcover: "HC",
   };
   const p = prefix[type];
   if (!p) return "";
-  const count = existing.filter((x) => x.type === type).length + 1;
+  const group = counterGroup[type] ?? [type];
+  const count = existing.filter((x) => group.includes(x.type)).length + 1;
   return `${p}${count}`;
 }
 

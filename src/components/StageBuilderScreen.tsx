@@ -53,6 +53,18 @@ function shapeFor(type: PropType, w: number, h: number) {
   switch (type) {
     case "paperTarget":
       return <path d={targetSilhouette(w, h)} fill="#d9b98a" stroke="#6b4a2f" strokeWidth={1.1} />;
+    case "tuxedoTarget": {
+      const shoulderY = -h * 0.28;
+      return (
+        <>
+          <path d={targetSilhouette(w, h)} fill="#18181b" stroke="#000" strokeWidth={1.1} />
+          <polygon
+            points={`${-w * 0.2},${shoulderY} ${w * 0.2},${shoulderY} 0,${h * 0.18}`}
+            fill="#fafafa"
+          />
+        </>
+      );
+    }
     case "noShoot":
       return (
         <>
