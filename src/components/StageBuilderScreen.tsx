@@ -467,8 +467,11 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
 
   const viewW = BAY_WIDTH_FT * PX_PER_FT;
   const viewH = BAY_DEPTH_FT * PX_PER_FT;
+  // Labeled lines every 5 yd; minor lines at half that spacing so the drawn
+  // squares are half the size of a labeled 5-yard cell.
   const gridStepYd = 5;
   const gridStepFt = gridStepYd * 3;
+  const minorStepFt = gridStepFt / 2;
 
   const gravelDefs = (
     <defs>
@@ -490,40 +493,48 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
   const gridLines = (
     <>
       <rect x={0} y={0} width={viewW} height={viewH} fill="url(#rr-gravel)" />
-      {Array.from({ length: Math.floor(BAY_WIDTH_FT / gridStepFt) + 1 }, (_, i) => i * gridStepFt).map((ft) => (
-        <g key={`v${ft}`}>
-          <line
-            x1={ft * PX_PER_FT}
-            y1={0}
-            x2={ft * PX_PER_FT}
-            y2={viewH}
-            stroke="#7c7565"
-            strokeWidth={0.5}
-            strokeOpacity={0.55}
-          />
-          <text x={ft * PX_PER_FT + 2} y={9} fontSize={7} fill="#57534e" className="font-mono">
-            {ft / 3}
-          </text>
-        </g>
-      ))}
-      {Array.from({ length: Math.floor(BAY_DEPTH_FT / gridStepFt) + 1 }, (_, i) => i * gridStepFt).map((ft) => (
-        <g key={`h${ft}`}>
-          <line
-            x1={0}
-            y1={ft * PX_PER_FT}
-            x2={viewW}
-            y2={ft * PX_PER_FT}
-            stroke="#7c7565"
-            strokeWidth={0.5}
-            strokeOpacity={0.55}
-          />
-          {ft > 0 && (
-            <text x={2} y={ft * PX_PER_FT - 2} fontSize={7} fill="#57534e" className="font-mono">
-              {ft / 3}
-            </text>
-          )}
-        </g>
-      ))}
+      {Array.from({ length: Math.floor(BAY_WIDTH_FT / minorStepFt) + 1 }, (_, i) => i * minorStepFt).map((ft) => {
+        const isMajor = ft % gridStepFt === 0;
+        return (
+          <g key={`v${ft}`}>
+            <line
+              x1={ft * PX_PER_FT}
+              y1={0}
+              x2={ft * PX_PER_FT}
+              y2={viewH}
+              stroke="#7c7565"
+              strokeWidth={isMajor ? 0.9 : 0.4}
+              strokeOpacity={isMajor ? 0.6 : 0.35}
+            />
+            {isMajor && (
+              <text x={ft * PX_PER_FT + 2} y={9} fontSize={7} fill="#57534e" className="font-mono">
+                {ft / 3}
+              </text>
+            )}
+          </g>
+        );
+      })}
+      {Array.from({ length: Math.floor(BAY_DEPTH_FT / minorStepFt) + 1 }, (_, i) => i * minorStepFt).map((ft) => {
+        const isMajor = ft % gridStepFt === 0;
+        return (
+          <g key={`h${ft}`}>
+            <line
+              x1={0}
+              y1={ft * PX_PER_FT}
+              x2={viewW}
+              y2={ft * PX_PER_FT}
+              stroke="#7c7565"
+              strokeWidth={isMajor ? 0.9 : 0.4}
+              strokeOpacity={isMajor ? 0.6 : 0.35}
+            />
+            {isMajor && ft > 0 && (
+              <text x={2} y={ft * PX_PER_FT - 2} fontSize={7} fill="#57534e" className="font-mono">
+                {ft / 3}
+              </text>
+            )}
+          </g>
+        );
+      })}
       <text x={viewW - 6} y={viewH - 6} textAnchor="end" fontSize={8} fill="#57534e" className="font-mono">
         grid: 5 yd
       </text>

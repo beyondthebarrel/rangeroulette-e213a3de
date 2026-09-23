@@ -35,9 +35,9 @@ export interface SavedStage {
   courseOfFire: string;
 }
 
-/** Bay footprint, in feet — a generous default range-bay size for sketching. */
-export const BAY_WIDTH_FT = 50;
-export const BAY_DEPTH_FT = 80;
+/** Bay footprint, in feet — 20 yards wide by 30 yards deep. */
+export const BAY_WIDTH_FT = 60;
+export const BAY_DEPTH_FT = 90;
 export const PX_PER_FT = 8;
 
 /** Base footprint per prop type at scale 1, in feet — width (x) by depth (y) in local space. */
@@ -104,15 +104,20 @@ export function nextLabel(type: PropType, existing: StageProp[]): string {
   return `${p}${count}`;
 }
 
+const DEFAULT_SCALE: Partial<Record<PropType, number>> = {
+  barrel: 1.3,
+};
+
 export function createProp(type: PropType, existing: StageProp[], x: number, y: number): StageProp {
+  const scale = DEFAULT_SCALE[type] ?? 1;
   return {
     id: makePropId(),
     type,
     x,
     y,
     rotation: 0,
-    scaleX: 1,
-    scaleY: 1,
+    scaleX: scale,
+    scaleY: scale,
     label: nextLabel(type, existing),
   };
 }
