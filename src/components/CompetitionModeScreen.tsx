@@ -4,6 +4,7 @@ import { CLASSIFIER_HHF, DIVISION_LABELS, DIVISION_ORDER, type Division } from "
 import { BackLink } from "./BackLink";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
+import { StageBuilderScreen } from "./StageBuilderScreen";
 import { Stepper } from "./Stepper";
 import { TitleFrame } from "./TitleFrame";
 
@@ -26,6 +27,7 @@ function classForPercent(percent: number): string {
 }
 
 export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
+  const [showStageBuilder, setShowStageBuilder] = useState(false);
   const [query, setQuery] = useState("");
   const [division, setDivision] = useState<Division | "">("");
 
@@ -92,6 +94,10 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
   }, [query]);
 
   const viewing = viewingNumber ? CLASSIFIER_STAGES.find((c) => c.number === viewingNumber) : null;
+
+  if (showStageBuilder) {
+    return <StageBuilderScreen onBack={() => setShowStageBuilder(false)} />;
+  }
 
   if (viewing) {
     const pdfUrl = classifierPdfUrl(viewing.number);
@@ -374,6 +380,13 @@ export function CompetitionModeScreen({ onBack }: { onBack: () => void }) {
             score your run — you'll pick your division on that screen.
           </p>
         </TitleFrame>
+
+        <button
+          onClick={() => setShowStageBuilder(true)}
+          className="w-full rounded-md border-2 border-orange-700 px-4 py-3 text-center font-semibold uppercase tracking-wide text-orange-400 hover:bg-orange-950"
+        >
+          🛠️ Build Your Own Stage
+        </button>
 
         <Panel>
           <input
