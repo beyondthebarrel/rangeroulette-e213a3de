@@ -29,76 +29,123 @@ function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
 
+// Icon language borrowed from official USPSA stage-diagram conventions (plain
+// white silhouettes with thin black outlines, dashed reference lines, skewed
+// ground-plane boxes) — original shapes drawn from scratch, not traced from
+// any specific USPSA diagram.
+const INK = "#18181b";
+
+function targetSilhouette(w: number, h: number) {
+  // Squared shoulders tapering to a narrower head, flat base — the generic
+  // cardboard-silhouette shape used across practical shooting diagrams.
+  return `M${-w / 2},${h / 2} L${-w / 2},${-h * 0.1} L${-w * 0.28},${-h / 2} L${w * 0.28},${-h / 2} L${w / 2},${-h * 0.1} L${w / 2},${h / 2} Z`;
+}
+
 function shapeFor(type: PropType, w: number, h: number) {
   switch (type) {
     case "paperTarget":
       return (
         <>
-          <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={2} fill="#d4a56a" stroke="#3f2f1f" strokeWidth={1} />
-          <ellipse
-            cx={0}
-            cy={-h * 0.05}
-            rx={w * 0.28}
-            ry={h * 0.22}
-            fill="none"
-            stroke="#3f2f1f"
-            strokeWidth={0.75}
-            strokeDasharray="1.5 1.5"
-          />
-          <polygon points={`-3,${-h / 2} 3,${-h / 2} 0,${-h / 2 - 4}`} fill="#3f2f1f" />
+          <path d={targetSilhouette(w, h)} fill="white" stroke={INK} strokeWidth={1.25} />
+          <line x1={-w * 0.22} y1={-h * 0.02} x2={w * 0.22} y2={-h * 0.02} stroke={INK} strokeWidth={0.6} strokeDasharray="1.5 1.5" />
+          <line x1={0} y1={-h * 0.24} x2={0} y2={h * 0.2} stroke={INK} strokeWidth={0.6} strokeDasharray="1.5 1.5" />
         </>
       );
     case "noShoot":
       return (
         <>
-          <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={2} fill="#fafafa" stroke="#18181b" strokeWidth={1} />
-          <line x1={-w / 2 + 2} y1={-h / 2 + 2} x2={w / 2 - 2} y2={h / 2 - 2} stroke="#dc2626" strokeWidth={1.5} />
-          <line x1={w / 2 - 2} y1={-h / 2 + 2} x2={-w / 2 + 2} y2={h / 2 - 2} stroke="#dc2626" strokeWidth={1.5} />
-          <polygon points={`-3,${-h / 2} 3,${-h / 2} 0,${-h / 2 - 4}`} fill="#18181b" />
+          <path d={targetSilhouette(w, h)} fill="white" stroke={INK} strokeWidth={1.25} strokeDasharray="2.5 1.5" />
+          <line x1={-w * 0.3} y1={-h * 0.32} x2={w * 0.3} y2={h * 0.32} stroke="#dc2626" strokeWidth={1.25} />
+          <line x1={w * 0.3} y1={-h * 0.32} x2={-w * 0.3} y2={h * 0.32} stroke="#dc2626" strokeWidth={1.25} />
         </>
       );
     case "steelPopper":
       return (
         <>
-          <line x1={0} y1={0} x2={0} y2={h / 2 + 4} stroke="#52525b" strokeWidth={1.5} />
-          <circle cx={0} cy={0} r={w / 2} fill="#a1a1aa" stroke="#3f3f46" strokeWidth={1} />
-          <circle cx={0} cy={0} r={w * 0.25} fill="none" stroke="#71717a" strokeWidth={0.75} />
+          <path
+            d={`M${-w / 2},${h / 2} L${-w / 2},${-h / 2 + w / 2} A${w / 2},${w / 2} 0 0 1 ${w / 2},${-h / 2 + w / 2} L${w / 2},${h / 2} Z`}
+            fill="white"
+            stroke={INK}
+            strokeWidth={1.25}
+          />
+          <line x1={-w * 0.28} y1={h * 0.15} x2={w * 0.28} y2={h * 0.15} stroke={INK} strokeWidth={0.6} />
         </>
       );
-    case "hardcover":
-      return <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={1} fill="#27272a" stroke="#000" strokeWidth={0.5} />;
+    case "hardcover": {
+      const hatches = [];
+      const step = w / 5;
+      for (let i = -2; i <= 2; i += 1) {
+        hatches.push(
+          <line
+            key={i}
+            x1={i * step - h / 2}
+            y1={-h / 2}
+            x2={i * step + h / 2}
+            y2={h / 2}
+            stroke={INK}
+            strokeWidth={0.5}
+          />,
+        );
+      }
+      return (
+        <>
+          <rect x={-w / 2} y={-h / 2} width={w} height={h} fill="#e4e4e7" stroke={INK} strokeWidth={1} />
+          {hatches}
+        </>
+      );
+    }
     case "wall":
       return (
         <>
-          <rect x={-w / 2} y={-h / 2} width={w} height={h} fill="#92736a" stroke="#4b3a35" strokeWidth={1} />
-          <line x1={-w / 2} y1={0} x2={w / 2} y2={0} stroke="#4b3a35" strokeWidth={0.5} strokeDasharray="2 2" />
+          <polygon
+            points={`${-w / 2},${h / 2} ${w / 2},${h / 2} ${w * 0.42},${-h / 2} ${-w * 0.42},${-h / 2}`}
+            fill="#d4d4d8"
+            stroke={INK}
+            strokeWidth={1}
+          />
+          <line x1={-w * 0.35} y1={0} x2={w * 0.35} y2={0} stroke={INK} strokeWidth={0.5} strokeDasharray="1.5 1.5" />
         </>
       );
     case "faultLine":
-      return <line x1={-w / 2} y1={0} x2={w / 2} y2={0} stroke="#dc2626" strokeWidth={Math.max(h, 2.5)} strokeLinecap="round" />;
+      return (
+        <>
+          <line x1={-w / 2} y1={0} x2={w / 2} y2={0} stroke="#dc2626" strokeWidth={2} />
+          <line x1={-w / 2} y1={-3} x2={-w / 2} y2={3} stroke={INK} strokeWidth={0.75} />
+          <line x1={w / 2} y1={-3} x2={w / 2} y2={3} stroke={INK} strokeWidth={0.75} />
+        </>
+      );
     case "shootingBox":
       return (
-        <rect
-          x={-w / 2}
-          y={-h / 2}
-          width={w}
-          height={h}
-          fill="rgba(249,115,22,0.08)"
-          stroke="#f97316"
-          strokeWidth={1.5}
-          strokeDasharray="3 2"
+        <polygon
+          points={`${-w / 2},${h / 2} ${w / 2},${h / 2} ${w / 2 + h * 0.3},${-h / 2} ${-w / 2 + h * 0.3},${-h / 2}`}
+          fill="none"
+          stroke="#dc2626"
+          strokeWidth={1.25}
         />
       );
     case "barrel":
       return (
         <>
-          <circle cx={0} cy={0} r={w / 2} fill="#2563eb" stroke="#1e3a8a" strokeWidth={1} />
-          <circle cx={0} cy={0} r={w * 0.3} fill="none" stroke="#1e3a8a" strokeWidth={0.75} />
+          <circle cx={0} cy={0} r={w / 2} fill="#bfdbfe" stroke={INK} strokeWidth={1.25} />
+          <circle cx={0} cy={0} r={w * 0.32} fill="none" stroke={INK} strokeWidth={0.75} />
         </>
       );
     default:
       return null;
   }
+}
+
+function PropSwatch({ type }: { type: PropType }) {
+  const base = BASE_SIZE_FT[type];
+  const w = base.w * PX_PER_FT;
+  const h = base.h * PX_PER_FT;
+  const pad = 4;
+  const half = Math.max(w, h) / 2 + pad;
+  return (
+    <svg viewBox={`${-half} ${-half} ${half * 2} ${half * 2}`} className="h-7 w-7 shrink-0">
+      {shapeFor(type, w, h)}
+    </svg>
+  );
 }
 
 function PropIcon({
@@ -177,7 +224,8 @@ function PropIcon({
           dominantBaseline={showLabelInside ? "middle" : "hanging"}
           fontSize={9}
           fontWeight={700}
-          fill={selected ? "#fb923c" : "#f4f4f5"}
+          fill={selected ? "#ea580c" : "#18181b"}
+          className="font-mono"
           style={{ pointerEvents: "none" }}
         >
           {prop.label}
@@ -322,13 +370,10 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
               <button
                 key={def.type}
                 onClick={() => addProp(def.type)}
-                className="flex flex-col items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900/60 p-2 hover:border-orange-600 hover:bg-zinc-900"
+                className="flex flex-col items-center gap-1.5 rounded-lg border border-zinc-300 bg-white p-2 hover:border-orange-600"
               >
-                <span
-                  className="h-5 w-5 shrink-0 rounded-sm border border-black/40"
-                  style={{ background: def.swatch }}
-                />
-                <span className="text-center text-[10px] leading-tight text-zinc-300">{def.name}</span>
+                <PropSwatch type={def.type} />
+                <span className="text-center text-[10px] leading-tight text-zinc-700">{def.name}</span>
               </button>
             ))}
           </div>
@@ -342,7 +387,7 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
           <svg
             ref={svgRef}
             viewBox={`0 0 ${viewW} ${viewH}`}
-            className="w-full touch-none rounded-lg border border-zinc-700 bg-zinc-200"
+            className="w-full touch-none rounded-sm border-2 border-zinc-900 bg-white"
             style={{ touchAction: "none" }}
             onPointerDown={() => setSelectedId(null)}
           >
@@ -354,7 +399,7 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
                   y1={0}
                   x2={ft * PX_PER_FT}
                   y2={viewH}
-                  stroke="#a1a1aa"
+                  stroke="#d4d4d8"
                   strokeWidth={0.5}
                 />
               ),
@@ -367,12 +412,12 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
                   y1={ft * PX_PER_FT}
                   x2={viewW}
                   y2={ft * PX_PER_FT}
-                  stroke="#a1a1aa"
+                  stroke="#d4d4d8"
                   strokeWidth={0.5}
                 />
               ),
             )}
-            <text x={6} y={14} fontSize={9} fill="#71717a">
+            <text x={6} y={13} fontSize={9} fill="#71717a" className="font-mono">
               {BAY_WIDTH_FT}×{BAY_DEPTH_FT} ft
             </text>
             {props.map((p) => (

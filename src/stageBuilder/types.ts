@@ -56,18 +56,17 @@ export const RECTANGULAR_TYPES = new Set<PropType>(["wall", "faultLine", "shooti
 export interface PropDef {
   type: PropType;
   name: string;
-  swatch: string;
 }
 
 export const PROP_DEFS: PropDef[] = [
-  { type: "paperTarget", name: "Paper Target", swatch: "#d4a56a" },
-  { type: "steelPopper", name: "Steel Popper", swatch: "#a1a1aa" },
-  { type: "noShoot", name: "No-Shoot", swatch: "#f4f4f5" },
-  { type: "hardcover", name: "Hard Cover", swatch: "#27272a" },
-  { type: "wall", name: "Wall", swatch: "#92736a" },
-  { type: "faultLine", name: "Fault Line", swatch: "#dc2626" },
-  { type: "shootingBox", name: "Shooting Box", swatch: "#f97316" },
-  { type: "barrel", name: "Blue Barrel", swatch: "#2563eb" },
+  { type: "paperTarget", name: "Paper Target" },
+  { type: "steelPopper", name: "Steel Popper" },
+  { type: "noShoot", name: "No-Shoot" },
+  { type: "hardcover", name: "Hard Cover" },
+  { type: "wall", name: "Wall" },
+  { type: "faultLine", name: "Fault Line" },
+  { type: "shootingBox", name: "Shooting Box" },
+  { type: "barrel", name: "Blue Barrel" },
 ];
 
 let uid = 0;
