@@ -161,8 +161,10 @@ function shapeFor(type: PropType, w: number, h: number) {
     case "barrel":
       return (
         <>
-          <circle cx={0} cy={0} r={w / 2} fill="#2563eb" stroke="#1e3a8a" strokeWidth={1.1} />
-          <circle cx={0} cy={0} r={w * 0.32} fill="none" stroke="#bfdbfe" strokeWidth={0.9} />
+          <circle cx={0} cy={0} r={w / 2} fill="#1e3a8a" />
+          <circle cx={-w * 0.04} cy={-w * 0.04} r={w * 0.46} fill="#2563eb" />
+          <circle cx={-w * 0.02} cy={-w * 0.02} r={w * 0.3} fill="none" stroke="#1e40af" strokeWidth={0.9} />
+          <ellipse cx={-w * 0.16} cy={-w * 0.18} rx={w * 0.15} ry={w * 0.09} fill="#dbeafe" opacity={0.6} />
         </>
       );
     default:
@@ -512,6 +514,13 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
               >
                 Reset
               </button>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/60 px-3 py-2">
+              <span className="text-xs uppercase tracking-wide text-zinc-500">
+                Max points available ({targetCount} target{targetCount === 1 ? "" : "s"}/poppers)
+              </span>
+              <span className="font-mono text-lg font-bold text-white">{maxPoints}</span>
             </div>
 
             <div className="flex gap-2">
