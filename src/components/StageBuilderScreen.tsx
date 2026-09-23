@@ -42,11 +42,18 @@ function targetSilhouette(w: number, h: number) {
   return `M${-w / 2},${h / 2} L${-w / 2},${shoulderY} L${-headR},${shoulderY} A${headR},${headR} 0 0 1 ${headR},${shoulderY} L${w / 2},${shoulderY} L${w / 2},${h / 2} Z`;
 }
 
-function popperPlate(w: number, bodyTop: number, bodyBottom: number) {
-  // The standard USPSA "Pepper Popper": a full-width rounded dome on top of a
-  // rectangular steel plate, mounted on a post — not a humanoid silhouette.
-  const domeR = w / 2;
-  return `M${-w / 2},${bodyBottom} L${-w / 2},${bodyTop} A${domeR},${domeR} 0 0 1 ${w / 2},${bodyTop} L${w / 2},${bodyBottom} Z`;
+function popperSilhouette(w: number, h: number) {
+  // The standard USPSA/IPSC steel popper: a narrow base tapering up into a
+  // wide round "shoulder" bulge, capped with a smaller round head bump.
+  const stemHalf = w * 0.15;
+  const bulgeHalf = w * 0.5;
+  const headHalf = w * 0.22;
+  const headR = w * 0.22;
+  const baseY = h * 0.42;
+  const torsoBottomY = h * 0.05;
+  const torsoMidY = -h * 0.12;
+  const torsoTopY = -h * 0.3;
+  return `M${-stemHalf},${baseY} L${-stemHalf},${torsoBottomY} Q${-bulgeHalf},${torsoMidY} ${-headHalf},${torsoTopY} A${headR},${headR} 0 0 1 ${headHalf},${torsoTopY} Q${bulgeHalf},${torsoMidY} ${stemHalf},${torsoBottomY} L${stemHalf},${baseY} Z`;
 }
 
 function shapeFor(type: PropType, w: number, h: number) {
@@ -73,18 +80,15 @@ function shapeFor(type: PropType, w: number, h: number) {
           <line x1={w * 0.3} y1={-h * 0.22} x2={-w * 0.3} y2={h * 0.4} stroke="#dc2626" strokeWidth={1.5} />
         </>
       );
-    case "steelPopper": {
-      const bodyTop = -h * 0.35;
-      const bodyBottom = -h * 0.05;
-      const postBottom = h * 0.4;
+    case "steelPopper":
       return (
         <>
-          <line x1={0} y1={bodyBottom} x2={0} y2={postBottom} stroke="#52525b" strokeWidth={w * 0.18} />
-          <line x1={-w * 0.3} y1={postBottom} x2={w * 0.3} y2={postBottom} stroke="#3f3f46" strokeWidth={1.5} />
-          <path d={popperPlate(w, bodyTop, bodyBottom)} fill="#a1a1aa" stroke="#3f3f46" strokeWidth={1.1} />
+          <path d={popperSilhouette(w, h)} fill="#a1a1aa" stroke="#3f3f46" strokeWidth={1.1} />
+          <rect x={-w * 0.32} y={h * 0.38} width={w * 0.64} height={h * 0.09} fill="#3f3f46" />
+          <circle cx={-w * 0.12} cy={h * 0.34} r={w * 0.07} fill="#18181b" />
+          <circle cx={w * 0.12} cy={h * 0.34} r={w * 0.07} fill="#18181b" />
         </>
       );
-    }
     case "hardcover": {
       const hatches = [];
       const step = w / 5;
