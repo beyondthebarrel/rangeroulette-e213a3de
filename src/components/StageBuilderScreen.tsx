@@ -690,8 +690,35 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
         </TitleFrame>
 
         <Panel>
-          <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
-            Add a Prop
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
+              Add a Prop
+            </div>
+            {props.length > 0 &&
+              (confirmClear ? (
+                <span className="flex items-center gap-1.5 text-xs">
+                  <span className="text-zinc-400">Clear all items?</span>
+                  <button
+                    onClick={handleClearAll}
+                    className="rounded bg-orange-700 px-2 py-1 text-white hover:bg-orange-600"
+                  >
+                    Yes
+                  </button>
+                  <button
+                    onClick={() => setConfirmClear(false)}
+                    className="rounded bg-zinc-700 px-2 py-1 text-white hover:bg-zinc-600"
+                  >
+                    Cancel
+                  </button>
+                </span>
+              ) : (
+                <button
+                  onClick={() => setConfirmClear(true)}
+                  className="rounded border border-zinc-700 px-2 py-1 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
+                >
+                  Clear All Items
+                </button>
+              ))}
           </div>
           <div className="grid grid-cols-4 gap-2">
             {PROP_DEFS.map((def) => (
@@ -705,6 +732,12 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
               </button>
             ))}
           </div>
+          {props.length > 0 && (
+            <p className="text-[11px] leading-snug text-zinc-500">
+              Clearing only wipes what's currently on the range — any stage you've already saved by
+              name below is untouched.
+            </p>
+          )}
         </Panel>
 
         <Panel>
@@ -890,35 +923,8 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
         )}
 
         <Panel>
-          <div className="flex items-center justify-between gap-2">
-            <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
-              Save This Layout
-            </div>
-            {props.length > 0 &&
-              (confirmClear ? (
-                <span className="flex items-center gap-1.5 text-xs">
-                  <span className="text-zinc-400">Clear the range?</span>
-                  <button
-                    onClick={handleClearAll}
-                    className="rounded bg-orange-700 px-2 py-1 text-white hover:bg-orange-600"
-                  >
-                    Yes
-                  </button>
-                  <button
-                    onClick={() => setConfirmClear(false)}
-                    className="rounded bg-zinc-700 px-2 py-1 text-white hover:bg-zinc-600"
-                  >
-                    Cancel
-                  </button>
-                </span>
-              ) : (
-                <button
-                  onClick={() => setConfirmClear(true)}
-                  className="rounded border border-zinc-700 px-2 py-1 text-xs uppercase tracking-wide text-zinc-400 hover:bg-zinc-800"
-                >
-                  Clear Range
-                </button>
-              ))}
+          <div className="text-xs font-semibold uppercase tracking-wider text-orange-400">
+            Save This Layout
           </div>
           <div className="flex gap-2">
             <input
