@@ -285,6 +285,13 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
 
   const selected = props.find((p) => p.id === selectedId) ?? null;
 
+  // No-shoot inserts are physically mounted in front of whatever they overlap,
+  // so always paint (and hit-test) them above every other prop, regardless of
+  // add order — a stable sort keeps everything else in its existing order.
+  const renderOrder = [...props].sort(
+    (a, b) => (a.type === "noShoot" ? 1 : 0) - (b.type === "noShoot" ? 1 : 0),
+  );
+
   function pointToFt(clientX: number, clientY: number): { x: number; y: number } | null {
     const svg = svgRef.current;
     if (!svg) return null;
@@ -452,7 +459,7 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
             <text x={6} y={13} fontSize={9} fill="#71717a" className="font-mono">
               {BAY_WIDTH_FT}×{BAY_DEPTH_FT} ft
             </text>
-            {props.map((p) => (
+            {renderOrder.map((p) => (
               <PropIcon
                 key={p.id}
                 prop={p}
