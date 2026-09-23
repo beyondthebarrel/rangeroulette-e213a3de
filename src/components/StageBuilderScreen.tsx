@@ -29,48 +29,48 @@ function clamp(n: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, n));
 }
 
-// Icon language borrowed from official USPSA stage-diagram conventions (plain
-// white silhouettes with thin black outlines, dashed reference lines, skewed
-// ground-plane boxes) — original shapes drawn from scratch, not traced from
-// any specific USPSA diagram.
+// Icon shapes modeled on the actual figures in USPSA's own stage-diagram
+// PDFs — a flat-shouldered cardboard silhouette with a rounded head bump and
+// a bold X brace for paper targets, a taller round-headed silhouette (no
+// brace) for steel poppers — redrawn from scratch as colored props for this
+// tool rather than traced/copied line-for-line from any one diagram.
 const INK = "#18181b";
 
 function targetSilhouette(w: number, h: number) {
-  // Squared shoulders tapering to a narrower head, flat base — the generic
-  // cardboard-silhouette shape used across practical shooting diagrams.
-  return `M${-w / 2},${h / 2} L${-w / 2},${-h * 0.1} L${-w * 0.28},${-h / 2} L${w * 0.28},${-h / 2} L${w / 2},${-h * 0.1} L${w / 2},${h / 2} Z`;
+  const shoulderY = -h * 0.28;
+  const headR = w * 0.24;
+  return `M${-w / 2},${h / 2} L${-w / 2},${shoulderY} L${-headR},${shoulderY} A${headR},${headR} 0 0 1 ${headR},${shoulderY} L${w / 2},${shoulderY} L${w / 2},${h / 2} Z`;
+}
+
+function popperSilhouette(w: number, h: number) {
+  const shoulderY = -h * 0.15;
+  const shoulderHalf = w * 0.3;
+  const headR = w * 0.3;
+  return `M${-w / 2},${h / 2} L${-shoulderHalf},${shoulderY} L${-headR},${shoulderY} A${headR},${headR} 0 0 1 ${headR},${shoulderY} L${shoulderHalf},${shoulderY} L${w / 2},${h / 2} Z`;
 }
 
 function shapeFor(type: PropType, w: number, h: number) {
   switch (type) {
-    case "paperTarget":
+    case "paperTarget": {
+      const shoulderY = -h * 0.28;
       return (
         <>
-          <path d={targetSilhouette(w, h)} fill="white" stroke={INK} strokeWidth={1.25} />
-          <line x1={-w * 0.22} y1={-h * 0.02} x2={w * 0.22} y2={-h * 0.02} stroke={INK} strokeWidth={0.6} strokeDasharray="1.5 1.5" />
-          <line x1={0} y1={-h * 0.24} x2={0} y2={h * 0.2} stroke={INK} strokeWidth={0.6} strokeDasharray="1.5 1.5" />
+          <path d={targetSilhouette(w, h)} fill="#d9b98a" stroke="#6b4a2f" strokeWidth={1.1} />
+          <line x1={-w / 2} y1={shoulderY} x2={w / 2} y2={h / 2} stroke="#3f2f1f" strokeWidth={1.5} />
+          <line x1={w / 2} y1={shoulderY} x2={-w / 2} y2={h / 2} stroke="#3f2f1f" strokeWidth={1.5} />
         </>
       );
+    }
     case "noShoot":
       return (
         <>
-          <path d={targetSilhouette(w, h)} fill="white" stroke={INK} strokeWidth={1.25} strokeDasharray="2.5 1.5" />
-          <line x1={-w * 0.3} y1={-h * 0.32} x2={w * 0.3} y2={h * 0.32} stroke="#dc2626" strokeWidth={1.25} />
-          <line x1={w * 0.3} y1={-h * 0.32} x2={-w * 0.3} y2={h * 0.32} stroke="#dc2626" strokeWidth={1.25} />
+          <path d={targetSilhouette(w, h)} fill="#fafafa" stroke={INK} strokeWidth={1.1} />
+          <line x1={-w * 0.3} y1={-h * 0.22} x2={w * 0.3} y2={h * 0.4} stroke="#dc2626" strokeWidth={1.5} />
+          <line x1={w * 0.3} y1={-h * 0.22} x2={-w * 0.3} y2={h * 0.4} stroke="#dc2626" strokeWidth={1.5} />
         </>
       );
     case "steelPopper":
-      return (
-        <>
-          <path
-            d={`M${-w / 2},${h / 2} L${-w / 2},${-h / 2 + w / 2} A${w / 2},${w / 2} 0 0 1 ${w / 2},${-h / 2 + w / 2} L${w / 2},${h / 2} Z`}
-            fill="white"
-            stroke={INK}
-            strokeWidth={1.25}
-          />
-          <line x1={-w * 0.28} y1={h * 0.15} x2={w * 0.28} y2={h * 0.15} stroke={INK} strokeWidth={0.6} />
-        </>
-      );
+      return <path d={popperSilhouette(w, h)} fill="#a1a1aa" stroke="#3f3f46" strokeWidth={1.1} />;
     case "hardcover": {
       const hatches = [];
       const step = w / 5;
@@ -82,14 +82,14 @@ function shapeFor(type: PropType, w: number, h: number) {
             y1={-h / 2}
             x2={i * step + h / 2}
             y2={h / 2}
-            stroke={INK}
+            stroke="#0a0a0a"
             strokeWidth={0.5}
           />,
         );
       }
       return (
         <>
-          <rect x={-w / 2} y={-h / 2} width={w} height={h} fill="#e4e4e7" stroke={INK} strokeWidth={1} />
+          <rect x={-w / 2} y={-h / 2} width={w} height={h} fill="#52525b" stroke="#18181b" strokeWidth={1} />
           {hatches}
         </>
       );
@@ -99,11 +99,11 @@ function shapeFor(type: PropType, w: number, h: number) {
         <>
           <polygon
             points={`${-w / 2},${h / 2} ${w / 2},${h / 2} ${w * 0.42},${-h / 2} ${-w * 0.42},${-h / 2}`}
-            fill="#d4d4d8"
-            stroke={INK}
+            fill="#b08968"
+            stroke="#5c4130"
             strokeWidth={1}
           />
-          <line x1={-w * 0.35} y1={0} x2={w * 0.35} y2={0} stroke={INK} strokeWidth={0.5} strokeDasharray="1.5 1.5" />
+          <line x1={-w * 0.35} y1={0} x2={w * 0.35} y2={0} stroke="#5c4130" strokeWidth={0.5} strokeDasharray="1.5 1.5" />
         </>
       );
     case "faultLine":
@@ -116,18 +116,21 @@ function shapeFor(type: PropType, w: number, h: number) {
       );
     case "shootingBox":
       return (
-        <polygon
-          points={`${-w / 2},${h / 2} ${w / 2},${h / 2} ${w / 2 + h * 0.3},${-h / 2} ${-w / 2 + h * 0.3},${-h / 2}`}
-          fill="none"
-          stroke="#dc2626"
+        <rect
+          x={-w / 2}
+          y={-h / 2}
+          width={w}
+          height={h}
+          fill="rgba(249,115,22,0.18)"
+          stroke="#f97316"
           strokeWidth={1.25}
         />
       );
     case "barrel":
       return (
         <>
-          <circle cx={0} cy={0} r={w / 2} fill="#bfdbfe" stroke={INK} strokeWidth={1.25} />
-          <circle cx={0} cy={0} r={w * 0.32} fill="none" stroke={INK} strokeWidth={0.75} />
+          <circle cx={0} cy={0} r={w / 2} fill="#2563eb" stroke="#1e3a8a" strokeWidth={1.1} />
+          <circle cx={0} cy={0} r={w * 0.32} fill="none" stroke="#bfdbfe" strokeWidth={0.9} />
         </>
       );
     default:
