@@ -239,7 +239,7 @@ function PropIcon({
   }
 
   const showLabelInside = prop.type === "shootingBox";
-  const labelDy = showLabelInside ? 0 : h / 2 + 10;
+  const labelDy = showLabelInside ? 0 : -(h / 2 + 4);
 
   return (
     <g>
@@ -270,7 +270,7 @@ function PropIcon({
           x={cx}
           y={cy + labelDy}
           textAnchor="middle"
-          dominantBaseline={showLabelInside ? "middle" : "hanging"}
+          dominantBaseline={showLabelInside ? "middle" : "auto"}
           fontSize={9}
           fontWeight={700}
           fill={selected ? "#ea580c" : "#18181b"}
@@ -363,12 +363,17 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
     setScoreTimeSeconds(null);
   }
 
-  // No-shoot inserts are physically mounted in front of whatever they overlap,
-  // so always paint (and hit-test) them above every other prop, regardless of
-  // add order — a stable sort keeps everything else in its existing order.
-  const renderOrder = [...props].sort(
-    (a, b) => (a.type === "noShoot" ? 1 : 0) - (b.type === "noShoot" ? 1 : 0),
-  );
+  // No-shoot inserts are mounted in front of whatever they overlap, and a
+  // barrel is a solid obstacle that blocks anything behind it — so both
+  // always paint (and hit-test) above every other prop regardless of add
+  // order, with barrel on top of a no-shoot too. A stable sort keeps
+  // everything else in its existing order.
+  function paintPriority(type: PropType): number {
+    if (type === "barrel") return 2;
+    if (type === "noShoot") return 1;
+    return 0;
+  }
+  const renderOrder = [...props].sort((a, b) => paintPriority(a.type) - paintPriority(b.type));
 
   function pointToFt(clientX: number, clientY: number): { x: number; y: number } | null {
     const svg = svgRef.current;
