@@ -186,12 +186,14 @@ function PropIcon({
   pointToFt,
   onSelect,
   onMove,
+  onDelete,
 }: {
   prop: StageProp;
   selected: boolean;
   pointToFt: (clientX: number, clientY: number) => { x: number; y: number } | null;
   onSelect: (id: string) => void;
   onMove: (id: string, x: number, y: number) => void;
+  onDelete: (id: string) => void;
 }) {
   const offsetRef = useRef<{ dx: number; dy: number } | null>(null);
   const base = BASE_SIZE_FT[prop.type];
@@ -263,6 +265,20 @@ function PropIcon({
           {prop.label}
         </text>
       )}
+      {selected && (
+        <g
+          transform={`translate(${cx + w / 2 + 8} ${cy - h / 2 - 8})`}
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            onDelete(prop.id);
+          }}
+          style={{ cursor: "pointer" }}
+        >
+          <circle r={7} fill="#dc2626" stroke="white" strokeWidth={1} />
+          <line x1={-3} y1={-3} x2={3} y2={3} stroke="white" strokeWidth={1.4} strokeLinecap="round" />
+          <line x1={3} y1={-3} x2={-3} y2={3} stroke="white" strokeWidth={1.4} strokeLinecap="round" />
+        </g>
+      )}
     </g>
   );
 }
@@ -322,10 +338,9 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
     setProps((prev) => prev.map((p) => (p.id === id ? { ...p, x, y } : p)));
   }
 
-  function deleteSelected() {
-    if (!selectedId) return;
-    setProps((prev) => prev.filter((p) => p.id !== selectedId));
-    setSelectedId(null);
+  function deleteProp(id: string) {
+    setProps((prev) => prev.filter((p) => p.id !== id));
+    setSelectedId((current) => (current === id ? null : current));
   }
 
   function duplicateSelected() {
@@ -467,6 +482,7 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
                 pointToFt={pointToFt}
                 onSelect={setSelectedId}
                 onMove={moveProp}
+                onDelete={deleteProp}
               />
             ))}
           </svg>
@@ -592,7 +608,7 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
                 Duplicate
               </button>
               <button
-                onClick={deleteSelected}
+                onClick={() => selectedId && deleteProp(selectedId)}
                 className="flex-1 rounded-md border border-red-800 px-3 py-2 text-xs uppercase tracking-wide text-red-400 hover:bg-red-950"
               >
                 Delete
