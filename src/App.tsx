@@ -7,6 +7,7 @@ import { CompetitionModeScreen } from "./components/CompetitionModeScreen";
 import { DryFireAnalyticsScreen } from "./components/DryFireAnalyticsScreen";
 import { DryFireHistoryScreen } from "./components/DryFireHistoryScreen";
 import { DryFireScreen } from "./components/DryFireScreen";
+import { FeaturePreviewScreen } from "./components/FeaturePreviewScreen";
 import { Header } from "./components/Header";
 import { LeaderboardScreen } from "./components/LeaderboardScreen";
 import { MaintenanceLogScreen } from "./components/MaintenanceLogScreen";
@@ -26,6 +27,7 @@ import { TargetsScreen } from "./components/TargetsScreen";
 import { TrainHistoryScreen } from "./components/TrainHistoryScreen";
 import { TrainScreen } from "./components/TrainScreen";
 import { GameProvider, useGame } from "./game/GameContext";
+import { hasSeenFeaturePreview, markFeaturePreviewSeen } from "./onboarding/featurePreview";
 import { hasSeenRulesIntro, markRulesIntroSeen } from "./onboarding/rulesIntro";
 import { getOnboardedStatus } from "./profile";
 import { getMySubscriptionStatus } from "./subscription";
@@ -90,6 +92,7 @@ function App() {
 
   const [onboarded, setOnboarded] = useState<boolean | null>(null);
   const [subscribed, setSubscribed] = useState<boolean | null>(null);
+  const [seenFeaturePreview, setSeenFeaturePreview] = useState(() => hasSeenFeaturePreview());
 
   useEffect(() => {
     if (!session?.user) {
@@ -132,6 +135,16 @@ function App() {
   }
 
   if (!subscribed) {
+    if (!seenFeaturePreview) {
+      return (
+        <FeaturePreviewScreen
+          onContinue={() => {
+            markFeaturePreviewSeen();
+            setSeenFeaturePreview(true);
+          }}
+        />
+      );
+    }
     return <SubscribeScreen onSubscribed={() => setSubscribed(true)} />;
   }
 
