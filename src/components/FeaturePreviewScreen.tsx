@@ -45,8 +45,8 @@ export function FeaturePreviewScreen({ onContinue }: { onContinue: () => void })
         <img src="/rr-logo.webp" alt="Range Roulette" className="w-full max-w-[280px] sm:max-w-[380px]" />
 
         <p className="text-center text-sm text-zinc-400">
-          Here's what's inside. Competition Mode — the classifier roster and Build Your Own Stage —
-          is free to explore right now, no subscription needed.
+          Here's what's inside. Dry Fire Mode and Build Your Own Stage are free to explore right
+          now, no subscription needed.
         </p>
 
         <div className="flex w-full flex-col gap-2">

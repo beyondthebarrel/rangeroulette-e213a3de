@@ -74,9 +74,10 @@ export function ModeSelectScreen({
   onOpenTargets,
   onOpenMaintenanceLog,
   onOpenCompetitionMode,
+  onOpenStageBuilder,
 }: {
-  /** Competition Mode (classifier roster + Build Your Own Stage) stays free to explore
-   * regardless of this — every other mode/utility gates behind it. */
+  /** Dry Fire Mode and Build Your Own Stage stay free to explore regardless of
+   * this — every other mode/utility gates behind it. */
   subscribed: boolean;
   onRequireSubscription: () => void;
   onSelectGame: () => void;
@@ -90,6 +91,7 @@ export function ModeSelectScreen({
   onOpenTargets: () => void;
   onOpenMaintenanceLog: () => void;
   onOpenCompetitionMode: () => void;
+  onOpenStageBuilder: () => void;
 }) {
   const gate = (fn: () => void) => (subscribed ? fn : onRequireSubscription);
 
@@ -121,16 +123,23 @@ export function ModeSelectScreen({
           <ModeButton
             icon={<LockIcon className="h-7 w-7 sm:h-10 sm:w-10" />}
             title="Dry Fire Mode"
-            description="No ammo — time-only reps with their own history & stats"
-            onClick={gate(onSelectDryFire)}
+            description="Free to explore — no-ammo reps at home with their own history & stats"
+            onClick={onSelectDryFire}
             variant="sky"
-            locked={!subscribed}
           />
           <ModeButton
             icon={<ClipboardListIcon className="h-7 w-7 sm:h-10 sm:w-10" />}
             title="Competition Mode"
-            description="Free to explore — USPSA classifier roster & Build Your Own Stage"
-            onClick={onOpenCompetitionMode}
+            description="USPSA's current classifier roster with a built-in hit-factor calculator"
+            onClick={gate(onOpenCompetitionMode)}
+            variant="purple"
+            locked={!subscribed}
+          />
+          <ModeButton
+            icon={<WrenchIcon className="h-7 w-7 sm:h-10 sm:w-10" />}
+            title="Build Your Own Stage"
+            description="Free to explore — sketch a custom stage, then launch it to score live runs"
+            onClick={onOpenStageBuilder}
             variant="purple"
           />
         </div>

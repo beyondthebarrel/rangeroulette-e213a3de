@@ -22,6 +22,7 @@ import { RoundResultScreen } from "./components/RoundResultScreen";
 import { RulesIntroScreen } from "./components/RulesIntroScreen";
 import { SafetyChecklistScreen } from "./components/SafetyChecklistScreen";
 import { ScoreScreen } from "./components/ScoreScreen";
+import { StageBuilderScreen } from "./components/StageBuilderScreen";
 import { SubscribeScreen } from "./components/SubscribeScreen";
 import { TargetsScreen } from "./components/TargetsScreen";
 import { TrainHistoryScreen } from "./components/TrainHistoryScreen";
@@ -51,6 +52,7 @@ type View =
   | "targets"
   | "maintenanceLog"
   | "competitionMode"
+  | "stageBuilder"
   | "subscribe";
 type PendingMode = "game" | "train" | "dryFire";
 
@@ -188,6 +190,7 @@ function App() {
             onOpenTargets={() => setView("targets")}
             onOpenMaintenanceLog={() => setView("maintenanceLog")}
             onOpenCompetitionMode={() => setView("competitionMode")}
+            onOpenStageBuilder={() => setView("stageBuilder")}
           />
         )}
         {view === "rangeLocator" && (
@@ -199,6 +202,9 @@ function App() {
         )}
         {view === "competitionMode" && (
           <CompetitionModeScreen onBack={() => setView("modeSelect")} />
+        )}
+        {view === "stageBuilder" && (
+          <StageBuilderScreen onBack={() => setView("modeSelect")} />
         )}
         {view === "subscribe" && (
           <SubscribeScreen
