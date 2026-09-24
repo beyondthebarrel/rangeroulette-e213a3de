@@ -23,12 +23,15 @@ function ModeButton({
   description,
   onClick,
   variant = "orange",
+  locked = false,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
   onClick: () => void;
   variant?: "orange" | "sky" | "purple";
+  /** Shows a lock badge and a "subscribe to unlock" line instead of the mode's own blurb. */
+  locked?: boolean;
 }) {
   const borderClass =
     variant === "sky" ? "border-sky-700" : variant === "purple" ? "border-violet-700" : "border-orange-700";
@@ -37,15 +40,20 @@ function ModeButton({
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-2.5 rounded-xl border-2 bg-zinc-900/60 p-2 text-left hover:bg-zinc-900 sm:gap-3 sm:p-4 ${borderClass}`}
+      className={`flex w-full items-center gap-2.5 rounded-xl border-2 bg-zinc-900/60 p-2 text-left hover:bg-zinc-900 sm:gap-3 sm:p-4 ${
+        locked ? "border-zinc-700 opacity-80" : borderClass
+      }`}
     >
-      <span className={`shrink-0 ${textClass}`}>{icon}</span>
-      <span>
-        <span className="block text-sm font-bold uppercase tracking-wide text-white sm:text-lg">
-          {title}
+      <span className={`shrink-0 ${locked ? "text-zinc-500" : textClass}`}>{icon}</span>
+      <span className="flex-1">
+        <span className="flex items-center gap-1.5">
+          <span className="block text-sm font-bold uppercase tracking-wide text-white sm:text-lg">
+            {title}
+          </span>
+          {locked && <LockIcon className="h-3.5 w-3.5 shrink-0 text-zinc-500" />}
         </span>
         <span className="block text-[10px] leading-snug text-zinc-400 sm:text-xs">
-          {description}
+          {locked ? "Subscribe to unlock this mode" : description}
         </span>
       </span>
     </button>
@@ -53,6 +61,8 @@ function ModeButton({
 }
 
 export function ModeSelectScreen({
+  subscribed,
+  onRequireSubscription,
   onSelectGame,
   onSelectTrain,
   onSelectDryFire,
@@ -65,6 +75,10 @@ export function ModeSelectScreen({
   onOpenMaintenanceLog,
   onOpenCompetitionMode,
 }: {
+  /** Competition Mode (classifier roster + Build Your Own Stage) stays free to explore
+   * regardless of this — every other mode/utility gates behind it. */
+  subscribed: boolean;
+  onRequireSubscription: () => void;
   onSelectGame: () => void;
   onSelectTrain: () => void;
   onSelectDryFire: () => void;
@@ -77,6 +91,8 @@ export function ModeSelectScreen({
   onOpenMaintenanceLog: () => void;
   onOpenCompetitionMode: () => void;
 }) {
+  const gate = (fn: () => void) => (subscribed ? fn : onRequireSubscription);
+
   return (
     <HeroBackdrop>
       <TitleFrame>
@@ -92,41 +108,51 @@ export function ModeSelectScreen({
             icon={<CardsIcon className="h-7 w-7 sm:h-10 sm:w-10" />}
             title="Game Mode"
             description="Pass-and-play card game for 2+ shooters"
-            onClick={onSelectGame}
+            onClick={gate(onSelectGame)}
+            locked={!subscribed}
           />
           <ModeButton
             icon={<StopwatchIcon className="h-7 w-7 sm:h-10 sm:w-10" />}
             title="Train Mode"
             description="Solo random drill generator & performance log"
-            onClick={onSelectTrain}
+            onClick={gate(onSelectTrain)}
+            locked={!subscribed}
           />
           <ModeButton
             icon={<LockIcon className="h-7 w-7 sm:h-10 sm:w-10" />}
             title="Dry Fire Mode"
             description="No ammo — time-only reps with their own history & stats"
-            onClick={onSelectDryFire}
+            onClick={gate(onSelectDryFire)}
             variant="sky"
+            locked={!subscribed}
           />
           <ModeButton
             icon={<ClipboardListIcon className="h-7 w-7 sm:h-10 sm:w-10" />}
             title="Competition Mode"
-            description="USPSA's current classifier roster, with links to official stage PDFs"
+            description="Free to explore — USPSA classifier roster & Build Your Own Stage"
             onClick={onOpenCompetitionMode}
             variant="purple"
           />
         </div>
 
         <div className="grid w-full grid-cols-2 gap-2">
-          <UtilityButton icon={<BookIcon className="h-4 w-4" />} label="Rules" onClick={onOpenRules} />
+          <UtilityButton
+            icon={<BookIcon className="h-4 w-4" />}
+            label="Rules"
+            onClick={gate(onOpenRules)}
+            locked={!subscribed}
+          />
           <UtilityButton
             icon={<TrophyIcon className="h-4 w-4" />}
             label="Leaderboard"
-            onClick={onOpenLeaderboard}
+            onClick={gate(onOpenLeaderboard)}
+            locked={!subscribed}
           />
           <UtilityButton
             icon={<ChartIcon className="h-4 w-4" />}
             label="Training Analytics"
-            onClick={onOpenAnalytics}
+            onClick={gate(onOpenAnalytics)}
+            locked={!subscribed}
           />
           <UtilityButton
             icon={<UserIcon className="h-4 w-4" />}
@@ -136,12 +162,14 @@ export function ModeSelectScreen({
           <UtilityButton
             icon={<MapPinIcon className="h-4 w-4" />}
             label="Find Ranges"
-            onClick={onOpenRangeLocator}
+            onClick={gate(onOpenRangeLocator)}
+            locked={!subscribed}
           />
           <UtilityButton
             icon={<TargetIcon className="h-4 w-4" />}
             label="Print Targets"
-            onClick={onOpenTargets}
+            onClick={gate(onOpenTargets)}
+            locked={!subscribed}
           />
         </div>
 
@@ -149,10 +177,20 @@ export function ModeSelectScreen({
           <UtilityButton
             icon={<WrenchIcon className="h-4 w-4" />}
             label="Maintenance Log"
-            onClick={onOpenMaintenanceLog}
+            onClick={gate(onOpenMaintenanceLog)}
+            locked={!subscribed}
             className="w-1/2"
           />
         </div>
+
+        {!subscribed && (
+          <button
+            onClick={onRequireSubscription}
+            className="w-full rounded-md bg-orange-700 px-4 py-3 font-semibold uppercase tracking-wide text-white hover:bg-orange-600"
+          >
+            🔓 Subscribe to Unlock Everything
+          </button>
+        )}
 
         <RetryImage
           src="/btb-logo.png"

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { getMySubscriptionStatus, startCheckout, type PlanType } from "../subscription";
+import { BackLink } from "./BackLink";
 import { HeroBackdrop } from "./HeroBackdrop";
 import { Panel } from "./Panel";
 import { TitleFrame } from "./TitleFrame";
@@ -13,7 +14,14 @@ const PLANS: { id: PlanType; price: string; cadence: string; blurb: string }[] =
   { id: "six_month", price: "$19.99", cadence: "/ 6 months", blurb: "Same rate, smaller charge, shorter commitment." },
 ];
 
-export function SubscribeScreen({ onSubscribed }: { onSubscribed: () => void }) {
+export function SubscribeScreen({
+  onSubscribed,
+  onBack,
+}: {
+  onSubscribed: () => void;
+  /** Lets the user leave without subscribing — omit for the old hard-gate behavior. */
+  onBack?: () => void;
+}) {
   const { user, signOut } = useAuth();
   const [plan, setPlan] = useState<PlanType>("annual");
   const [starting, setStarting] = useState(false);
@@ -86,6 +94,7 @@ export function SubscribeScreen({ onSubscribed }: { onSubscribed: () => void }) 
   return (
     <HeroBackdrop>
       <TitleFrame>
+        {onBack && <BackLink onClick={onBack} label="Modes" />}
         <h1 className="text-2xl font-bold uppercase tracking-wide text-orange-500">
           Subscribe to Range Roulette
         </h1>

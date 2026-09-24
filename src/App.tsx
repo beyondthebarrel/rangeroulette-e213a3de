@@ -50,7 +50,8 @@ type View =
   | "rangeLocator"
   | "targets"
   | "maintenanceLog"
-  | "competitionMode";
+  | "competitionMode"
+  | "subscribe";
 type PendingMode = "game" | "train" | "dryFire";
 
 function GameScreen({ onBackToModes }: { onBackToModes: () => void }) {
@@ -130,30 +131,30 @@ function App() {
     return <AuthScreen />;
   }
 
-  if (subscribed === null) {
-    return <div className="flex min-h-svh items-center justify-center bg-black text-zinc-400">Loading…</div>;
-  }
-
-  if (!subscribed) {
-    if (!seenFeaturePreview) {
-      return (
-        <FeaturePreviewScreen
-          onContinue={() => {
-            markFeaturePreviewSeen();
-            setSeenFeaturePreview(true);
-          }}
-        />
-      );
-    }
-    return <SubscribeScreen onSubscribed={() => setSubscribed(true)} />;
-  }
-
   if (onboarded === null) {
     return <div className="flex min-h-svh items-center justify-center bg-black text-zinc-400">Loading…</div>;
   }
 
   if (!onboarded) {
     return <ProfileSetupScreen onComplete={() => setOnboarded(true)} />;
+  }
+
+  if (subscribed === null) {
+    return <div className="flex min-h-svh items-center justify-center bg-black text-zinc-400">Loading…</div>;
+  }
+
+  // Competition Mode (classifier roster + Build Your Own Stage) is free to
+  // explore without subscribing — everything else gates behind it, prompted
+  // inline from ModeSelectScreen rather than blocking the whole app up front.
+  if (!subscribed && !seenFeaturePreview) {
+    return (
+      <FeaturePreviewScreen
+        onContinue={() => {
+          markFeaturePreviewSeen();
+          setSeenFeaturePreview(true);
+        }}
+      />
+    );
   }
 
   function selectMode(mode: PendingMode) {
@@ -174,6 +175,8 @@ function App() {
         {view === "rulesIntro" && <RulesIntroScreen onDone={closeRulesIntro} />}
         {view === "modeSelect" && (
           <ModeSelectScreen
+            subscribed={subscribed}
+            onRequireSubscription={() => setView("subscribe")}
             onSelectGame={() => selectMode("game")}
             onSelectTrain={() => selectMode("train")}
             onSelectDryFire={() => selectMode("dryFire")}
@@ -196,6 +199,15 @@ function App() {
         )}
         {view === "competitionMode" && (
           <CompetitionModeScreen onBack={() => setView("modeSelect")} />
+        )}
+        {view === "subscribe" && (
+          <SubscribeScreen
+            onSubscribed={() => {
+              setSubscribed(true);
+              setView("modeSelect");
+            }}
+            onBack={() => setView("modeSelect")}
+          />
         )}
         {view === "editProfile" && (
           <ProfileSetupScreen

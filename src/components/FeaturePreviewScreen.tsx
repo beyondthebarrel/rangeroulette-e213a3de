@@ -44,7 +44,10 @@ export function FeaturePreviewScreen({ onContinue }: { onContinue: () => void })
       <TitleFrame>
         <img src="/rr-logo.webp" alt="Range Roulette" className="w-full max-w-[280px] sm:max-w-[380px]" />
 
-        <p className="text-center text-sm text-zinc-400">Here's what's inside before you subscribe:</p>
+        <p className="text-center text-sm text-zinc-400">
+          Here's what's inside. Competition Mode — the classifier roster and Build Your Own Stage —
+          is free to explore right now, no subscription needed.
+        </p>
 
         <div className="flex w-full flex-col gap-2">
           <FeatureRow
@@ -87,7 +90,7 @@ export function FeaturePreviewScreen({ onContinue }: { onContinue: () => void })
           onClick={onContinue}
           className="w-full rounded-md bg-orange-700 px-4 py-3 font-semibold uppercase tracking-wide text-white hover:bg-orange-600"
         >
-          See Plans →
+          Continue →
         </button>
       </TitleFrame>
     </HeroBackdrop>
