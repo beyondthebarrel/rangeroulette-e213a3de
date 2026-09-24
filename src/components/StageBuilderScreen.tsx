@@ -139,6 +139,8 @@ function shapeFor(type: PropType, w: number, h: number) {
     case "faultLine":
       return (
         <>
+          {/* Invisible fat stroke widens the touch/drag hit area — a 2px line is nearly impossible to grab on a phone. */}
+          <line x1={-w / 2} y1={0} x2={w / 2} y2={0} stroke="transparent" strokeWidth={14} />
           <line x1={-w / 2} y1={0} x2={w / 2} y2={0} stroke="#dc2626" strokeWidth={2} />
           <line x1={-w / 2} y1={-3} x2={-w / 2} y2={3} stroke={INK} strokeWidth={0.75} />
           <line x1={w / 2} y1={-3} x2={w / 2} y2={3} stroke={INK} strokeWidth={0.75} />
@@ -190,6 +192,38 @@ function PropSwatch({ type }: { type: PropType }) {
     <svg viewBox={`${-half} ${-half} ${half * 2} ${half * 2}`} className="h-7 w-7 shrink-0">
       {shapeFor(type, w, h)}
     </svg>
+  );
+}
+
+function ZoomControls({
+  zoom,
+  onZoomIn,
+  onZoomOut,
+}: {
+  zoom: number;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <button
+        onClick={onZoomOut}
+        disabled={zoom <= 1}
+        aria-label="Zoom out"
+        className="flex h-7 w-7 items-center justify-center rounded-md bg-zinc-700 text-base font-bold text-white hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        −
+      </button>
+      <span className="w-10 text-center font-mono text-[11px] text-zinc-400">{Math.round(zoom * 100)}%</span>
+      <button
+        onClick={onZoomIn}
+        disabled={zoom >= 3}
+        aria-label="Zoom in"
+        className="flex h-7 w-7 items-center justify-center rounded-md bg-zinc-700 text-base font-bold text-white hover:bg-zinc-600 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        +
+      </button>
+    </div>
   );
 }
 
@@ -310,6 +344,13 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
   const [saveName, setSaveName] = useState("");
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  // Zoom the canvas up for precise placement on a small phone screen — the
+  // wrapping div scrolls to pan once the SVG renders wider than it.
+  const [zoom, setZoom] = useState(1);
+  const ZOOM_MIN = 1;
+  const ZOOM_MAX = 3;
+  const zoomIn = () => setZoom((z) => Math.min(ZOOM_MAX, Math.round((z + 0.5) * 10) / 10));
+  const zoomOut = () => setZoom((z) => Math.max(ZOOM_MIN, Math.round((z - 0.5) * 10) / 10));
 
   const [mode, setMode] = useState<"build" | "score">("build");
   const [powerFactor, setPowerFactor] = useState<"major" | "minor">("minor");
@@ -556,7 +597,15 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
           </TitleFrame>
 
           <Panel>
-            <svg viewBox={`0 0 ${viewW} ${viewH}`} className="w-full rounded-sm border-2 border-zinc-900 bg-white">
+            <div className="flex justify-end">
+              <ZoomControls zoom={zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} />
+            </div>
+            <div className="max-h-[70vh] overflow-auto rounded-sm border-2 border-zinc-900">
+              <svg
+                viewBox={`0 0 ${viewW} ${viewH}`}
+                style={{ width: `${zoom * 100}%` }}
+                className="block min-w-full bg-white"
+              >
               {gravelDefs}
               {gridLines}
               {renderOrder.map((p) => (
@@ -571,7 +620,8 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
                   readOnly
                 />
               ))}
-            </svg>
+              </svg>
+            </div>
           </Panel>
 
           {courseOfFire.trim() && (
@@ -743,31 +793,38 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
         <Panel>
           <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-zinc-500">
             <span>↑ Downrange</span>
-            <span>Not to exact scale</span>
+            <ZoomControls zoom={zoom} onZoomIn={zoomIn} onZoomOut={zoomOut} />
           </div>
-          <svg
-            ref={svgRef}
-            viewBox={`0 0 ${viewW} ${viewH}`}
-            className="w-full touch-none rounded-sm border-2 border-zinc-900 bg-white"
-            style={{ touchAction: "none" }}
-            onPointerDown={() => setSelectedId(null)}
-          >
-            {gravelDefs}
-            {gridLines}
-            {renderOrder.map((p) => (
-              <PropIcon
-                key={p.id}
-                prop={p}
-                selected={p.id === selectedId}
-                pointToFt={pointToFt}
-                onSelect={setSelectedId}
-                onMove={moveProp}
-                onDelete={deleteProp}
-              />
-            ))}
-          </svg>
+          {zoom > 1 && (
+            <p className="text-center text-[11px] text-zinc-500">
+              Zoomed in — drag on empty range to scroll around, drag a prop to move it.
+            </p>
+          )}
+          <div className="max-h-[70vh] overflow-auto rounded-sm border-2 border-zinc-900">
+            <svg
+              ref={svgRef}
+              viewBox={`0 0 ${viewW} ${viewH}`}
+              style={{ width: `${zoom * 100}%` }}
+              className="block min-w-full bg-white"
+              onPointerDown={() => setSelectedId(null)}
+            >
+              {gravelDefs}
+              {gridLines}
+              {renderOrder.map((p) => (
+                <PropIcon
+                  key={p.id}
+                  prop={p}
+                  selected={p.id === selectedId}
+                  pointToFt={pointToFt}
+                  onSelect={setSelectedId}
+                  onMove={moveProp}
+                  onDelete={deleteProp}
+                />
+              ))}
+            </svg>
+          </div>
           <div className="text-center text-[11px] uppercase tracking-wide text-zinc-500">
-            ↓ Shooter Start
+            Not to exact scale · ↓ Shooter Start
           </div>
         </Panel>
 
