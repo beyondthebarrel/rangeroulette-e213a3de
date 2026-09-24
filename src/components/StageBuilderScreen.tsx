@@ -345,8 +345,13 @@ export function StageBuilderScreen({ onBack }: { onBack: () => void }) {
   const [confirmClear, setConfirmClear] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   // Zoom the canvas up for precise placement on a small phone screen — the
-  // wrapping div scrolls to pan once the SVG renders wider than it.
-  const [zoom, setZoom] = useState(1);
+  // wrapping div scrolls to pan once the SVG renders wider than it. Phones
+  // start pre-zoomed rather than relying on someone finding the +/- buttons
+  // on their own; zoom is still adjustable (down to a full-stage overview,
+  // or up further) from there.
+  const [zoom, setZoom] = useState(() =>
+    typeof window !== "undefined" && window.innerWidth < 640 ? 1.75 : 1,
+  );
   const ZOOM_MIN = 1;
   const ZOOM_MAX = 3;
   const zoomIn = () => setZoom((z) => Math.min(ZOOM_MAX, Math.round((z + 0.5) * 10) / 10));
