@@ -127,12 +127,14 @@ function resolveRound(state: GameState): GameState {
   const finalTimes: Record<string, number | null> = {};
   state.players.forEach((p) => {
     const entry = state.scores[p.id] ?? emptyScore();
-    const extra = activeChallengesFor(state.activeChallenges, p.id).some(
-      (c) => c.instance.def.autoEffect === "plusHalfSecond",
-    )
-      ? 0.5
-      : 0;
-    finalTimes[p.id] = computeFinalTime(entry, parSeconds, extra);
+    const mine = activeChallengesFor(state.activeChallenges, p.id);
+    const has = (e: string) => mine.some((c) => c.instance.def.autoEffect === e);
+    let extra = 0;
+    if (has("plusHalfSecond")) extra += 0.5;
+    if (has("minusHalfSecond")) extra -= 0.5;
+    if (has("minusOneSecond")) extra -= 1.0;
+    const t = computeFinalTime(entry, parSeconds, extra);
+    finalTimes[p.id] = t == null ? null : Math.max(0, t);
   });
 
   const finishers = state.players.filter((p) => finalTimes[p.id] != null);
@@ -186,6 +188,22 @@ function resolveRound(state: GameState): GameState {
       donations.push({ fromId: donorPlayer.id, toId: lastPlace.id });
     });
   }
+
+  // "Instant Play: last place adds one point and draws a Challenge card"
+  state.activeChallenges
+    .filter((c) => c.instance.def.autoEffect === "lastPlaceBonus")
+    .forEach(() => {
+      const lowest = Math.min(...players.map((p) => p.points));
+      const lastPlace = players.find((p) => p.points === lowest);
+      if (!lastPlace) return;
+      const draw = drawOne(challengeDeck);
+      challengeDeck = draw.deck;
+      players = players.map((p) =>
+        p.id === lastPlace.id
+          ? { ...p, points: p.points + 1, hand: [...p.hand, draw.card] }
+          : p,
+      );
+    });
 
   const result: RoundResult = {
     finalTimes,

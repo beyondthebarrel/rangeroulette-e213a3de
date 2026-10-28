@@ -73,6 +73,12 @@ export const TARGET_CARDS: CategoryCardDef[] = [
   { id: "tg-2-a-zone-5yd", label: "2 USPSA A-Zone", detail: '6"x11", 5 yard spacing' },
   { id: "tg-2-a-zone-15yd", label: "2 USPSA A-Zone", detail: '6"x11", 15 yard spacing' },
   { id: "tg-2-head-box-7yd", label: "2 USPSA Head Box", detail: '2"x4", spaced 7 yards' },
+  // Expansion Pack
+  { id: "exp-tg-1-c-zone", label: "1 USPSA C-Zone", detail: '12"x24"' },
+  { id: "exp-tg-2-targets-4yd", label: "2 USPSA Targets", detail: 'Whole target 18"x30", spaced 4 yards' },
+  { id: "exp-tg-3-a-zone-shoulder", label: "3 USPSA A-Zone", detail: '6"x11", shoulder to shoulder' },
+  { id: "exp-tg-1-a-zone-penalty", label: "1 USPSA A-Zone", detail: "Hits outside A-zone add 2 seconds, no makeup shots" },
+  { id: "exp-tg-3-head-box-2yd", label: "3 USPSA Head Box", detail: '6"x6", spaced 2 yards' },
 ].map((c) => ({ ...c, category: "target" as const, qty: 4 }));
 
 export const COURSE_OF_FIRE_CARDS: CategoryCardDef[] = [
@@ -82,6 +88,12 @@ export const COURSE_OF_FIRE_CARDS: CategoryCardDef[] = [
   { id: "cof-1-repeat-3x", label: "1 Round Each Target, Then Repeat", detail: "3 times" },
   { id: "cof-2-strong-hand", label: "2 Rounds Each Target", detail: "Strong hand" },
   { id: "cof-1-each-target", label: "1 Round Each Target" },
+  // Expansion Pack
+  { id: "exp-cof-3-reload-3", label: "3 Rounds, Reload, 3 Rounds Each Target" },
+  { id: "exp-cof-4-moving-rearward", label: "4 Rounds Each Target", detail: "While moving rearward" },
+  { id: "exp-cof-3-moving-left-right", label: "3 Rounds Each Target", detail: "While moving left to right" },
+  { id: "exp-cof-2-reload-2", label: "2 Shots, Reload, 2 Shots Each Target" },
+  { id: "exp-cof-6-each-target", label: "6 Rounds Each Target" },
 ].map((c) => ({ ...c, category: "courseOfFire" as const, qty: 4 }));
 
 export const CATEGORY_DECKS: Record<CategoryKey, CategoryCardDef[]> = {
@@ -110,7 +122,10 @@ export function buildCategoryDeck(category: CategoryKey): CategoryCardDef[] {
 export type ChallengeAutoEffect =
   | "plusHalfSecond"
   | "donateLastPlace"
-  | "reverseChallenge";
+  | "reverseChallenge"
+  | "minusHalfSecond"
+  | "minusOneSecond"
+  | "lastPlaceBonus";
 
 export interface ChallengeCardDef {
   id: string;
@@ -136,6 +151,14 @@ export const CHALLENGE_CARDS: ChallengeCardDef[] = [
   // x3
   { id: "ch-reverse", text: "Reverse a challenge card being played on you", qty: 3, autoEffect: "reverseChallenge" },
   { id: "ch-weak-hand", text: "Draw using weak hand", qty: 3 },
+  // Expansion Pack
+  { id: "exp-ch-minus-half-second", text: "Subtract 0.5 seconds off next turn", qty: 4, autoEffect: "minusHalfSecond" },
+  { id: "exp-ch-low-ready-next-turn", text: "Start your next turn loaded, low ready", qty: 2 },
+  { id: "exp-ch-circular-pattern", text: "Move in a circular pattern for the whole drill", qty: 2 },
+  { id: "exp-ch-instant-head-box", text: "Instant Play: Holstered, hands at side. Draw and shoot a 2x4 head box from the 20 in 2 seconds or less to earn an instant win. Holes touching the line don't count. No makeup shots.", qty: 4 },
+  { id: "exp-ch-weak-hand-after-draw", text: "Weak hand only (after the draw)", qty: 4 },
+  { id: "exp-ch-minus-1-second", text: "Subtract 1 second from next turn", qty: 2, autoEffect: "minusOneSecond" },
+  { id: "exp-ch-instant-last-place", text: "Instant Play: Current last place adds one point and draws a Challenge card", qty: 2, autoEffect: "lastPlaceBonus" },
 ];
 
 export interface WhoopsieCardDef {
