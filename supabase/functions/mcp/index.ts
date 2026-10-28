@@ -51,7 +51,13 @@ var TARGET_CARDS = [
   { id: "tg-1-head-box", label: "1 USPSA Head Box", detail: '2"x4"' },
   { id: "tg-2-a-zone-5yd", label: "2 USPSA A-Zone", detail: '6"x11", 5 yard spacing' },
   { id: "tg-2-a-zone-15yd", label: "2 USPSA A-Zone", detail: '6"x11", 15 yard spacing' },
-  { id: "tg-2-head-box-7yd", label: "2 USPSA Head Box", detail: '2"x4", spaced 7 yards' }
+  { id: "tg-2-head-box-7yd", label: "2 USPSA Head Box", detail: '2"x4", spaced 7 yards' },
+  // Expansion Pack
+  { id: "exp-tg-1-c-zone", label: "1 USPSA C-Zone", detail: '12"x24"' },
+  { id: "exp-tg-2-targets-4yd", label: "2 USPSA Targets", detail: 'Whole target 18"x30", spaced 4 yards' },
+  { id: "exp-tg-3-a-zone-shoulder", label: "3 USPSA A-Zone", detail: '6"x11", shoulder to shoulder' },
+  { id: "exp-tg-1-a-zone-penalty", label: "1 USPSA A-Zone", detail: "Hits outside A-zone add 2 seconds, no makeup shots" },
+  { id: "exp-tg-3-head-box-2yd", label: "3 USPSA Head Box", detail: '6"x6", spaced 2 yards' }
 ].map((c) => ({ ...c, category: "target", qty: 4 }));
 var COURSE_OF_FIRE_CARDS = [
   { id: "cof-2-reload-after-first", label: "2 Shots on Each Target", detail: "Reload after first shot" },
@@ -59,7 +65,13 @@ var COURSE_OF_FIRE_CARDS = [
   { id: "cof-failure-drill", label: "Failure Drill on Each Target", detail: "2 body, 1 head" },
   { id: "cof-1-repeat-3x", label: "1 Round Each Target, Then Repeat", detail: "3 times" },
   { id: "cof-2-strong-hand", label: "2 Rounds Each Target", detail: "Strong hand" },
-  { id: "cof-1-each-target", label: "1 Round Each Target" }
+  { id: "cof-1-each-target", label: "1 Round Each Target" },
+  // Expansion Pack
+  { id: "exp-cof-3-reload-3", label: "3 Rounds, Reload, 3 Rounds Each Target" },
+  { id: "exp-cof-4-moving-rearward", label: "4 Rounds Each Target", detail: "While moving rearward" },
+  { id: "exp-cof-3-moving-left-right", label: "3 Rounds Each Target", detail: "While moving left to right" },
+  { id: "exp-cof-2-reload-2", label: "2 Shots, Reload, 2 Shots Each Target" },
+  { id: "exp-cof-6-each-target", label: "6 Rounds Each Target" }
 ].map((c) => ({ ...c, category: "courseOfFire", qty: 4 }));
 var CATEGORY_DECKS = {
   time: TIME_CARDS,
